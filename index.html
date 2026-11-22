@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+®, 2024
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -7,40 +8,70 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
-window.__nfBooted=false; window.__nfEngineReady=false; window.__nfRealError=false;
+window.__nfBooted=false; window.__nfRealError=false;
 window.__nfShowError=function(m){window.__nfRealError=true;var b=document.getElementById('errorBox');if(!b){setTimeout(function(){window.__nfShowError(m);},300);return;}b.style.display='block';b.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> '+String(m).replace(/</g,'&lt;')+' <button onclick="this.parentElement.style.display=\'none\'" style="margin-left:8px;text-decoration:underline;color:inherit">dismiss</button>';};
 window.onerror=function(m){window.__nfShowError('Startup error: '+m);return true;};
-window.__nfQuick=function(t){var ta=document.getElementById('userInput');if(!ta)return;if(window.__nfEngineReady){ta.value=t;var f=document.getElementById('chatForm');if(f&&f.requestSubmit)f.requestSubmit();else if(f)f.dispatchEvent(new Event('submit',{cancelable:true}));}else{window.__nfShowError('AI engine not loaded in this preview. Open this file on your github.io (or as a saved .html) to chat.');}};
-document.addEventListener('submit',function(e){if(e.target&&e.target.id==='chatForm'&&!window.__nfEngineReady){e.preventDefault();window.__nfShowError('Open this page on your github.io to use the AI. The preview sandbox blocks the engine.');}});
-document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(!window.__nfBooted&&!window.__nfRealError)window.__nfShowError('The app engine did not load in this sandbox. Questions still show, but to chat, open this file on your github.io.');},2000);});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(!window.__nfBooted&&!window.__nfRealError)window.__nfShowError('Engine blocked by sandbox. Open this file on github.io or as a local .html file.');},2000);});
 </script>
 
 <style>
-  :root { --bg:#0f172a; --text:#f8fafc; --header-bg:rgba(15,23,42,.95); --bubble-user:#4f46e5; --bubble-ai:#1e293b; --border:#334155; --input-bg:#1e293b; --text-muted:#94a3b8; --modal-bg:#1e293b; }
-  body.light { --bg:#f8fafc; --text:#0f172a; --header-bg:rgba(248,250,252,.95); --bubble-user:#4f46e5; --bubble-ai:#ffffff; --border:#e2e8f0; --input-bg:#f1f5f9; --text-muted:#64748b; --modal-bg:#ffffff; }
+  :root { --bg:#0f172a; --text:#f8fafc; --header-bg:rgba(15,23,42,.98); --bubble-user:#4f46e5; --bubble-ai:#1e293b; --border:#334155; --input-bg:#1e293b; --text-muted:#94a3b8; --modal-bg:#1e293b; --sidebar-bg:#0b1120; }
+  body.light { --bg:#f8fafc; --text:#0f172a; --header-bg:rgba(248,250,252,.98); --bubble-user:#4f46e5; --bubble-ai:#ffffff; --border:#e2e8f0; --input-bg:#f1f5f9; --text-muted:#64748b; --modal-bg:#ffffff; --sidebar-bg:#f1f5f9; }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html, body { height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); transition:background .3s,color .3s; }
   button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
   input, textarea, select { font-family:inherit; font-size:16px; }
-  #app { display:flex; flex-direction:column; height:100dvh; width:100%; position:relative; }
-  header { height:60px; background:var(--header-bg); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 16px; flex-shrink:0; z-index:50; }
-  .brand { display:flex; align-items:center; gap:12px; min-width:0; }
-  .logo-small { width:32px; height:32px; flex:none; background:linear-gradient(135deg,#6366f1,#a855f7); border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; }
+
+  /* LAYOUT: Sidebar + Main */
+  #app { display:flex; height:100dvh; width:100%; position:relative; }
+  
+  /* SIDEBAR */
+  #sidebar {
+    width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; z-index: 60;
+    transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #sidebar.open { transform: translateX(0); }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .new-chat-btn { width: 100%; background: var(--bubble-user); color: white; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .new-chat-btn:active { opacity: 0.8; }
+  .close-sidebar { display: block; width: 32px; height: 32px; border-radius: 8px; align-items: center; justify-content: center; color: var(--text-muted); }
+  .close-sidebar:active { background: var(--border); }
+  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); text-align: left; display: flex; align-items: center; gap: 10px; transition: background 0.15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .history-item:active, .history-item.active { background: var(--border); }
+  .history-item i { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+  .history-item .del-hist { margin-left: auto; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+  .history-item .del-hist:active { color: #ef4444; }
+
+  /* MAIN AREA */
+  #main { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
+  
+  /* HEADER */
+  header { height: 60px; background: var(--header-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 50; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
+  .menu-btn:active { background: var(--border); }
+  .logo-small { width: 32px; height: 32px; flex:none; background:linear-gradient(135deg,#6366f1,#a855f7); border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; }
   .title { font-weight:700; font-size:17px; }
   .model-tag { font-size:11px; color:var(--text-muted); font-weight:600; }
   .header-btns { display:flex; gap:8px; }
   .header-btn { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text-muted); }
   .header-btn:active { background:var(--border); }
-  .header-btn.new-chat { color:#10b981; }
+
   #errorBox { display:none; margin:10px 16px 0; padding:10px 14px; border-radius:10px; background:#450a0a; color:#fca5a5; font-size:13px; line-height:1.4; border:1px solid #ef4444; }
   #errorBox i { margin-right:6px; }
+
+  /* CHAT AREA */
   #chatArea { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; display:flex; flex-direction:column; gap:16px; }
-  .welcome { text-align:center; padding:30px 20px; color:var(--text-muted); }
+  .welcome { text-align:center; padding:30px 20px; color:var(--text-muted); animation:popIn .3s ease-out; }
   .welcome i.big { font-size:40px; color:#6366f1; margin-bottom:16px; }
   .welcome h2 { font-size:20px; color:var(--text); margin-bottom:8px; }
   .suggestions { display:flex; flex-direction:column; gap:10px; max-width:320px; margin:20px auto 0; }
   .sugg-btn { background:var(--bubble-ai); border:1px solid var(--border); padding:14px; border-radius:12px; text-align:left; font-size:14px; font-weight:500; display:flex; align-items:center; gap:10px; color:var(--text); width:100%; transition:transform .1s; }
   .sugg-btn:active { transform:scale(.97); opacity:.8; }
+
+  /* MESSAGES */
   .msg { display:flex; flex-direction:column; max-width:85%; animation:popIn .2s ease-out; }
   .msg.user { align-self:flex-end; align-items:flex-end; }
   .msg.ai { align-self:flex-start; align-items:flex-start; }
@@ -55,6 +86,24 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .bubble ul, .bubble ol { margin-left:20px; margin-bottom:8px; }
   .bubble code { background:rgba(0,0,0,.3); padding:2px 4px; border-radius:4px; font-family:monospace; font-size:13px; }
   .retry { margin-top:8px; display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:700; color:#f59e0b; border:1px solid rgba(245,158,11,.5); background:rgba(245,158,11,.1); }
+
+  /* COLLAPSIBLE THINKING BLOCK */
+  .thinking-block {
+    background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 10px; margin: 8px 0 12px 0; overflow: hidden;
+  }
+  .thinking-block summary {
+    padding: 10px 14px; font-size: 13px; font-weight: 600; color: #818cf8; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; user-select: none; list-style: none;
+  }
+  .thinking-block summary::-webkit-details-marker { display: none; }
+  .thinking-block summary i { font-size: 14px; }
+  .thinking-content {
+    padding: 0 14px 14px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.5;
+    border-top: 1px solid rgba(99, 102, 241, 0.2); margin-top: -4px; padding-top: 10px;
+  }
+
+  /* INPUT AREA */
   #inputArea { background:var(--header-bg); backdrop-filter:blur(10px); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; z-index:50; }
   .search-toggle { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:600; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
   .toggle-switch { position:relative; width:44px; height:24px; display:inline-block; }
@@ -70,6 +119,8 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   #sendBtn { width:44px; height:44px; border-radius:50%; background:#4f46e5; color:white; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
   #sendBtn:active { transform:scale(.9); }
   #sendBtn:disabled { opacity:.5; }
+
+  /* SETTINGS MODAL */
   #settingsModal { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.7); display:none; align-items:flex-end; justify-content:center; }
   #settingsModal.open { display:flex; }
   .modal-content { width:100%; background:var(--modal-bg); border-radius:20px 20px 0 0; padding:20px; max-height:80vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:calc(20px + env(safe-area-inset-bottom)); animation:slideUp .3s ease-out; }
@@ -88,68 +139,88 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .btn-primary:active { opacity:.8; }
   .list-item { display:flex; justify-content:space-between; align-items:center; background:var(--input-bg); padding:12px; border-radius:10px; margin-bottom:8px; font-size:14px; color:var(--text); }
   .delete-item { color:#ef4444; padding:8px; }
+  
+  /* CONTEXT MENU & TOAST */
   #contextMenu { position:fixed; z-index:200; background:var(--modal-bg); border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.5); overflow:hidden; display:none; border:1px solid var(--border); min-width:160px; }
   .ctx-btn { width:100%; text-align:left; padding:14px 16px; font-size:14px; font-weight:500; display:flex; align-items:center; gap:10px; color:var(--text); }
   .ctx-btn:active { background:var(--border); }
   .ctx-btn.danger { color:#ef4444; }
   #toast { position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-20px); background:var(--text); color:var(--bg); padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:.3s; z-index:300; }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* DESKTOP RESPONSIVE */
+  @media (min-width: 768px) {
+    #sidebar { position: relative; transform: translateX(0); }
+    .close-sidebar { display: none; }
+    .menu-btn { display: none; }
+  }
 </style>
 </head>
 <body>
 
 <div id="app">
-  <header>
-    <div class="brand">
-      <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
-      <div style="min-width:0">
-        <div class="title">NeuralForge</div>
-        <div class="model-tag" id="modelTag">openai</div>
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn" class="new-chat-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
+      <button id="closeSidebarBtn" class="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+    <header>
+      <div class="brand">
+        <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+        <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
+        <div style="min-width:0">
+          <div class="title">NeuralForge</div>
+          <div class="model-tag" id="modelTag">openai</div>
+        </div>
+      </div>
+      <div class="header-btns">
+        <button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
+        <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+      </div>
+    </header>
+
+    <div id="errorBox"></div>
+    <div id="chatArea">
+      <div class="welcome" id="welcomeScreen">
+        <i class="fa-solid fa-sparkles big"></i>
+        <h2>How can I help?</h2>
+        <p>Long-press any message to edit, copy, or delete.</p>
+        <div class="suggestions">
+          <button class="sugg-btn" onclick="__nfQuick('What are the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
+          <button class="sugg-btn" onclick="__nfQuick('Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
+          <button class="sugg-btn" onclick="__nfQuick('Write a python function to reverse a string')"><i class="fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>
+          <button class="sugg-btn" onclick="__nfQuick('Give me 5 creative business ideas')"><i class="fa-solid fa-lightbulb" style="color:#f59e0b"></i> 5 business ideas</button>
+        </div>
       </div>
     </div>
-    <div class="header-btns">
-      <button class="header-btn new-chat" id="newChatBtn" title="New Chat"><i class="fa-solid fa-plus"></i></button>
-      <button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
-      <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
-    </div>
-  </header>
 
-  <div id="errorBox"></div>
-
-  <!-- STATIC welcome screen: renders even if the sandbox blocks the main script -->
-  <div id="chatArea">
-    <div class="welcome" id="welcomeScreen">
-      <i class="fa-solid fa-sparkles big"></i>
-      <h2>How can I help?</h2>
-      <p>Long-press any message to edit or delete.</p>
-      <div class="suggestions">
-        <button class="sugg-btn" onclick="__nfQuick('What are the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
-        <button class="sugg-btn" onclick="__nfQuick('Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
-        <button class="sugg-btn" onclick="__nfQuick('Write a python function to reverse a string')"><i class="fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>
-        <button class="sugg-btn" onclick="__nfQuick('Give me 5 creative business ideas')"><i class="fa-solid fa-lightbulb" style="color:#f59e0b"></i> 5 business ideas</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="inputArea">
-    <div class="search-toggle">
-      <label style="display:flex; align-items:center; gap:8px;">
-        <label class="toggle-switch">
-          <input type="checkbox" id="webSearchToggle">
-          <span class="slider"></span>
+    <div id="inputArea">
+      <div class="search-toggle">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <label class="toggle-switch">
+            <input type="checkbox" id="webSearchToggle">
+            <span class="slider"></span>
+          </label>
+          <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
         </label>
-        <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
-      </label>
-    </div>
-    <form class="input-row" id="chatForm">
-      <div class="input-wrap">
-        <textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea>
       </div>
-      <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
-    </form>
+      <form class="input-row" id="chatForm">
+        <div class="input-wrap">
+          <textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea>
+        </div>
+        <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+    </div>
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
 <div id="settingsModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -158,25 +229,24 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     </div>
 
     <div class="setting-group">
-      <div class="setting-label">AI Model</div>
+      <div class="setting-label">AI Model & Intelligence</div>
       <select class="setting-input" id="modelSelect">
         <option value="openai">⚡ Fast & balanced (openai)</option>
         <option value="openai-large">🧠 Smartest, slower (openai-large)</option>
-        <option value="deepseek">🔷 DeepSeek (reasoning)</option>
+        <option value="deepseek">🔷 DeepSeek (advanced reasoning)</option>
         <option value="llama">🦙 Meta Llama</option>
         <option value="mistral">🌪️ Mistral</option>
         <option value="qwen-coder">💻 Qwen Coder (best for code)</option>
       </select>
       <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; font-weight:600; color:var(--text);">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
-        Smart Mode (step-by-step reasoning)
+        Smart Mode (Step-by-step reasoning)
       </label>
-      <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Free models can be busy. If one fails, pick another and Retry.</p>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Smart Mode forces the AI to "think" before answering. Its thinking steps will be hidden in a collapsible menu.</p>
     </div>
 
     <div class="setting-group">
       <div class="setting-label">Welcome Screen Questions</div>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Add custom prompts to show when you start a new chat.</p>
       <div style="display:flex; gap:8px; margin-bottom:12px;">
         <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1;">
         <button id="addQuestionBtn" style="background:#4f46e5; color:white; padding:0 16px; border-radius:10px;"><i class="fa-solid fa-plus"></i></button>
@@ -187,12 +257,11 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
       <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. Follow these rules strictly:
-1. Be accurate and honest. If you are unsure, say so instead of guessing.
-2. Think step by step before answering complex questions.
-3. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.
-4. For any code, always use a fenced code block with the language tag, then explain briefly.
-5. Use perfect grammar and punctuation. Match the user's language.
-6. Be concise but complete. Never refuse a safe request.</textarea>
+1. Be accurate and honest. If unsure, say so instead of guessing.
+2. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.
+3. For any code, always use a fenced code block with the language tag, then explain briefly.
+4. Use perfect grammar and punctuation. Match the user's language.
+5. Be concise but complete.</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
 
@@ -207,6 +276,7 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   </div>
 </div>
 
+<!-- CONTEXT MENU -->
 <div id="contextMenu">
   <button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
   <button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
@@ -226,15 +296,15 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Follow these rules strictly:\n1. Be accurate and honest. If you are unsure, say so instead of guessing.\n2. Think step by step before answering complex questions.\n3. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.\n4. For any code, always use a fenced code block with the language tag, then explain briefly.\n5. Use perfect grammar and punctuation. Match the user\u2019s language.\n6. Be concise but complete. Never refuse a safe request.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Follow these rules strictly:\n1. Be accurate and honest. If unsure, say so instead of guessing.\n2. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.\n3. For any code, always use a fenced code block with the language tag, then explain briefly.\n4. Use perfect grammar and punctuation. Match the user’s language.\n5. Be concise but complete.';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
-    { text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' },
-    { text: 'Give me 5 creative business ideas', icon: 'fa-lightbulb', color: '#f59e0b' }
+    { text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' }
   ];
 
-  var messages = [];
+  var histories = safe(function () { var a = JSON.parse(lsGet('nf_histories', '[]')); return Array.isArray(a) ? a : []; }, []);
+  var currentChatId = lsGet('nf_current_chat', '') || '';
   var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
   var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
   var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
@@ -246,9 +316,36 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   var longPressTimer = null;
 
   function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
+  function getMessages() {
+    var chat = histories.find(h => h.id === currentChatId);
+    return chat ? chat.messages : [];
+  }
+  function setMessages(msgs) {
+    var chat = histories.find(h => h.id === currentChatId);
+    if (chat) {
+      chat.messages = msgs;
+      if (msgs.length > 0 && !chat.title) {
+        chat.title = msgs[0].content.substring(0, 30) + (msgs[0].content.length > 30 ? '...' : '');
+      }
+      lsSet('nf_histories', JSON.stringify(histories));
+      renderSidebar();
+    }
+  }
+  function createNewChat() {
+    var id = 'chat_' + Date.now();
+    histories.unshift({ id: id, title: 'New Chat', messages: [] });
+    currentChatId = id;
+    lsSet('nf_current_chat', currentChatId);
+    lsSet('nf_histories', JSON.stringify(histories));
+    renderSidebar();
+    renderWelcomeScreen();
+    if (window.innerWidth < 768) $('sidebar').classList.remove('open');
+  }
 
   function boot() {
     try {
+      if (!currentChatId || !histories.find(h => h.id === currentChatId)) createNewChat();
+
       var isDark = lsGet('nf_theme', 'dark') !== 'light';
       function applyTheme() {
         if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
@@ -263,13 +360,12 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
       $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Model: ' + currentModel); };
       $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
 
+      $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
+      $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
+      $('newChatBtn').onclick = createNewChat;
       $('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); };
       $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
       $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
-      $('newChatBtn').onclick = function () {
-        if (messages.length > 0 && !confirm('Start a new chat? Current messages will be cleared.')) return;
-        messages = []; renderWelcomeScreen(); showToast('Started new chat');
-      };
 
       var ctxMenu = $('contextMenu');
       document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
@@ -277,12 +373,19 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
       $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
 
       $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
-      $('ctxDelete').onclick = function () { selectedMsgEl.remove(); showToast('Deleted'); ctxMenu.style.display = 'none'; };
+      $('ctxDelete').onclick = function () { selectedMsgEl.remove(); var msgs = getMessages().filter(m => m.content !== selectedMsgEl.dataset.text); setMessages(msgs); showToast('Deleted'); ctxMenu.style.display = 'none'; };
       $('ctxEdit').onclick = function () { $('userInput').value = selectedMsgEl.dataset.text; selectedMsgEl.remove(); ctxMenu.style.display = 'none'; $('userInput').focus(); };
       $('ctxRegen').onclick = function () {
-        var idx = messages.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
+        var msgs = getMessages();
+        var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
         ctxMenu.style.display = 'none';
-        if (idx > 0) { var prev = messages[idx - 1].content; messages = messages.slice(0, idx); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0]); }
+        if (idx > 0) { 
+          var prev = msgs[idx - 1].content; 
+          msgs = msgs.slice(0, idx); 
+          setMessages(msgs); 
+          selectedMsgEl.remove(); 
+          runAI(prev.split('\n\n[WEB CONTEXT')[0]); 
+        }
       };
 
       $('sysPrompt').value = sysPrompt;
@@ -292,26 +395,59 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
       $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); } });
       $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
 
+      renderSidebar();
       renderQuestions();
       renderMemory();
-      renderWelcomeScreen();
-      window.__nfEngineReady = true;
+      renderChat();
       window.__nfBooted = true;
     } catch (err) {
       window.__nfShowError('Init crashed: ' + (err && err.message ? err.message : err));
     }
   }
 
-  function submitForm() {
-    if (isGenerating) return;
-    var input = $('userInput');
-    var text = input.value.trim();
-    if (!text) return;
-    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-    addMessageToUI(text, 'user');
-    input.value = ''; input.style.height = 'auto';
-    isGenerating = true; $('sendBtn').disabled = true;
-    runAI(text);
+  function renderSidebar() {
+    var list = $('historyList');
+    list.innerHTML = histories.map(function (h) {
+      var isActive = h.id === currentChatId ? ' active' : '';
+      return '<div class="history-item' + isActive + '" data-id="' + h.id + '">' +
+        '<i class="fa-regular fa-message"></i>' +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(h.title) + '</span>' +
+        '<button class="del-hist" data-del="' + h.id + '"><i class="fa-solid fa-trash"></i></button>' +
+        '</div>';
+    }).join('');
+    
+    list.querySelectorAll('.history-item').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('.del-hist')) return;
+        currentChatId = el.dataset.id;
+        lsSet('nf_current_chat', currentChatId);
+        renderSidebar();
+        renderChat();
+        if (window.innerWidth < 768) $('sidebar').classList.remove('open');
+      });
+    });
+    list.querySelectorAll('.del-hist').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = btn.dataset.del;
+        histories = histories.filter(h => h.id !== id);
+        lsSet('nf_histories', JSON.stringify(histories));
+        if (currentChatId === id) createNewChat();
+        else renderSidebar();
+      });
+    });
+  }
+
+  function renderChat() {
+    var msgs = getMessages();
+    var chatArea = $('chatArea');
+    chatArea.innerHTML = '';
+    if (msgs.length === 0) {
+      renderWelcomeScreen();
+      return;
+    }
+    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false); });
+    scrollToBottom();
   }
 
   function renderWelcomeScreen() {
@@ -322,6 +458,24 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     html += '</div></div>';
     $('chatArea').innerHTML = html;
   }
+
+  function submitForm() {
+    if (isGenerating) return;
+    var input = $('userInput');
+    var text = input.value.trim();
+    if (!text) return;
+    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
+    
+    var msgs = getMessages();
+    msgs.push({ role: 'user', content: text });
+    setMessages(msgs);
+    
+    addMessageToUI(text, 'user', true);
+    input.value = ''; input.style.height = 'auto';
+    isGenerating = true; $('sendBtn').disabled = true;
+    runAI(text);
+  }
+  window.__nfQuick = function(t) { $('userInput').value = t; submitForm(); };
 
   async function runAI(text) {
     var useWeb = $('webSearchToggle').checked;
@@ -335,10 +489,12 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     showTyping('Thinking...');
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
-    if (smartMode) systemMsg += '\n\nSMART MODE: Before answering, reason step by step, consider edge cases, and verify correctness. Then give the final clear answer.';
+    if (smartMode) {
+      systemMsg += '\n\nSMART MODE: Before answering, you MUST think step-by-step inside <thinking> and </thinking> tags. The user will see this as a collapsible section. After thinking, provide the final clear answer.';
     if (memory.length) systemMsg += '\n\n[USER MEMORY - Always remember these facts]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
 
-    messages.push({ role: 'user', content: finalPrompt });
+    var msgs = getMessages();
+    msgs.push({ role: 'user', content: finalPrompt }); // temporarily for API
 
     var aiText = '', rawBuf = '';
     var aiMsgDiv = document.createElement('div');
@@ -355,7 +511,7 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
         method: 'POST',
         signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: currentModel, messages: [{ role: 'system', content: systemMsg }].concat(messages.slice(-10)), stream: true, temperature: smartMode ? 0.3 : 0.7 })
+        body: JSON.stringify({ model: currentModel, messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10)), stream: true, temperature: smartMode ? 0.3 : 0.7 })
       });
       clearTimeout(to);
       if (!res.ok) throw new Error('Server error ' + res.status);
@@ -394,7 +550,11 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
 
       streamBubble.innerHTML = formatText(aiText);
       attachLongPress(aiMsgDiv, aiText, 'ai');
-      messages.push({ role: 'assistant', content: aiText });
+      
+      // Save to history
+      var savedMsgs = getMessages();
+      savedMsgs.push({ role: 'assistant', content: aiText });
+      setMessages(savedMsgs);
       scrollToBottom();
 
     } catch (err) {
@@ -405,9 +565,11 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
       streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
       aiMsgDiv.classList.add('error');
       streamBubble.querySelector('.retry').addEventListener('click', function () {
-        while (messages.length && messages[messages.length - 1].role === 'assistant') messages.pop();
-        var lastUser = messages.slice().reverse().find(function (m) { return m.role === 'user'; });
+        var savedMsgs = getMessages();
+        while (savedMsgs.length && savedMsgs[savedMsgs.length - 1].role === 'assistant') savedMsgs.pop();
+        setMessages(savedMsgs);
         aiMsgDiv.remove();
+        var lastUser = savedMsgs.slice().reverse().find(function (m) { return m.role === 'user'; });
         if (lastUser) runAI(lastUser.content.split('\n\n[WEB CONTEXT')[0]);
       });
       attachLongPress(aiMsgDiv, '', 'ai');
@@ -419,6 +581,10 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   function formatText(text) {
     var html = String(text)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      // COLLAPSIBLE THINKING BLOCK PARSER
+      .replace(/<thinking>([\s\S]*?)<\/thinking>/gi, function(match, p1) {
+        return '<details class="thinking-block"><summary><i class="fa-solid fa-brain"></i> Show thinking process</summary><div class="thinking-content">' + p1.replace(/\n/g, '<br>') + '</div></details>';
+      })
       .replace(/```([\s\S]*?)```/g, function (m, c) { return '<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0;"><code>' + c.replace(/^\n/, '').replace(/\n$/, '') + '</code></pre>'; })
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -435,9 +601,10 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   }
 
   function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-  function addMessageToUI(text, type) {
+  function addMessageToUI(text, type, animate) {
     var div = document.createElement('div');
     div.className = 'msg ' + type; div.dataset.text = text;
+    if (animate) div.style.animation = 'popIn .2s ease-out';
     div.innerHTML = '<div class="bubble">' + formatText(text) + '</div>';
     $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
   }
