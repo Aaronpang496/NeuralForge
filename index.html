@@ -2,184 +2,178 @@
 <html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuralForge AI — Smart Agent</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>NeuralForge Mobile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'sans-serif'] },
                 }
             }
         }
     </script>
-    <!-- Inter Font & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
-        .fade-in { animation: fadeIn 0.25s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .prose p { margin-bottom: 0.5em; }
-        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-        .prose strong { color: inherit; font-weight: 700; }
-        .prose code { background: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
-        .dark .prose code { background: rgba(255,255,255,0.1); }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; 
+            touch-action: manipulation; /* Prevents double-tap zoom delay */
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Hide scrollbar for clean mobile look */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Mobile chat bubble styling */
+        .bubble-user { 
+            background: #4F46E5; 
+            color: white; 
+            border-radius: 18px 18px 4px 18px; 
+        }
+        .dark .bubble-user { background: #6366F1; }
+        
+        .bubble-ai { 
+            background: #E2E8F0; 
+            color: #0F172A; 
+            border-radius: 18px 18px 18px 4px; 
+        }
+        .dark .bubble-ai { background: #1E293B; color: #F1F5F9; }
+
+        .prose p { margin-bottom: 0.5em; line-height: 1.5; }
+        .prose strong { font-weight: 600; }
     </style>
 </head>
-<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 flex flex-col overflow-hidden">
+<body class="h-[100dvh] w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden">
 
-    <!-- Top Navigation Header -->
-    <header class="flex-none h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between z-30">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                <i class="fa-solid fa-brain text-lg"></i>
+    <!-- Mobile Header -->
+    <header class="flex-none h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 z-20 sticky top-0">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md">
+                <i class="fa-solid fa-brain text-sm"></i>
             </div>
             <div>
-                <h1 class="font-bold text-base md:text-lg tracking-tight flex items-center gap-2">
-                    NeuralForge <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">Agent</span>
-                </h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Live Web Search & Custom Memory</p>
+                <h1 class="font-semibold text-base leading-tight">NeuralForge</h1>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Online • Smart Search</p>
             </div>
         </div>
-
-        <div class="flex items-center space-x-2">
-            <div class="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl flex items-center border border-slate-200 dark:border-slate-700">
-                <button id="navChatBtn" onclick="switchTab('chat')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm">
-                    <i class="fa-solid fa-comments"></i> <span class="hidden sm:inline">Chat</span>
-                </button>
-                <button id="navTrainBtn" onclick="switchTab('train')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                    <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">Memory</span>
-                </button>
-            </div>
-            <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                <i id="themeIcon" class="fa-solid fa-moon"></i>
-            </button>
-        </div>
+        <button onclick="toggleSettings()" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-800 transition">
+            <i class="fa-solid fa-sliders text-lg"></i>
+        </button>
     </header>
 
-    <!-- Main Content Container -->
-    <main class="flex-1 relative overflow-hidden flex">
-
-        <!-- ================= CHAT VIEW ================= -->
-        <div id="chatView" class="absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10">
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full">
-                <!-- Welcome Banner -->
-                <div class="flex items-start space-x-4 max-w-2xl mx-auto my-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm fade-in">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-lg">
-                        <i class="fa-solid fa-sparkles"></i>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-base mb-1">NeuralForge Agent Ready</h2>
-                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-                            I am connected to a real LLM. Toggle <strong>Live Web Search</strong> below to let me fetch and synthesize real-time internet facts, or teach me custom facts in the Memory tab.
-                        </p>
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="sendQuickPrompt('What are the latest developments in AI this week?')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition">
-                                🌐 "Latest AI developments?"
-                            </button>
-                            <button onclick="sendQuickPrompt('Write a python script to scrape a website.')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition">
-                                💻 "Write a Python scraper"
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    <!-- Chat Area -->
+    <main id="chatView" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 bg-slate-50 dark:bg-slate-950 scroll-smooth">
+        <!-- Welcome Message -->
+        <div class="flex flex-col items-center text-center py-8 fade-in">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-sm">
+                <i class="fa-solid fa-sparkles"></i>
             </div>
-
-            <!-- Input Bar -->
-            <div class="flex-none p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20">
-                <div class="max-w-3xl mx-auto space-y-3">
-                    <!-- Web Search Toggle -->
-                    <div class="flex items-center justify-between px-1">
-                        <label class="cursor-pointer flex items-center space-x-2 text-xs font-medium text-slate-600 dark:text-slate-300 select-none">
-                            <input type="checkbox" id="webSearchToggle" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
-                            <span class="flex items-center gap-1.5">
-                                <i class="fa-solid fa-globe text-indigo-500"></i> Live Web Search (Smart Synthesis)
-                            </span>
-                        </label>
-                        <button onclick="clearChat()" class="text-[11px] text-slate-400 hover:text-red-500 transition flex items-center gap-1">
-                            <i class="fa-solid fa-trash-can"></i> Clear Chat
-                        </button>
-                    </div>
-
-                    <form id="chatForm" onsubmit="handleChatSubmit(event)" class="relative flex items-center">
-                        <input 
-                            type="text" 
-                            id="userInput" 
-                            placeholder="Ask anything..." 
-                            class="w-full pl-4 pr-14 py-3.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white placeholder-slate-400 shadow-inner"
-                            autocomplete="off"
-                        >
-                        <button 
-                            type="submit" 
-                            id="sendBtn"
-                            class="absolute right-2 w-10 h-10 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl flex items-center justify-center transition shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <i class="fa-solid fa-paper-plane text-sm"></i>
-                        </button>
-                    </form>
-                </div>
+            <h2 class="font-semibold text-lg mb-1">How can I help you today?</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs mb-6">I can search the live web, write code, or answer questions using my custom memory.</p>
+            
+            <div class="grid grid-cols-1 gap-2 w-full max-w-xs">
+                <button onclick="sendQuickPrompt('What are the latest AI news today?')" class="text-sm p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left active:scale-95 transition shadow-sm">
+                    🌐 <span class="font-medium">Latest AI news today?</span>
+                </button>
+                <button onclick="sendQuickPrompt('Explain quantum computing like I am 5')" class="text-sm p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left active:scale-95 transition shadow-sm">
+                    🧠 <span class="font-medium">Explain quantum computing simply</span>
+                </button>
             </div>
         </div>
-
-        <!-- ================= MEMORY STUDIO VIEW ================= -->
-        <div id="trainView" class="absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none overflow-y-auto p-4 md:p-8">
-            <div class="max-w-4xl mx-auto w-full space-y-6 pb-12">
-                
-                <!-- System Prompt -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-                    <h3 class="font-semibold text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-id-card text-indigo-500"></i> Core Behavior
-                    </h3>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">System Prompt</label>
-                        <textarea id="settingSystemPrompt" rows="3" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">You are NeuralForge, a highly intelligent, concise, and helpful AI assistant. When provided with web search context, synthesize it clearly and cite sources.</textarea>
-                    </div>
-                    <button onclick="saveSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition">Save Behavior</button>
-                </div>
-
-                <!-- Custom Knowledge -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-graduation-cap text-indigo-500"></i> Custom Memory
-                        </h3>
-                        <span id="trainingPairsCount" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">0 Items</span>
-                    </div>
-
-                    <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Fact to Remember</label>
-                            <input type="text" id="trainKeyword" placeholder="e.g. My name is Alex and I am building an AI app." class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div class="flex justify-end pt-1">
-                            <button onclick="addTrainingPair()" class="px-3.5 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center gap-1.5">
-                                <i class="fa-solid fa-plus text-xs"></i> Add to Memory
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1" id="trainingPairsList"></div>
-                </div>
-
-            </div>
-        </div>
-
     </main>
 
+    <!-- Input Area (Mobile Optimized) -->
+    <div class="flex-none bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-20">
+        <!-- Search Toggle -->
+        <div class="flex items-center justify-between px-1 mb-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <div class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="webSearchToggle" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                </div>
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                    <i class="fa-solid fa-globe text-indigo-500"></i> Live Web Search
+                </span>
+            </label>
+            <button onclick="clearChat()" class="text-xs text-slate-400 active:text-red-500 transition font-medium">Clear</button>
+        </div>
+
+        <!-- Input Form -->
+        <form id="chatForm" onsubmit="handleChatSubmit(event)" class="flex items-end gap-2">
+            <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Message NeuralForge..." 
+                    class="w-full bg-transparent px-4 py-3 text-base focus:outline-none dark:text-white placeholder-slate-400"
+                    autocomplete="off"
+                    enterkeyhint="send"
+                >
+            </div>
+            <button 
+                type="submit" 
+                id="sendBtn"
+                class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 active:scale-90 text-white rounded-full flex items-center justify-center transition shadow-md disabled:opacity-50 disabled:active:scale-100 flex-shrink-0"
+            >
+                <i class="fa-solid fa-paper-plane text-lg"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Settings / Memory Slide-up Panel -->
+    <div id="settingsPanel" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 ease-out bg-white dark:bg-slate-950 flex flex-col">
+        <!-- Panel Header -->
+        <div class="flex-none h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-white dark:bg-slate-950">
+            <button onclick="toggleSettings()" class="w-10 h-10 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 active:bg-slate-100 dark:active:bg-slate-800 transition">
+                <i class="fa-solid fa-chevron-down text-lg"></i>
+            </button>
+            <h2 class="font-semibold text-base">AI Memory & Settings</h2>
+            <div class="w-10"></div> <!-- Spacer for centering -->
+        </div>
+
+        <!-- Panel Content -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+            
+            <!-- System Prompt -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Behavior</label>
+                <textarea id="settingSystemPrompt" rows="3" class="w-full p-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white resize-none">You are NeuralForge, a highly intelligent, concise, and helpful AI assistant on a mobile device. Keep answers brief and easy to read on a small screen.</textarea>
+                <button onclick="saveSettings()" class="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl active:scale-95 transition">Save Behavior</button>
+            </div>
+
+            <!-- Custom Memory -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Custom Memory</label>
+                    <span id="trainingPairsCount" class="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">0 Items</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="trainKeyword" placeholder="e.g., My name is Alex, I love coding" class="flex-1 p-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
+                    <button onclick="addTrainingPair()" class="px-4 bg-slate-800 dark:bg-slate-700 text-white rounded-xl active:scale-95 transition">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+
+                <div id="trainingPairsList" class="space-y-2 pb-20">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-xs font-medium">
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] translate-y-[-150%] opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-full shadow-xl flex items-center space-x-2 text-xs font-semibold">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
         <span id="toastMessage">Notification</span>
     </div>
 
-    <!-- JavaScript Application Logic -->
     <script>
         // =====================================================================
         // CONFIGURATION: HIDE YOUR API KEY HERE
@@ -192,79 +186,34 @@
         function getApiKey() {
             try {
                 const decoded = atob(ENCODED_API_KEY);
-                if (decoded.includes("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")) {
-                    console.warn("Please replace the ENCODED_API_KEY with your actual base64 encoded OpenRouter key.");
-                    return "";
-                }
+                if (decoded.includes("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")) return "";
                 return decoded;
-            } catch (e) {
-                return "";
-            }
+            } catch (e) { return ""; }
         }
 
-        // --- State Management ---
-        let currentTab = 'chat';
+        // --- State ---
         let settings = {
-            systemPrompt: localStorage.getItem('neural_system_prompt') || 'You are NeuralForge, a highly intelligent, concise, and helpful AI assistant.'
+            systemPrompt: localStorage.getItem('neural_system_prompt') || 'You are NeuralForge, a highly intelligent, concise, and helpful AI assistant on a mobile device. Keep answers brief and easy to read on a small screen.'
         };
         let trainingPairs = JSON.parse(localStorage.getItem('neural_training_pairs') || '[]');
         let conversationHistory = []; 
 
         window.onload = function() {
-            loadUI();
+            document.getElementById('settingSystemPrompt').value = settings.systemPrompt;
             renderTrainingPairs();
             
-            // Theme init
             if (localStorage.getItem('neural_theme') === 'dark' || (!localStorage.getItem('neural_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
-                document.getElementById('themeIcon').className = "fa-solid fa-sun";
             }
         };
 
-        function switchTab(tab) {
-            currentTab = tab;
-            const chatView = document.getElementById('chatView');
-            const trainView = document.getElementById('trainView');
-            const navChatBtn = document.getElementById('navChatBtn');
-            const navTrainBtn = document.getElementById('navTrainBtn');
-
-            chatView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none";
-            trainView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none overflow-y-auto p-4 md:p-8";
-            navChatBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
-            navTrainBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
-
-            if (tab === 'chat') {
-                chatView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10 opacity-100";
-                navChatBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm";
-                document.getElementById('userInput').focus();
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            if (panel.classList.contains('translate-y-full')) {
+                panel.classList.remove('translate-y-full');
             } else {
-                trainView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10 opacity-100 overflow-y-auto p-4 md:p-8";
-                navTrainBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm";
+                panel.classList.add('translate-y-full');
             }
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                icon.className = "fa-solid fa-moon";
-                localStorage.setItem('neural_theme', 'light');
-            } else {
-                html.classList.add('dark');
-                icon.className = "fa-solid fa-sun";
-                localStorage.setItem('neural_theme', 'dark');
-            }
-        }
-
-        function loadUI() {
-            document.getElementById('settingSystemPrompt').value = settings.systemPrompt;
-        }
-
-        function saveSettings() {
-            settings.systemPrompt = document.getElementById('settingSystemPrompt').value;
-            localStorage.setItem('neural_system_prompt', settings.systemPrompt);
-            showToast("Behavior settings saved!");
         }
 
         function sendQuickPrompt(text) {
@@ -274,55 +223,46 @@
 
         function clearChat() {
             conversationHistory = [];
-            document.getElementById('chatMessages').innerHTML = `
-                <div class="flex items-start space-x-4 max-w-2xl mx-auto my-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm fade-in">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-lg">
+            document.getElementById('chatView').innerHTML = `
+                <div class="flex flex-col items-center text-center py-8 fade-in">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-sm">
                         <i class="fa-solid fa-sparkles"></i>
                     </div>
-                    <div>
-                        <h2 class="font-bold text-base mb-1">Chat Cleared</h2>
-                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300">Memory reset. Ready for a new topic.</p>
-                    </div>
+                    <h2 class="font-semibold text-lg mb-1">Chat Cleared</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">Memory reset. Ready for a new topic.</p>
                 </div>
             `;
         }
 
-        // --- SMART WEB SEARCH LOGIC ---
+        // --- SMART WEB SEARCH ---
         async function performWebSearch(query) {
             try {
-                // Use AllOrigins as a free CORS proxy to fetch DuckDuckGo HTML
                 const targetUrl = `https://html.duckduckgo.com/html?q=${encodeURIComponent(query)}`;
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
                 
                 if (!data.contents) return "No search results found.";
                 
-                // Parse the HTML to extract text snippets
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.contents, 'text/html');
                 const snippets = Array.from(doc.querySelectorAll('.result__snippet')).map(el => el.textContent.trim());
                 
                 if (snippets.length === 0) {
-                    // Fallback to Wikipedia API if DDG returns nothing
                     const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`);
                     const wikiData = await wikiRes.json();
                     if (wikiData.query && wikiData.query.search.length > 0) {
                         return "Wikipedia Context: " + wikiData.query.search.map(s => `[${s.title}] ${s.snippet.replace(/<[^>]*>/g, '')}`).join(" | ");
                     }
-                    return "No relevant web results found for this query.";
+                    return "No relevant web results found.";
                 }
-                
-                // Return top 4 snippets formatted for the LLM
-                return "Live Web Search Results:\n" + snippets.slice(0, 4).map((s, i) => `${i+1}. ${s}`).join("\n");
+                return "Live Web Search Results:\n" + snippets.slice(0, 3).map((s, i) => `${i+1}. ${s}`).join("\n");
             } catch (error) {
-                console.error("Web search failed:", error);
-                return "Web search failed due to network/proxy issues.";
+                return "Web search failed due to network issues.";
             }
         }
 
-        // --- REAL AI LOGIC (OPENROUTER) ---
+        // --- AI LOGIC ---
         async function handleChatSubmit(e) {
             e.preventDefault();
             const inputField = document.getElementById('userInput');
@@ -331,7 +271,7 @@
 
             const apiKey = getApiKey();
             if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
-                showToast("⚠️ API Key missing! Edit the code and add your Base64 encoded key.", "error");
+                showToast("⚠️ API Key missing! Edit the code.", "error");
                 return;
             }
 
@@ -342,29 +282,20 @@
             const isWebSearchEnabled = document.getElementById('webSearchToggle').checked;
             let finalUserMessage = messageText;
 
-            // 1. If web search is on, fetch context first
             if (isWebSearchEnabled) {
-                const searchThinkingId = showThinkingIndicator("🔍 Searching the live web...");
+                const searchThinkingId = showThinkingIndicator("🔍 Searching the web...");
                 const searchResults = await performWebSearch(messageText);
                 removeThinkingIndicator(searchThinkingId);
-                
-                // Inject search results into the prompt for the LLM to synthesize
-                finalUserMessage = `User Query: ${messageText}\n\n[INSTRUCTIONS: Use the following live web search context to answer the user's query accurately. Synthesize the information clearly and cite sources if applicable. If the context is irrelevant, use your general knowledge but mention you couldn't find specific live results.]\n\n[WEB SEARCH CONTEXT]:\n${searchResults}`;
+                finalUserMessage = `User Query: ${messageText}\n\n[INSTRUCTIONS: Use the following live web search context to answer accurately. Keep it concise for mobile reading. Cite sources if applicable.]\n\n[WEB CONTEXT]:\n${searchResults}`;
             }
 
-            // 2. Show AI thinking indicator
             const thinkingId = showThinkingIndicator("Thinking...");
 
-            // 3. Prepare System Prompt with Custom Memory
             let systemContent = settings.systemPrompt;
             if (trainingPairs.length > 0) {
-                systemContent += "\n\n[USER'S CUSTOM MEMORY / FACTS]:\n";
-                trainingPairs.forEach(pair => {
-                    systemContent += `- ${pair.keyword}\n`;
-                });
+                systemContent += "\n\n[USER'S CUSTOM MEMORY]:\n" + trainingPairs.map(p => `- ${p.keyword}`).join("\n");
             }
 
-            // 4. Add to history and call API
             conversationHistory.push({ role: "user", content: finalUserMessage });
 
             try {
@@ -374,93 +305,80 @@
                         "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "application/json",
                         "HTTP-Referer": window.location.href, 
-                        "X-Title": "NeuralForge Agent"
+                        "X-Title": "NeuralForge Mobile"
                     },
                     body: JSON.stringify({
-                        "model": "meta-llama/llama-3.1-8b-instruct:free", // Smart, free model
+                        "model": "meta-llama/llama-3.1-8b-instruct:free",
                         "messages": [
                             { "role": "system", "content": systemContent },
-                            ...conversationHistory.slice(-8) // Keep last 8 messages for context window
+                            ...conversationHistory.slice(-6) // Keep context small for mobile speed
                         ]
                     })
                 });
 
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error?.message || "API Error");
-                }
+                if (!response.ok) throw new Error("API Error");
 
                 const data = await response.json();
                 const aiText = data.choices[0].message.content;
 
                 removeThinkingIndicator(thinkingId);
                 appendMessage(aiText, 'ai');
-                
                 conversationHistory.push({ role: "assistant", content: aiText });
 
             } catch (error) {
                 removeThinkingIndicator(thinkingId);
-                appendMessage(`⚠️ Error: ${error.message}. Please check your API key or internet connection.`, 'ai');
-                console.error(error);
+                appendMessage(`⚠️ Error: ${error.message}`, 'ai');
             } finally {
                 document.getElementById('sendBtn').disabled = false;
-                document.getElementById('userInput').focus();
+                inputField.focus();
             }
         }
 
         function appendMessage(text, sender) {
-            const chatMessages = document.getElementById('chatMessages');
+            // Remove welcome message if it exists
+            const welcome = document.querySelector('#chatView .flex-col.items-center');
+            if (welcome) welcome.remove();
+
+            const chatView = document.getElementById('chatView');
             const isUser = sender === 'user';
             
             const messageDiv = document.createElement('div');
-            messageDiv.className = `flex items-start space-x-3 max-w-3xl mx-auto w-full fade-in ${isUser ? 'justify-end' : ''}`;
+            messageDiv.className = `flex w-full fade-in ${isUser ? 'justify-end' : 'justify-start'}`;
 
-            const avatarBg = isUser ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200';
-            const avatarIcon = isUser ? 'fa-user' : 'fa-brain';
-            const bubbleBg = isUser 
-                ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' 
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tl-sm shadow-sm prose dark:prose-invert max-w-none';
+            const bubbleClass = isUser ? 'bubble-user' : 'bubble-ai';
+            const formattedText = escapeHTML(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
 
-            // Basic markdown parsing for bold, lists, and code
-            let formattedText = escapeHTML(text)
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-
-            let avatarHtml = `<div class="w-8 h-8 rounded-xl ${avatarBg} flex items-center justify-center flex-shrink-0 text-xs shadow-sm"><i class="fa-solid ${avatarIcon}"></i></div>`;
-            let contentHtml = `
-                <div class="flex-1 max-w-[85%] sm:max-w-[75%]">
-                    <div class="flex items-center gap-2 mb-1 ${isUser ? 'justify-end' : ''}">
-                        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">${isUser ? 'You' : 'NeuralForge'}</span>
-                    </div>
-                    <div class="${bubbleBg} p-4 text-xs sm:text-sm leading-relaxed">${formattedText}</div>
+            messageDiv.innerHTML = `
+                <div class="max-w-[85%] ${bubbleClass} px-4 py-2.5 shadow-sm prose dark:prose-invert text-[15px] leading-snug">
+                    ${formattedText}
                 </div>
             `;
 
-            messageDiv.innerHTML = isUser ? contentHtml + avatarHtml : avatarHtml + contentHtml;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatView.appendChild(messageDiv);
+            // Smooth scroll to bottom
+            setTimeout(() => {
+                chatView.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
+            }, 50);
         }
 
-        function showThinkingIndicator(text = "Thinking...") {
-            const chatMessages = document.getElementById('chatMessages');
+        function showThinkingIndicator(text) {
+            const chatView = document.getElementById('chatView');
             const id = 'thinking-' + Date.now();
             const div = document.createElement('div');
             div.id = id;
-            div.className = 'flex items-start space-x-3 max-w-3xl mx-auto w-full fade-in';
+            div.className = 'flex w-full justify-start fade-in';
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 text-xs shadow-sm"><i class="fa-solid fa-brain"></i></div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-1"><span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">NeuralForge</span></div>
-                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl rounded-tl-sm shadow-sm inline-flex items-center space-x-2">
-                        <span class="text-xs text-slate-500 dark:text-slate-400 italic">${text}</span>
-                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
-                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.2s"></div>
-                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.4s"></div>
+                <div class="bubble-ai px-4 py-3 flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 italic">${text}</span>
+                    <div class="flex gap-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.15s"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.3s"></div>
                     </div>
                 </div>
             `;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatView.appendChild(div);
+            chatView.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
             return id;
         }
 
@@ -469,18 +387,16 @@
             if (el) el.remove();
         }
 
-        // --- Memory Studio Actions ---
+        // --- Memory Actions ---
         function addTrainingPair() {
             const kw = document.getElementById('trainKeyword').value.trim();
-            if (!kw) {
-                showToast("Please enter a fact to remember!", "error");
-                return;
-            }
+            if (!kw) { showToast("Enter a fact first!", "error"); return; }
+            
             trainingPairs.push({ id: Date.now(), keyword: kw });
             document.getElementById('trainKeyword').value = '';
             renderTrainingPairs();
             saveData();
-            showToast("Fact added to AI Memory!");
+            showToast("Memory updated!");
         }
 
         function deleteTrainingPair(id) {
@@ -494,21 +410,25 @@
             document.getElementById('trainingPairsCount').innerText = `${trainingPairs.length} Items`;
             
             if (trainingPairs.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">No custom memory added. The AI will rely on its base knowledge and web search.</p>`;
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No custom memory added yet.</p>`;
                 return;
             }
-            let html = '';
-            trainingPairs.forEach(p => {
-                html += `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 gap-3">
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-medium text-slate-700 dark:text-slate-200">${escapeHTML(p.keyword)}</p>
-                        </div>
-                        <button onclick="deleteTrainingPair(${p.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center justify-center transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
+            
+            container.innerHTML = trainingPairs.map(p => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p class="text-sm text-slate-700 dark:text-slate-200 flex-1 truncate pr-2">${escapeHTML(p.keyword)}</p>
+                    <button onclick="deleteTrainingPair(${p.id})" class="w-8 h-8 rounded-full text-slate-400 active:text-red-500 active:bg-red-50 dark:active:bg-red-900/30 flex items-center justify-center transition">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function saveSettings() {
+            settings.systemPrompt = document.getElementById('settingSystemPrompt').value;
+            localStorage.setItem('neural_system_prompt', settings.systemPrompt);
+            showToast("Behavior saved!");
+            toggleSettings();
         }
 
         function saveData() {
@@ -521,16 +441,16 @@
 
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const toastIcon = document.getElementById('toastIcon');
-            toastMessage.innerText = message;
-            toastIcon.className = type === 'error' ? "fa-solid fa-circle-exclamation text-red-400 text-sm" : "fa-solid fa-circle-check text-emerald-400 text-sm";
-            toast.classList.remove('translate-y-20', 'opacity-0');
+            document.getElementById('toastMessage').innerText = message;
+            document.getElementById('toastIcon').className = type === 'error' ? "fa-solid fa-circle-exclamation text-red-400 text-sm" : "fa-solid fa-circle-check text-emerald-400 text-sm";
+            
+            toast.classList.remove('translate-y-[-150%]', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
+            
             setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+                toast.classList.add('translate-y-[-150%]', 'opacity-0');
+            }, 2500);
         }
     </script>
 </body>
