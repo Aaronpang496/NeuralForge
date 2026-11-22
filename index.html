@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-®, 2024
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -491,6 +490,7 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
     if (smartMode) {
       systemMsg += '\n\nSMART MODE: Before answering, you MUST think step-by-step inside <thinking> and </thinking> tags. The user will see this as a collapsible section. After thinking, provide the final clear answer.';
+    }
     if (memory.length) systemMsg += '\n\n[USER MEMORY - Always remember these facts]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
 
     var msgs = getMessages();
