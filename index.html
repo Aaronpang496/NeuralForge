@@ -6,34 +6,48 @@
 <title>NeuralForge AI</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+  /* --- THEME VARIABLES --- */
+  :root {
+    --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15, 23, 42, 0.95);
+    --bubble-user: #4f46e5; --bubble-ai: #1e293b; --border: #334155;
+    --input-bg: #1e293b; --text-muted: #94a3b8; --modal-bg: #1e293b;
+  }
+  body.light {
+    --bg: #f8fafc; --text: #0f172a; --header-bg: rgba(248, 250, 252, 0.95);
+    --bubble-user: #4f46e5; --bubble-ai: #ffffff; --border: #e2e8f0;
+    --input-bg: #f1f5f9; --text-muted: #64748b; --modal-bg: #ffffff;
+  }
+
   /* --- BULLETPROOF MOBILE CSS --- */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
   button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-  input, textarea { font-family: inherit; font-size: 16px; } /* 16px prevents iOS auto-zoom */
+  input, textarea { font-family: inherit; font-size: 16px; } /* Prevents iOS zoom */
 
   /* --- LAYOUT --- */
   #app { display: flex; flex-direction: column; height: 100dvh; width: 100%; position: relative; }
   
   header {
-    height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
-    border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;
+    height: 60px; background: var(--header-bg); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
     padding: 0 16px; flex-shrink: 0; z-index: 50; position: relative;
   }
   .brand { display: flex; align-items: center; gap: 12px; }
   .logo-small { width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; }
   .title { font-weight: 700; font-size: 17px; }
-  .header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #94a3b8; }
-  .header-btn:active { background: #1e293b; }
+  .header-btns { display: flex; gap: 8px; }
+  .header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
+  .header-btn:active { background: var(--border); }
+  .header-btn.new-chat { color: #10b981; } /* Green for new chat */
 
   /* --- CHAT AREA --- */
   #chatArea { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
-  .welcome { text-align: center; padding: 40px 20px; color: #64748b; }
+  .welcome { text-align: center; padding: 40px 20px; color: var(--text-muted); animation: popIn 0.3s ease-out; }
   .welcome i { font-size: 40px; color: #6366f1; margin-bottom: 16px; }
-  .welcome h2 { font-size: 20px; color: #f8fafc; margin-bottom: 8px; }
+  .welcome h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
   .suggestions { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 20px auto 0; }
-  .sugg-btn { background: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: #f8fafc; width: 100%; }
-  .sugg-btn:active { background: #334155; }
+  .sugg-btn { background: var(--bubble-ai); border: 1px solid var(--border); padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); width: 100%; transition: transform 0.1s; }
+  .sugg-btn:active { transform: scale(0.97); opacity: 0.8; }
 
   /* --- MESSAGES --- */
   .msg { display: flex; flex-direction: column; max-width: 85%; animation: popIn 0.2s ease-out; }
@@ -41,9 +55,9 @@
   .msg.ai { align-self: flex-start; align-items: flex-start; }
   @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   
-  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; position: relative; }
-  .msg.user .bubble { background: #4f46e5; color: white; border-bottom-right-radius: 4px; }
-  .msg.ai .bubble { background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-bottom-left-radius: 4px; }
+  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; position: relative; }
+  .msg.user .bubble { background: var(--bubble-user); color: white; border-bottom-right-radius: 4px; }
+  .msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
 
   .bubble strong { font-weight: 700; }
@@ -52,66 +66,67 @@
   .bubble code { background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
 
   /* --- INPUT AREA --- */
-  #inputArea { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #1e293b; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 50; position: relative; }
-  .search-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #94a3b8; }
+  #inputArea { background: var(--header-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 50; position: relative; }
+  .search-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
   .toggle-switch { position: relative; width: 44px; height: 24px; }
   .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 24px; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 24px; }
   .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
   input:checked + .slider { background-color: #4f46e5; }
   input:checked + .slider:before { transform: translateX(20px); }
   
   .input-row { display: flex; gap: 10px; align-items: flex-end; }
-  .input-wrap { flex: 1; background: #1e293b; border-radius: 24px; border: 1px solid #334155; padding: 4px 4px 4px 16px; display: flex; align-items: center; }
+  .input-wrap { flex: 1; background: var(--input-bg); border-radius: 24px; border: 1px solid var(--border); padding: 4px 4px 4px 16px; display: flex; align-items: center; }
   .input-wrap:focus-within { border-color: #4f46e5; }
-  #userInput { flex: 1; background: transparent; border: none; padding: 10px 0; resize: none; max-height: 120px; outline: none; color: #f8fafc; }
+  #userInput { flex: 1; background: transparent; border: none; padding: 10px 0; resize: none; max-height: 120px; outline: none; color: var(--text); }
   #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   #sendBtn:active { transform: scale(0.9); }
   #sendBtn:disabled { opacity: 0.5; }
 
-  /* --- SIMPLE SETTINGS MODAL (No click bugs!) --- */
+  /* --- SIMPLE SETTINGS MODAL --- */
   #settingsModal {
     position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7);
     display: none; align-items: flex-end; justify-content: center;
   }
   #settingsModal.open { display: flex; }
   .modal-content {
-    width: 100%; background: #1e293b; border-radius: 20px 20px 0 0; padding: 20px;
+    width: 100%; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px;
     max-height: 80vh; overflow-y: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom));
     animation: slideUp 0.3s ease-out;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .modal-header h2 { font-size: 18px; font-weight: 700; color: #f8fafc; }
-  .close-btn { width: 32px; height: 32px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #f8fafc; }
+  .modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+  .close-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text); }
   
-  .setting-group { margin-bottom: 20px; }
-  .setting-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-  .setting-input { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; font-size: 15px; outline: none; color: #f8fafc; }
+  .setting-group { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+  .setting-group:last-child { border-bottom: none; }
+  .setting-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .setting-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 15px; outline: none; color: var(--text); }
   .setting-input:focus { border-color: #4f46e5; }
   textarea.setting-input { min-height: 80px; resize: vertical; }
   
   .btn-primary { width: 100%; background: #4f46e5; color: white; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; margin-top: 10px; }
   .btn-primary:active { opacity: 0.8; }
   
-  .memory-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: #f8fafc; }
-  .delete-mem { color: #ef4444; padding: 8px; }
+  .list-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: var(--text); }
+  .delete-item { color: #ef4444; padding: 8px; }
 
   /* --- CONTEXT MENU --- */
   #contextMenu {
-    position: fixed; z-index: 200; background: #1e293b; border-radius: 12px;
+    position: fixed; z-index: 200; background: var(--modal-bg); border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; display: none;
-    border: 1px solid #334155; min-width: 160px;
+    border: 1px solid var(--border); min-width: 160px;
   }
-  .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: #f8fafc; }
-  .ctx-btn:active { background: #334155; }
+  .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .ctx-btn:active { background: var(--border); }
   .ctx-btn.danger { color: #ef4444; }
 
   /* --- TOAST --- */
   #toast {
     position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
-    background: #f8fafc; color: #0f172a; padding: 10px 20px; border-radius: 20px;
+    background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px;
     font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 300;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -125,19 +140,15 @@
       <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
       <div class="title">NeuralForge</div>
     </div>
-    <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+    <div class="header-btns">
+      <button class="header-btn new-chat" id="newChatBtn" title="New Chat"><i class="fa-solid fa-plus"></i></button>
+      <button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
+      <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+    </div>
   </header>
 
   <div id="chatArea">
-    <div class="welcome" id="welcomeScreen">
-      <i class="fa-solid fa-sparkles"></i>
-      <h2>How can I help?</h2>
-      <p>Long-press any message to edit or delete.</p>
-      <div class="suggestions">
-        <button class="sugg-btn" onclick="sendQuick('What are the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
-        <button class="sugg-btn" onclick="sendQuick('Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
-      </div>
-    </div>
+    <!-- Welcome screen injected by JS -->
   </div>
 
   <div id="inputArea">
@@ -149,7 +160,6 @@
         </label>
         <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
       </label>
-      <button onclick="clearChat()" style="font-size:12px; color:#64748b;">Clear</button>
     </div>
     <form class="input-row" id="chatForm">
       <div class="input-wrap">
@@ -164,13 +174,23 @@
 <div id="settingsModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h2>Settings & Memory</h2>
+      <h2>Settings</h2>
       <button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="setting-group">
+      <div class="setting-label">Welcome Screen Questions</div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Add custom prompts to show when you start a new chat.</p>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1;">
+        <button onclick="addQuestion()" style="background:#4f46e5; color:white; padding:0 16px; border-radius:10px;"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <div id="questionList"></div>
+    </div>
+
+    <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, a helpful AI on a mobile phone. Keep answers concise and easy to read.</textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, a highly intelligent and helpful AI assistant. Always use perfect grammar, clear punctuation, and structure your answers with paragraphs or bullet points when appropriate. Be concise but thorough.</textarea>
       <button class="btn-primary" onclick="saveSettings()">Save Behavior</button>
     </div>
 
@@ -197,19 +217,50 @@
 
 <script>
   // ==========================================
-  // NO API KEY NEEDED! 
-  // We use Pollinations.ai (Free, Open, No Auth)
+  // NO API KEY NEEDED! (Pollinations.ai)
   // ==========================================
 
   let messages = [];
   let memory = JSON.parse(localStorage.getItem('nf_memory') || '[]');
-  let sysPrompt = localStorage.getItem('nf_sys') || 'You are NeuralForge, a helpful AI on a mobile phone. Keep answers concise and easy to read.';
+  let sysPrompt = localStorage.getItem('nf_sys') || 'You are NeuralForge, a highly intelligent and helpful AI assistant. Always use perfect grammar, clear punctuation, and structure your answers with paragraphs or bullet points when appropriate. Be concise but thorough.';
+  
+  // Custom Welcome Questions
+  let customQuestions = JSON.parse(localStorage.getItem('nf_questions') || 'null') || [
+    { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
+    { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' }
+  ];
+
   let isGenerating = false;
   let selectedMsgEl = null;
   let longPressTimer;
 
+  // --- Initialization ---
   document.getElementById('sysPrompt').value = sysPrompt;
   renderMemory();
+  renderQuestions();
+  renderWelcomeScreen();
+
+  // --- Theme Toggle ---
+  const themeBtn = document.getElementById('themeBtn');
+  const themeIcon = document.getElementById('themeIcon');
+  let isDark = localStorage.getItem('nf_theme') !== 'light';
+  applyTheme();
+
+  themeBtn.onclick = () => {
+    isDark = !isDark;
+    localStorage.setItem('nf_theme', isDark ? 'dark' : 'light');
+    applyTheme();
+  };
+
+  function applyTheme() {
+    if (isDark) {
+      document.body.classList.remove('light');
+      themeIcon.className = 'fa-solid fa-sun';
+    } else {
+      document.body.classList.add('light');
+      themeIcon.className = 'fa-solid fa-moon';
+    }
+  }
 
   // --- UI Interactions ---
   const settingsModal = document.getElementById('settingsModal');
@@ -217,27 +268,45 @@
   document.getElementById('closeSettings').onclick = () => settingsModal.classList.remove('open');
   settingsModal.onclick = (e) => { if(e.target === settingsModal) settingsModal.classList.remove('open'); };
 
+  // NEW CHAT BUTTON
+  document.getElementById('newChatBtn').onclick = () => {
+    if (messages.length > 0 && !confirm('Start a new chat? Current messages will be cleared.')) return;
+    messages = [];
+    document.getElementById('chatArea').innerHTML = '';
+    renderWelcomeScreen();
+    showToast("Started new chat");
+  };
+
   const ctxMenu = document.getElementById('contextMenu');
   document.addEventListener('click', (e) => {
     if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
   });
 
+  // --- Welcome Screen Logic ---
+  function renderWelcomeScreen() {
+    const chatArea = document.getElementById('chatArea');
+    let buttonsHtml = customQuestions.map(q => `
+      <button class="sugg-btn" onclick="sendQuick('${q.text.replace(/'/g, "\\'")}')">
+        <i class="fa-solid ${q.icon}" style="color:${q.color}"></i> ${q.text}
+      </button>
+    `).join('');
+
+    chatArea.innerHTML = `
+      <div class="welcome" id="welcomeScreen">
+        <i class="fa-solid fa-sparkles"></i>
+        <h2>How can I help?</h2>
+        <p>Long-press any message to edit or delete.</p>
+        <div class="suggestions">
+          ${buttonsHtml}
+        </div>
+      </div>
+    `;
+  }
+
   // --- Chat Logic ---
   function sendQuick(text) {
     document.getElementById('userInput').value = text;
     document.getElementById('chatForm').dispatchEvent(new Event('submit'));
-  }
-
-  function clearChat() {
-    if(confirm('Clear all messages?')) {
-      messages = [];
-      document.getElementById('chatArea').innerHTML = `
-        <div class="welcome" id="welcomeScreen">
-          <i class="fa-solid fa-sparkles"></i>
-          <h2>Chat Cleared</h2>
-          <p>Ready for a new topic.</p>
-        </div>`;
-    }
   }
 
   document.getElementById('chatForm').onsubmit = async (e) => {
@@ -247,12 +316,13 @@
     const text = input.value.trim();
     if (!text) return;
 
-    // Remove welcome screen
+    // Remove welcome screen if it exists
     const welcome = document.getElementById('welcomeScreen');
     if (welcome) welcome.remove();
 
     addMessageToUI(text, 'user');
     input.value = '';
+    input.style.height = 'auto';
     isGenerating = true;
     document.getElementById('sendBtn').disabled = true;
 
@@ -263,25 +333,24 @@
       showTyping("🔍 Searching web...");
       const results = await searchWeb(text);
       removeTyping();
-      finalPrompt = `User Query: ${text}\n\n[INSTRUCTIONS: Use this live web context to answer accurately. Keep it concise for mobile.]\n\n[WEB CONTEXT]:\n${results}`;
+      finalPrompt = `User Query: ${text}\n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite the source titles in brackets like [Title].]\n\n[WEB CONTEXT]:\n${results}`;
     }
 
     showTyping("Thinking...");
     
     let systemMsg = sysPrompt;
     if (memory.length > 0) {
-      systemMsg += "\n\n[USER MEMORY]:\n" + memory.map(m => `- ${m}`).join('\n');
+      systemMsg += "\n\n[USER MEMORY - Always remember these facts]:\n" + memory.map(m => `- ${m}`).join('\n');
     }
 
     messages.push({ role: 'user', content: finalPrompt });
 
     try {
-      // Using Pollinations.ai OpenAI-compatible endpoint (No API Key required!)
       const res = await fetch("https://text.pollinations.ai/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "openai", // Uses a high-quality model
+          model: "openai",
           messages: [{ role: "system", content: systemMsg }, ...messages.slice(-6)],
           stream: true
         })
@@ -289,19 +358,17 @@
 
       if (!res.ok) throw new Error(`Server error ${res.status}`);
 
-      // Handle Streaming
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let aiText = "";
       
-      // Create AI message bubble for streaming
       const aiMsgDiv = document.createElement('div');
       aiMsgDiv.className = 'msg ai';
       aiMsgDiv.innerHTML = `<div class="bubble" id="streamBubble"></div>`;
       document.getElementById('chatArea').appendChild(aiMsgDiv);
       const streamBubble = document.getElementById('streamBubble');
 
-      removeTyping(); // Remove the "Thinking..." indicator
+      removeTyping();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -319,17 +386,17 @@
               const content = json.choices?.[0]?.delta?.content || '';
               if (content) {
                 aiText += content;
-                streamBubble.innerHTML = formatText(aiText) + '<span class="cursor">▋</span>';
-                document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+                streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite;"></span>';
+                scrollToBottom();
               }
             } catch (e) {}
           }
         }
       }
 
-      // Finalize
       streamBubble.innerHTML = formatText(aiText);
       messages.push({ role: 'assistant', content: aiText });
+      scrollToBottom();
 
     } catch (err) {
       removeTyping();
@@ -341,7 +408,25 @@
   };
 
   function formatText(text) {
-    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    let html = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
+      .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
+      .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+    
+    html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
+    html = html.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    return html;
+  }
+
+  function scrollToBottom() {
+    const chatArea = document.getElementById('chatArea');
+    chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
   }
 
   function addMessageToUI(text, type) {
@@ -351,9 +436,8 @@
     div.dataset.text = text;
     div.innerHTML = `<div class="bubble">${formatText(text)}</div>`;
     chatArea.appendChild(div);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    scrollToBottom();
 
-    // Long press logic
     div.addEventListener('touchstart', (e) => {
       longPressTimer = setTimeout(() => showContextMenu(e, div, text, type), 500);
     });
@@ -366,9 +450,9 @@
     const div = document.createElement('div');
     div.className = 'msg ai';
     div.id = 'typingIndicator';
-    div.innerHTML = `<div class="bubble" style="color:#94a3b8; font-style:italic;">${text} <i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+    div.innerHTML = `<div class="bubble" style="color:var(--text-muted); font-style:italic;">${text} <i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
     chatArea.appendChild(div);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    scrollToBottom();
   }
 
   function removeTyping() {
@@ -376,7 +460,7 @@
     if (el) el.remove();
   }
 
-  // --- Context Menu & Editing ---
+  // --- Context Menu ---
   function showContextMenu(e, el, text, type) {
     selectedMsgEl = el;
     const touch = e.touches[0];
@@ -420,26 +504,61 @@
     ctxMenu.style.display = 'none';
   };
 
-  // --- Web Search ---
+  // --- Web Search (Wikipedia API) ---
   async function searchWeb(query) {
     try {
-      const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query)}`;
+      const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`;
       const res = await fetch(url);
       const data = await res.json();
-      if (!data.contents) return "No results.";
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
-      const snippets = Array.from(doc.querySelectorAll('.result__snippet')).map(el => el.textContent.trim());
-      
-      if (snippets.length === 0) return "No relevant results found.";
-      return snippets.slice(0, 3).map((s, i) => `${i+1}. ${s}`).join('\n');
+      if (data.query && data.query.search.length > 0) {
+        return data.query.search.map(s => `[${s.title}] ${s.snippet.replace(/<[^>]*>/g, '')}`).join('\n\n');
+      }
+      return "No relevant results found.";
     } catch (e) {
       return "Web search failed.";
     }
   }
 
-  // --- Memory & Settings ---
+  // --- Settings: Custom Questions ---
+  function renderQuestions() {
+    const list = document.getElementById('questionList');
+    if (customQuestions.length === 0) {
+      list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom questions yet.</p>';
+      return;
+    }
+    list.innerHTML = customQuestions.map((q, i) => `
+      <div class="list-item">
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${q.text}</span>
+        <button class="delete-item" onclick="deleteQuestion(${i})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `).join('');
+  }
+
+  function addQuestion() {
+    const input = document.getElementById('questionInput');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // Randomly assign an icon and color for variety
+    const icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen'];
+    const colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444'];
+    const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+    customQuestions.push({ text, icon: randomIcon, color: randomColor });
+    localStorage.setItem('nf_questions', JSON.stringify(customQuestions));
+    input.value = '';
+    renderQuestions();
+    showToast("Question added to welcome screen!");
+  }
+
+  function deleteQuestion(index) {
+    customQuestions.splice(index, 1);
+    localStorage.setItem('nf_questions', JSON.stringify(customQuestions));
+    renderQuestions();
+  }
+
+  // --- Settings: Memory ---
   function saveSettings() {
     sysPrompt = document.getElementById('sysPrompt').value;
     localStorage.setItem('nf_sys', sysPrompt);
@@ -467,13 +586,13 @@
   function renderMemory() {
     const list = document.getElementById('memoryList');
     if (memory.length === 0) {
-      list.innerHTML = '<p style="font-size:13px; color:#64748b; text-align:center;">No custom memory yet.</p>';
+      list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom memory yet.</p>';
       return;
     }
     list.innerHTML = memory.map((m, i) => `
-      <div class="memory-item">
-        <span>${m}</span>
-        <button class="delete-mem" onclick="deleteMemory(${i})"><i class="fa-solid fa-trash"></i></button>
+      <div class="list-item">
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m}</span>
+        <button class="delete-item" onclick="deleteMemory(${i})"><i class="fa-solid fa-trash"></i></button>
       </div>
     `).join('');
   }
