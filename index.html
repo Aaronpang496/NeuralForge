@@ -1,654 +1,489 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-    <title>NeuralForge Mobile</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; 
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .bubble-user { 
-            background: #4F46E5; 
-            color: white; 
-            border-radius: 18px 18px 4px 18px; 
-        }
-        .dark .bubble-user { background: #6366F1; }
-        
-        .bubble-ai { 
-            background: #E2E8F0; 
-            color: #0F172A; 
-            border-radius: 18px 18px 18px 4px; 
-        }
-        .dark .bubble-ai { background: #1E293B; color: #F1F5F9; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NeuralForge AI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  /* --- BULLETPROOF MOBILE CSS --- */
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, textarea { font-family: inherit; font-size: 16px; } /* 16px prevents iOS auto-zoom */
 
-        .prose p { margin-bottom: 0.5em; line-height: 1.5; }
-        .prose strong { font-weight: 600; }
+  /* --- LAYOUT --- */
+  #app { display: flex; flex-direction: column; height: 100dvh; width: 100%; position: relative; }
+  
+  header {
+    height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; flex-shrink: 0; z-index: 50; position: relative;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo-small { width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; }
+  .title { font-weight: 700; font-size: 17px; }
+  .header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #94a3b8; }
+  .header-btn:active { background: #1e293b; }
 
-        /* Context menu */
-        .context-menu {
-            animation: menuFade 0.15s ease-out;
-        }
-        @keyframes menuFade {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
+  /* --- CHAT AREA --- */
+  #chatArea { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+  .welcome { text-align: center; padding: 40px 20px; color: #64748b; }
+  .welcome i { font-size: 40px; color: #6366f1; margin-bottom: 16px; }
+  .welcome h2 { font-size: 20px; color: #f8fafc; margin-bottom: 8px; }
+  .suggestions { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 20px auto 0; }
+  .sugg-btn { background: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: #f8fafc; width: 100%; }
+  .sugg-btn:active { background: #334155; }
 
-        /* Edit mode */
-        .edit-mode textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-    </style>
+  /* --- MESSAGES --- */
+  .msg { display: flex; flex-direction: column; max-width: 85%; animation: popIn 0.2s ease-out; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.ai { align-self: flex-start; align-items: flex-start; }
+  @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; position: relative; }
+  .msg.user .bubble { background: #4f46e5; color: white; border-bottom-right-radius: 4px; }
+  .msg.ai .bubble { background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-bottom-left-radius: 4px; }
+  .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+
+  .bubble strong { font-weight: 700; }
+  .bubble p { margin-bottom: 8px; } .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 8px; }
+  .bubble code { background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+
+  /* --- INPUT AREA --- */
+  #inputArea { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #1e293b; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 50; position: relative; }
+  .search-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #94a3b8; }
+  .toggle-switch { position: relative; width: 44px; height: 24px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 24px; }
+  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+  input:checked + .slider { background-color: #4f46e5; }
+  input:checked + .slider:before { transform: translateX(20px); }
+  
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .input-wrap { flex: 1; background: #1e293b; border-radius: 24px; border: 1px solid #334155; padding: 4px 4px 4px 16px; display: flex; align-items: center; }
+  .input-wrap:focus-within { border-color: #4f46e5; }
+  #userInput { flex: 1; background: transparent; border: none; padding: 10px 0; resize: none; max-height: 120px; outline: none; color: #f8fafc; }
+  #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  #sendBtn:active { transform: scale(0.9); }
+  #sendBtn:disabled { opacity: 0.5; }
+
+  /* --- SIMPLE SETTINGS MODAL (No click bugs!) --- */
+  #settingsModal {
+    position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  #settingsModal.open { display: flex; }
+  .modal-content {
+    width: 100%; background: #1e293b; border-radius: 20px 20px 0 0; padding: 20px;
+    max-height: 80vh; overflow-y: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-header h2 { font-size: 18px; font-weight: 700; color: #f8fafc; }
+  .close-btn { width: 32px; height: 32px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #f8fafc; }
+  
+  .setting-group { margin-bottom: 20px; }
+  .setting-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .setting-input { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; font-size: 15px; outline: none; color: #f8fafc; }
+  .setting-input:focus { border-color: #4f46e5; }
+  textarea.setting-input { min-height: 80px; resize: vertical; }
+  
+  .btn-primary { width: 100%; background: #4f46e5; color: white; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; margin-top: 10px; }
+  .btn-primary:active { opacity: 0.8; }
+  
+  .memory-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: #f8fafc; }
+  .delete-mem { color: #ef4444; padding: 8px; }
+
+  /* --- CONTEXT MENU --- */
+  #contextMenu {
+    position: fixed; z-index: 200; background: #1e293b; border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; display: none;
+    border: 1px solid #334155; min-width: 160px;
+  }
+  .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: #f8fafc; }
+  .ctx-btn:active { background: #334155; }
+  .ctx-btn.danger { color: #ef4444; }
+
+  /* --- TOAST --- */
+  #toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: #f8fafc; color: #0f172a; padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 300;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
 </head>
-<body class="h-[100dvh] w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden">
+<body>
 
-    <header class="flex-none h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 z-20 sticky top-0">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md">
-                <i class="fa-solid fa-brain text-sm"></i>
-            </div>
-            <div>
-                <h1 class="font-semibold text-base leading-tight">NeuralForge</h1>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Online • Smart Search</p>
-            </div>
-        </div>
-        <button onclick="toggleSettings()" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-800 transition">
-            <i class="fa-solid fa-sliders text-lg"></i>
-        </button>
-    </header>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
+      <div class="title">NeuralForge</div>
+    </div>
+    <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+  </header>
 
-    <main id="chatView" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 bg-slate-50 dark:bg-slate-950 scroll-smooth">
-        <div class="flex flex-col items-center text-center py-8 fade-in">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-sm">
-                <i class="fa-solid fa-sparkles"></i>
-            </div>
-            <h2 class="font-semibold text-lg mb-1">How can I help you today?</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs mb-6">Long-press any message to edit or delete it.</p>
-            
-            <div class="grid grid-cols-1 gap-2 w-full max-w-xs">
-                <button onclick="sendQuickPrompt('What are the latest AI news today?')" class="text-sm p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left active:scale-95 transition shadow-sm">
-                    🌐 <span class="font-medium">Latest AI news today?</span>
-                </button>
-                <button onclick="sendQuickPrompt('Explain quantum computing like I am 5')" class="text-sm p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left active:scale-95 transition shadow-sm">
-                    🧠 <span class="font-medium">Explain quantum computing simply</span>
-                </button>
-            </div>
-        </div>
-    </main>
+  <div id="chatArea">
+    <div class="welcome" id="welcomeScreen">
+      <i class="fa-solid fa-sparkles"></i>
+      <h2>How can I help?</h2>
+      <p>Long-press any message to edit or delete.</p>
+      <div class="suggestions">
+        <button class="sugg-btn" onclick="sendQuick('What are the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
+        <button class="sugg-btn" onclick="sendQuick('Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
+      </div>
+    </div>
+  </div>
 
-    <div class="flex-none bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-20">
-        <div class="flex items-center justify-between px-1 mb-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <div class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="webSearchToggle" class="sr-only peer" checked>
-                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                </div>
-                <span class="text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                    <i class="fa-solid fa-globe text-indigo-500"></i> Live Web Search
-                </span>
-            </label>
-            <button onclick="clearChat()" class="text-xs text-slate-400 active:text-red-500 transition font-medium">Clear</button>
-        </div>
+  <div id="inputArea">
+    <div class="search-toggle">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <label class="toggle-switch">
+          <input type="checkbox" id="webSearchToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
+      </label>
+      <button onclick="clearChat()" style="font-size:12px; color:#64748b;">Clear</button>
+    </div>
+    <form class="input-row" id="chatForm">
+      <div class="input-wrap">
+        <textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea>
+      </div>
+      <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+  </div>
+</div>
 
-        <form id="chatForm" onsubmit="handleChatSubmit(event)" class="flex items-end gap-2">
-            <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition">
-                <input 
-                    type="text" 
-                    id="userInput" 
-                    placeholder="Message NeuralForge..." 
-                    class="w-full bg-transparent px-4 py-3 text-base focus:outline-none dark:text-white placeholder-slate-400"
-                    autocomplete="off"
-                    enterkeyhint="send"
-                >
-            </div>
-            <button 
-                type="submit" 
-                id="sendBtn"
-                class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 active:scale-90 text-white rounded-full flex items-center justify-center transition shadow-md disabled:opacity-50 disabled:active:scale-100 flex-shrink-0"
-            >
-                <i class="fa-solid fa-paper-plane text-lg"></i>
-            </button>
-        </form>
+<!-- Settings Modal -->
+<div id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Settings & Memory</h2>
+      <button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
-    <!-- Context Menu (Hidden by default) -->
-    <div id="contextMenu" class="fixed z-50 hidden">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden context-menu">
-            <button id="editBtn" class="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-200 active:bg-slate-100 dark:active:bg-slate-700 flex items-center gap-2">
-                <i class="fa-solid fa-pen text-xs"></i> Edit Message
-            </button>
-            <button id="deleteBtn" class="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 active:bg-red-50 dark:active:bg-red-900/30 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700">
-                <i class="fa-solid fa-trash-can text-xs"></i> Delete Message
-            </button>
-            <button id="regenerateBtn" class="w-full px-4 py-3 text-left text-sm font-medium text-indigo-600 dark:text-indigo-400 active:bg-indigo-50 dark:active:bg-indigo-900/30 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 hidden">
-                <i class="fa-solid fa-rotate text-xs"></i> Regenerate Response
-            </button>
-        </div>
+    <div class="setting-group">
+      <div class="setting-label">System Behavior</div>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, a helpful AI on a mobile phone. Keep answers concise and easy to read.</textarea>
+      <button class="btn-primary" onclick="saveSettings()">Save Behavior</button>
     </div>
 
-    <div id="settingsPanel" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 ease-out bg-white dark:bg-slate-950 flex flex-col">
-        <div class="flex-none h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-white dark:bg-slate-950">
-            <button onclick="toggleSettings()" class="w-10 h-10 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 active:bg-slate-100 dark:active:bg-slate-800 transition">
-                <i class="fa-solid fa-chevron-down text-lg"></i>
-            </button>
-            <h2 class="font-semibold text-base">AI Memory & Settings</h2>
-            <div class="w-10"></div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Behavior</label>
-                <textarea id="settingSystemPrompt" rows="3" class="w-full p-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white resize-none">You are NeuralForge, a highly intelligent, concise, and helpful AI assistant on a mobile device. Keep answers brief and easy to read on a small screen.</textarea>
-                <button onclick="saveSettings()" class="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl active:scale-95 transition">Save Behavior</button>
-            </div>
-
-            <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Custom Memory</label>
-                    <span id="trainingPairsCount" class="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">0 Items</span>
-                </div>
-                
-                <div class="flex gap-2">
-                    <input type="text" id="trainKeyword" placeholder="e.g., My name is Alex, I love coding" class="flex-1 p-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white">
-                    <button onclick="addTrainingPair()" class="px-4 bg-slate-800 dark:bg-slate-700 text-white rounded-xl active:scale-95 transition">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
-                </div>
-
-                <div id="trainingPairsList" class="space-y-2 pb-20"></div>
-            </div>
-        </div>
+    <div class="setting-group">
+      <div class="setting-label">Custom Memory</div>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1;">
+        <button onclick="addMemory()" style="background:#4f46e5; color:white; padding:0 16px; border-radius:10px;"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <div id="memoryList"></div>
     </div>
+  </div>
+</div>
 
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] translate-y-[-150%] opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-full shadow-xl flex items-center space-x-2 text-xs font-semibold">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-        <span id="toastMessage">Notification</span>
-    </div>
+<!-- Context Menu -->
+<div id="contextMenu">
+  <button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
+  <button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+  <button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i> Copy Text</button>
+  <button class="ctx-btn danger" id="ctxDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+</div>
 
-    <script>
-        const ENCODED_API_KEY = "c2stb3ItdjEtOTI2NmJmNjQxNTlmNWNlZGU5YzUzNzE0Zjg1NDExMDIwMzM2OTc4NTE1MmJkN2Y4NTE2MjI4NWYzY2Y0OWVkNw==";
+<div id="toast">Notification</div>
+
+<script>
+  // ==========================================
+  // NO API KEY NEEDED! 
+  // We use Pollinations.ai (Free, Open, No Auth)
+  // ==========================================
+
+  let messages = [];
+  let memory = JSON.parse(localStorage.getItem('nf_memory') || '[]');
+  let sysPrompt = localStorage.getItem('nf_sys') || 'You are NeuralForge, a helpful AI on a mobile phone. Keep answers concise and easy to read.';
+  let isGenerating = false;
+  let selectedMsgEl = null;
+  let longPressTimer;
+
+  document.getElementById('sysPrompt').value = sysPrompt;
+  renderMemory();
+
+  // --- UI Interactions ---
+  const settingsModal = document.getElementById('settingsModal');
+  document.getElementById('settingsBtn').onclick = () => settingsModal.classList.add('open');
+  document.getElementById('closeSettings').onclick = () => settingsModal.classList.remove('open');
+  settingsModal.onclick = (e) => { if(e.target === settingsModal) settingsModal.classList.remove('open'); };
+
+  const ctxMenu = document.getElementById('contextMenu');
+  document.addEventListener('click', (e) => {
+    if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
+  });
+
+  // --- Chat Logic ---
+  function sendQuick(text) {
+    document.getElementById('userInput').value = text;
+    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+  }
+
+  function clearChat() {
+    if(confirm('Clear all messages?')) {
+      messages = [];
+      document.getElementById('chatArea').innerHTML = `
+        <div class="welcome" id="welcomeScreen">
+          <i class="fa-solid fa-sparkles"></i>
+          <h2>Chat Cleared</h2>
+          <p>Ready for a new topic.</p>
+        </div>`;
+    }
+  }
+
+  document.getElementById('chatForm').onsubmit = async (e) => {
+    e.preventDefault();
+    if (isGenerating) return;
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Remove welcome screen
+    const welcome = document.getElementById('welcomeScreen');
+    if (welcome) welcome.remove();
+
+    addMessageToUI(text, 'user');
+    input.value = '';
+    isGenerating = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    const useWeb = document.getElementById('webSearchToggle').checked;
+    let finalPrompt = text;
+
+    if (useWeb) {
+      showTyping("🔍 Searching web...");
+      const results = await searchWeb(text);
+      removeTyping();
+      finalPrompt = `User Query: ${text}\n\n[INSTRUCTIONS: Use this live web context to answer accurately. Keep it concise for mobile.]\n\n[WEB CONTEXT]:\n${results}`;
+    }
+
+    showTyping("Thinking...");
+    
+    let systemMsg = sysPrompt;
+    if (memory.length > 0) {
+      systemMsg += "\n\n[USER MEMORY]:\n" + memory.map(m => `- ${m}`).join('\n');
+    }
+
+    messages.push({ role: 'user', content: finalPrompt });
+
+    try {
+      // Using Pollinations.ai OpenAI-compatible endpoint (No API Key required!)
+      const res = await fetch("https://text.pollinations.ai/openai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai", // Uses a high-quality model
+          messages: [{ role: "system", content: systemMsg }, ...messages.slice(-6)],
+          stream: true
+        })
+      });
+
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+      // Handle Streaming
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = "";
+      
+      // Create AI message bubble for streaming
+      const aiMsgDiv = document.createElement('div');
+      aiMsgDiv.className = 'msg ai';
+      aiMsgDiv.innerHTML = `<div class="bubble" id="streamBubble"></div>`;
+      document.getElementById('chatArea').appendChild(aiMsgDiv);
+      const streamBubble = document.getElementById('streamBubble');
+
+      removeTyping(); // Remove the "Thinking..." indicator
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
         
-        function getApiKey() {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
             try {
-                const decoded = atob(ENCODED_API_KEY);
-                if (decoded.includes("YOUR_API_KEY")) return "";
-                return decoded;
-            } catch (e) { return ""; }
+              const json = JSON.parse(data);
+              const content = json.choices?.[0]?.delta?.content || '';
+              if (content) {
+                aiText += content;
+                streamBubble.innerHTML = formatText(aiText) + '<span class="cursor">▋</span>';
+                document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+              }
+            } catch (e) {}
+          }
         }
-
-        let settings = {
-            systemPrompt: localStorage.getItem('neural_system_prompt') || 'You are NeuralForge, a highly intelligent, concise, and helpful AI assistant on a mobile device. Keep answers brief and easy to read on a small screen.'
-        };
-        let trainingPairs = JSON.parse(localStorage.getItem('neural_training_pairs') || '[]');
-        let conversationHistory = []; 
-        let messageIdCounter = 0;
-        let selectedMessageId = null;
-        let longPressTimer = null;
-
-        window.onload = function() {
-            document.getElementById('settingSystemPrompt').value = settings.systemPrompt;
-            renderTrainingPairs();
-            
-            if (localStorage.getItem('neural_theme') === 'dark' || (!localStorage.getItem('neural_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-
-            // Close context menu on outside click
-            document.addEventListener('click', (e) => {
-                const menu = document.getElementById('contextMenu');
-                if (!menu.contains(e.target)) {
-                    menu.classList.add('hidden');
-                }
-            });
-        };
-
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            if (panel.classList.contains('translate-y-full')) {
-                panel.classList.remove('translate-y-full');
-            } else {
-                panel.classList.add('translate-y-full');
-            }
-        }
-
-        function sendQuickPrompt(text) {
-            document.getElementById('userInput').value = text;
-            handleChatSubmit(new Event('submit'));
-        }
-
-        function clearChat() {
-            if (confirm('Clear all messages?')) {
-                conversationHistory = [];
-                document.getElementById('chatView').innerHTML = `
-                    <div class="flex flex-col items-center text-center py-8 fade-in">
-                        <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-sm">
-                            <i class="fa-solid fa-sparkles"></i>
-                        </div>
-                        <h2 class="font-semibold text-lg mb-1">Chat Cleared</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">Memory reset. Ready for a new topic.</p>
-                    </div>
-                `;
-            }
-        }
-
-        async function performWebSearch(query) {
-            try {
-                const targetUrl = `https://html.duckduckgo.com/html?q=${encodeURIComponent(query)}`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                
-                if (!data.contents) return "No search results found.";
-                
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                const snippets = Array.from(doc.querySelectorAll('.result__snippet')).map(el => el.textContent.trim());
-                
-                if (snippets.length === 0) {
-                    const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`);
-                    const wikiData = await wikiRes.json();
-                    if (wikiData.query && wikiData.query.search.length > 0) {
-                        return "Wikipedia Context: " + wikiData.query.search.map(s => `[${s.title}] ${s.snippet.replace(/<[^>]*>/g, '')}`).join(" | ");
-                    }
-                    return "No relevant web results found.";
-                }
-                return "Live Web Search Results:\n" + snippets.slice(0, 3).map((s, i) => `${i+1}. ${s}`).join("\n");
-            } catch (error) {
-                console.error("Web search error:", error);
-                return "Web search failed due to network issues.";
-            }
-        }
-
-        async function handleChatSubmit(e, editData = null) {
-            e.preventDefault();
-            const inputField = document.getElementById('userInput');
-            const messageText = inputField.value.trim();
-            if (!messageText) return;
-
-            const isEdit = editData !== null;
-            const messageId = isEdit ? editData.id : ++messageIdCounter;
-            
-            if (isEdit) {
-                // Remove old message and all subsequent messages
-                const msgIndex = conversationHistory.findIndex(m => m.messageId === messageId);
-                if (msgIndex !== -1) {
-                    conversationHistory = conversationHistory.slice(0, msgIndex);
-                }
-                // Remove DOM elements
-                const oldMsg = document.querySelector(`[data-message-id="${messageId}"]`);
-                if (oldMsg) {
-                    let next = oldMsg.nextElementSibling;
-                    while (next && !next.dataset.messageId) {
-                        const toRemove = next;
-                        next = next.nextElementSibling;
-                        toRemove.remove();
-                    }
-                    oldMsg.remove();
-                }
-            }
-
-            appendMessage(messageText, 'user', messageId);
-            inputField.value = '';
-            document.getElementById('sendBtn').disabled = true;
-
-            const apiKey = getApiKey();
-            if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
-                showToast("⚠️ API Key missing! Edit the code.", "error");
-                appendMessage("Error: API key is not configured. Please edit the HTML file and add your Base64-encoded OpenRouter API key.", 'ai');
-                document.getElementById('sendBtn').disabled = false;
-                return;
-            }
-
-            const isWebSearchEnabled = document.getElementById('webSearchToggle').checked;
-            let finalUserMessage = messageText;
-
-            if (isWebSearchEnabled) {
-                const searchThinkingId = showThinkingIndicator("🔍 Searching the web...");
-                const searchResults = await performWebSearch(messageText);
-                removeThinkingIndicator(searchThinkingId);
-                finalUserMessage = `User Query: ${messageText}\n\n[INSTRUCTIONS: Use the following live web search context to answer accurately. Keep it concise for mobile reading. Cite sources if applicable.]\n\n[WEB CONTEXT]:\n${searchResults}`;
-            }
-
-            const thinkingId = showThinkingIndicator("Thinking...");
-
-            let systemContent = settings.systemPrompt;
-            if (trainingPairs.length > 0) {
-                systemContent += "\n\n[USER'S CUSTOM MEMORY]:\n" + trainingPairs.map(p => `- ${p.keyword}`).join("\n");
-            }
-
-            conversationHistory.push({ role: "user", content: finalUserMessage, messageId: messageId });
-
-            try {
-                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${apiKey}`,
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": window.location.href, 
-                        "X-Title": "NeuralForge Mobile"
-                    },
-                    body: JSON.stringify({
-                        "model": "meta-llama/llama-3.1-8b-instruct:free",
-                        "messages": [
-                            { "role": "system", "content": systemContent },
-                            ...conversationHistory.slice(-6).map(m => ({ role: m.role, content: m.content }))
-                        ]
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                const aiText = data.choices[0].message.content;
-
-                removeThinkingIndicator(thinkingId);
-                const aiMessageId = ++messageIdCounter;
-                appendMessage(aiText, 'ai', aiMessageId);
-                conversationHistory.push({ role: "assistant", content: aiText, messageId: aiMessageId });
-
-            } catch (error) {
-                console.error("Chat error:", error);
-                removeThinkingIndicator(thinkingId);
-                appendMessage(`⚠️ Error: ${error.message}`, 'ai');
-            } finally {
-                document.getElementById('sendBtn').disabled = false;
-                inputField.focus();
-            }
-        }
-
-        function appendMessage(text, sender, messageId = null) {
-            const welcome = document.querySelector('#chatView .flex-col.items-center');
-            if (welcome) welcome.remove();
-
-            const chatView = document.getElementById('chatView');
-            const isUser = sender === 'user';
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `flex w-full fade-in ${isUser ? 'justify-end' : 'justify-start'}`;
-            messageDiv.dataset.messageId = messageId;
-            messageDiv.dataset.sender = sender;
-
-            const bubbleClass = isUser ? 'bubble-user' : 'bubble-ai';
-            const formattedText = escapeHTML(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-
-            messageDiv.innerHTML = `
-                <div class="max-w-[85%] ${bubbleClass} px-4 py-2.5 shadow-sm prose dark:prose-invert text-[15px] leading-snug">
-                    ${formattedText}
-                </div>
-            `;
-
-            // Long press detection
-            let pressTimer;
-            messageDiv.addEventListener('touchstart', (e) => {
-                pressTimer = setTimeout(() => {
-                    showContextMenu(e, messageId, sender, text);
-                }, 500);
-            });
-
-            messageDiv.addEventListener('touchend', () => {
-                clearTimeout(pressTimer);
-            });
-
-            messageDiv.addEventListener('touchmove', () => {
-                clearTimeout(pressTimer);
-            });
-
-            chatView.appendChild(messageDiv);
-            setTimeout(() => {
-                chatView.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
-            }, 50);
-        }
-
-        function showContextMenu(event, messageId, sender, originalText) {
-            event.preventDefault();
-            selectedMessageId = messageId;
-            
-            const menu = document.getElementById('contextMenu');
-            const editBtn = document.getElementById('editBtn');
-            const deleteBtn = document.getElementById('deleteBtn');
-            const regenerateBtn = document.getElementById('regenerateBtn');
-
-            // Show/hide options based on sender
-            if (sender === 'user') {
-                editBtn.classList.remove('hidden');
-                regenerateBtn.classList.add('hidden');
-            } else {
-                editBtn.classList.add('hidden');
-                regenerateBtn.classList.remove('hidden');
-            }
-
-            // Position menu
-            const touch = event.touches ? event.touches[0] : event;
-            const x = touch.clientX || touch.pageX;
-            const y = touch.clientY || touch.pageY;
-
-            menu.style.left = `${Math.min(x, window.innerWidth - 200)}px`;
-            menu.style.top = `${Math.min(y, window.innerHeight - 150)}px`;
-            menu.classList.remove('hidden');
-
-            // Set up handlers
-            editBtn.onclick = () => editMessage(messageId, originalText);
-            deleteBtn.onclick = () => deleteMessage(messageId);
-            regenerateBtn.onclick = () => regenerateResponse(messageId);
-        }
-
-        function editMessage(messageId, originalText) {
-            const menu = document.getElementById('contextMenu');
-            menu.classList.add('hidden');
-
-            const msgElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (!msgElement) return;
-
-            const bubble = msgElement.querySelector('.bubble-user, .bubble-ai');
-            const originalHTML = bubble.innerHTML;
-
-            // Replace with edit UI
-            bubble.innerHTML = `
-                <div class="edit-mode space-y-2">
-                    <textarea class="w-full p-2 text-[15px] bg-white/20 dark:bg-black/20 rounded-lg border border-white/30 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none" style="min-height: 80px;">${originalText}</textarea>
-                    <div class="flex gap-2">
-                        <button class="flex-1 py-2 bg-white/20 dark:bg-black/20 rounded-lg text-sm font-semibold active:scale-95 transition" onclick="cancelEdit('${messageId}')">Cancel</button>
-                        <button class="flex-1 py-2 bg-white text-indigo-600 rounded-lg text-sm font-semibold active:scale-95 transition" onclick="saveEdit('${messageId}')">Save & Send</button>
-                    </div>
-                </div>
-            `;
-
-            const textarea = bubble.querySelector('textarea');
-            textarea.focus();
-            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-        }
-
-        function cancelEdit(messageId) {
-            location.reload(); // Simple reload to restore state
-        }
-
-        function saveEdit(messageId) {
-            const msgElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (!msgElement) return;
-
-            const textarea = msgElement.querySelector('textarea');
-            const newText = textarea.value.trim();
-
-            if (!newText) {
-                showToast("Message cannot be empty", "error");
-                return;
-            }
-
-            // Resubmit with edit data
-            const editData = { id: parseInt(messageId) };
-            document.getElementById('userInput').value = newText;
-            handleChatSubmit(new Event('submit'), editData);
-        }
-
-        function deleteMessage(messageId) {
-            const menu = document.getElementById('contextMenu');
-            menu.classList.add('hidden');
-
-            if (!confirm('Delete this message?')) return;
-
-            const msgElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (msgElement) {
-                // Remove from history
-                const msgIndex = conversationHistory.findIndex(m => m.messageId === messageId);
-                if (msgIndex !== -1) {
-                    conversationHistory.splice(msgIndex, 1);
-                }
-                msgElement.remove();
-                showToast("Message deleted");
-            }
-        }
-
-        async function regenerateResponse(messageId) {
-            const menu = document.getElementById('contextMenu');
-            menu.classList.add('hidden');
-
-            const msgElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (!msgElement) return;
-
-            // Find the user message before this AI response
-            const msgIndex = conversationHistory.findIndex(m => m.messageId === messageId);
-            if (msgIndex === -1) return;
-
-            // Get the previous user message
-            let userMsgIndex = msgIndex - 1;
-            while (userMsgIndex >= 0 && conversationHistory[userMsgIndex].role !== 'user') {
-                userMsgIndex--;
-            }
-
-            if (userMsgIndex < 0) {
-                showToast("No user message found", "error");
-                return;
-            }
-
-            const userMessage = conversationHistory[userMsgIndex].content;
-            const userMessageId = conversationHistory[userMsgIndex].messageId;
-
-            // Remove the AI response
-            conversationHistory.splice(msgIndex, 1);
-            msgElement.remove();
-
-            // Regenerate
-            document.getElementById('userInput').value = userMessage.replace(/\[INSTRUCTIONS:.*?\[WEB CONTEXT\]:\n.*$/s, '').trim();
-            handleChatSubmit(new Event('submit'), { id: userMessageId, regenerate: true });
-        }
-
-        function showThinkingIndicator(text) {
-            const chatView = document.getElementById('chatView');
-            const id = 'thinking-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'flex w-full justify-start fade-in';
-            div.innerHTML = `
-                <div class="bubble-ai px-4 py-3 flex items-center gap-2">
-                    <span class="text-xs text-slate-500 dark:text-slate-400 italic">${text}</span>
-                    <div class="flex gap-1">
-                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.15s"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.3s"></div>
-                    </div>
-                </div>
-            `;
-            chatView.appendChild(div);
-            chatView.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
-            return id;
-        }
-
-        function removeThinkingIndicator(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        function addTrainingPair() {
-            const kw = document.getElementById('trainKeyword').value.trim();
-            if (!kw) { showToast("Enter a fact first!", "error"); return; }
-            
-            trainingPairs.push({ id: Date.now(), keyword: kw });
-            document.getElementById('trainKeyword').value = '';
-            renderTrainingPairs();
-            saveData();
-            showToast("Memory updated!");
-        }
-
-        function deleteTrainingPair(id) {
-            trainingPairs = trainingPairs.filter(p => p.id !== id);
-            renderTrainingPairs();
-            saveData();
-        }
-
-        function renderTrainingPairs() {
-            const container = document.getElementById('trainingPairsList');
-            document.getElementById('trainingPairsCount').innerText = `${trainingPairs.length} Items`;
-            
-            if (trainingPairs.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No custom memory added yet.</p>`;
-                return;
-            }
-            
-            container.innerHTML = trainingPairs.map(p => `
-                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <p class="text-sm text-slate-700 dark:text-slate-200 flex-1 truncate pr-2">${escapeHTML(p.keyword)}</p>
-                    <button onclick="deleteTrainingPair(${p.id})" class="w-8 h-8 rounded-full text-slate-400 active:text-red-500 active:bg-red-50 dark:active:bg-red-900/30 flex items-center justify-center transition">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function saveSettings() {
-            settings.systemPrompt = document.getElementById('settingSystemPrompt').value;
-            localStorage.setItem('neural_system_prompt', settings.systemPrompt);
-            showToast("Behavior saved!");
-            toggleSettings();
-        }
-
-        function saveData() {
-            localStorage.setItem('neural_training_pairs', JSON.stringify(trainingPairs));
-        }
-
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMessage').innerText = message;
-            document.getElementById('toastIcon').className = type === 'error' ? "fa-solid fa-circle-exclamation text-red-400 text-sm" : "fa-solid fa-circle-check text-emerald-400 text-sm";
-            
-            toast.classList.remove('translate-y-[-150%]', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-            
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-[-150%]', 'opacity-0');
-            }, 2500);
-        }
-    </script>
+      }
+
+      // Finalize
+      streamBubble.innerHTML = formatText(aiText);
+      messages.push({ role: 'assistant', content: aiText });
+
+    } catch (err) {
+      removeTyping();
+      addMessageToUI(`⚠️ Error: ${err.message}. The free AI server might be busy. Try again in a moment.`, 'error');
+    } finally {
+      isGenerating = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+  };
+
+  function formatText(text) {
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  }
+
+  function addMessageToUI(text, type) {
+    const chatArea = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = `msg ${type}`;
+    div.dataset.text = text;
+    div.innerHTML = `<div class="bubble">${formatText(text)}</div>`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    // Long press logic
+    div.addEventListener('touchstart', (e) => {
+      longPressTimer = setTimeout(() => showContextMenu(e, div, text, type), 500);
+    });
+    div.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    div.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+  }
+
+  function showTyping(text) {
+    const chatArea = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.id = 'typingIndicator';
+    div.innerHTML = `<div class="bubble" style="color:#94a3b8; font-style:italic;">${text} <i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  // --- Context Menu & Editing ---
+  function showContextMenu(e, el, text, type) {
+    selectedMsgEl = el;
+    const touch = e.touches[0];
+    ctxMenu.style.left = Math.min(touch.clientX, window.innerWidth - 170) + 'px';
+    ctxMenu.style.top = Math.min(touch.clientY, window.innerHeight - 200) + 'px';
+    ctxMenu.style.display = 'block';
+
+    document.getElementById('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
+    document.getElementById('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
+  }
+
+  document.getElementById('ctxCopy').onclick = () => {
+    navigator.clipboard.writeText(selectedMsgEl.dataset.text);
+    showToast("Copied!");
+    ctxMenu.style.display = 'none';
+  };
+
+  document.getElementById('ctxDelete').onclick = () => {
+    selectedMsgEl.remove();
+    showToast("Deleted");
+    ctxMenu.style.display = 'none';
+  };
+
+  document.getElementById('ctxEdit').onclick = () => {
+    const text = selectedMsgEl.dataset.text;
+    document.getElementById('userInput').value = text;
+    selectedMsgEl.remove();
+    ctxMenu.style.display = 'none';
+    document.getElementById('userInput').focus();
+  };
+
+  document.getElementById('ctxRegen').onclick = () => {
+    const idx = messages.findIndex(m => m.role === 'assistant' && m.content === selectedMsgEl.dataset.text);
+    if (idx > 0) {
+      const prevUser = messages[idx - 1].content;
+      messages = messages.slice(0, idx);
+      selectedMsgEl.remove();
+      document.getElementById('userInput').value = prevUser.replace(/User Query: (.*?)\n\n.*/s, '$1').trim();
+      document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    }
+    ctxMenu.style.display = 'none';
+  };
+
+  // --- Web Search ---
+  async function searchWeb(query) {
+    try {
+      const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.contents) return "No results.";
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+      const snippets = Array.from(doc.querySelectorAll('.result__snippet')).map(el => el.textContent.trim());
+      
+      if (snippets.length === 0) return "No relevant results found.";
+      return snippets.slice(0, 3).map((s, i) => `${i+1}. ${s}`).join('\n');
+    } catch (e) {
+      return "Web search failed.";
+    }
+  }
+
+  // --- Memory & Settings ---
+  function saveSettings() {
+    sysPrompt = document.getElementById('sysPrompt').value;
+    localStorage.setItem('nf_sys', sysPrompt);
+    showToast("Settings saved!");
+    settingsModal.classList.remove('open');
+  }
+
+  function addMemory() {
+    const input = document.getElementById('memInput');
+    const text = input.value.trim();
+    if (!text) return;
+    memory.push(text);
+    localStorage.setItem('nf_memory', JSON.stringify(memory));
+    input.value = '';
+    renderMemory();
+    showToast("Memory added!");
+  }
+
+  function deleteMemory(index) {
+    memory.splice(index, 1);
+    localStorage.setItem('nf_memory', JSON.stringify(memory));
+    renderMemory();
+  }
+
+  function renderMemory() {
+    const list = document.getElementById('memoryList');
+    if (memory.length === 0) {
+      list.innerHTML = '<p style="font-size:13px; color:#64748b; text-align:center;">No custom memory yet.</p>';
+      return;
+    }
+    list.innerHTML = memory.map((m, i) => `
+      <div class="memory-item">
+        <span>${m}</span>
+        <button class="delete-mem" onclick="deleteMemory(${i})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `).join('');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
 </body>
 </html>
