@@ -1,396 +1,537 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NeuralForge AI — Chat Studio</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: "class" };
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { font-family: Inter, sans-serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: rgba(156,163,175,.5); border-radius: 4px; }
-    .fade-in { animation: fadeIn .2s ease forwards; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeuralForge AI — Smart Agent</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <!-- Inter Font & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
+        .fade-in { animation: fadeIn 0.25s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .prose p { margin-bottom: 0.5em; }
+        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+        .prose strong { color: inherit; font-weight: 700; }
+        .prose code { background: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .dark .prose code { background: rgba(255,255,255,0.1); }
+    </style>
 </head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 flex flex-col overflow-hidden">
 
-<body class="h-full overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-  <header class="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center">
-        <i class="fa-solid fa-brain"></i>
-      </div>
-      <div>
-        <h1 class="font-bold">NeuralForge <span class="text-xs text-indigo-500">OpenRouter</span></h1>
-        <p class="text-xs text-slate-500">Chat, customize, and save locally</p>
-      </div>
+    <!-- Top Navigation Header -->
+    <header class="flex-none h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between z-30">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-brain text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base md:text-lg tracking-tight flex items-center gap-2">
+                    NeuralForge <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">Agent</span>
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Live Web Search & Custom Memory</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <div class="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl flex items-center border border-slate-200 dark:border-slate-700">
+                <button id="navChatBtn" onclick="switchTab('chat')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm">
+                    <i class="fa-solid fa-comments"></i> <span class="hidden sm:inline">Chat</span>
+                </button>
+                <button id="navTrainBtn" onclick="switchTab('train')" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">Memory</span>
+                </button>
+            </div>
+            <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                <i id="themeIcon" class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 relative overflow-hidden flex">
+
+        <!-- ================= CHAT VIEW ================= -->
+        <div id="chatView" class="absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10">
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full">
+                <!-- Welcome Banner -->
+                <div class="flex items-start space-x-4 max-w-2xl mx-auto my-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm fade-in">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-lg">
+                        <i class="fa-solid fa-sparkles"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base mb-1">NeuralForge Agent Ready</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                            I am connected to a real LLM. Toggle <strong>Live Web Search</strong> below to let me fetch and synthesize real-time internet facts, or teach me custom facts in the Memory tab.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="sendQuickPrompt('What are the latest developments in AI this week?')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition">
+                                🌐 "Latest AI developments?"
+                            </button>
+                            <button onclick="sendQuickPrompt('Write a python script to scrape a website.')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition">
+                                💻 "Write a Python scraper"
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="flex-none p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20">
+                <div class="max-w-3xl mx-auto space-y-3">
+                    <!-- Web Search Toggle -->
+                    <div class="flex items-center justify-between px-1">
+                        <label class="cursor-pointer flex items-center space-x-2 text-xs font-medium text-slate-600 dark:text-slate-300 select-none">
+                            <input type="checkbox" id="webSearchToggle" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-globe text-indigo-500"></i> Live Web Search (Smart Synthesis)
+                            </span>
+                        </label>
+                        <button onclick="clearChat()" class="text-[11px] text-slate-400 hover:text-red-500 transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Clear Chat
+                        </button>
+                    </div>
+
+                    <form id="chatForm" onsubmit="handleChatSubmit(event)" class="relative flex items-center">
+                        <input 
+                            type="text" 
+                            id="userInput" 
+                            placeholder="Ask anything..." 
+                            class="w-full pl-4 pr-14 py-3.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white placeholder-slate-400 shadow-inner"
+                            autocomplete="off"
+                        >
+                        <button 
+                            type="submit" 
+                            id="sendBtn"
+                            class="absolute right-2 w-10 h-10 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl flex items-center justify-center transition shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MEMORY STUDIO VIEW ================= -->
+        <div id="trainView" class="absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none overflow-y-auto p-4 md:p-8">
+            <div class="max-w-4xl mx-auto w-full space-y-6 pb-12">
+                
+                <!-- System Prompt -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h3 class="font-semibold text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-indigo-500"></i> Core Behavior
+                    </h3>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">System Prompt</label>
+                        <textarea id="settingSystemPrompt" rows="3" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">You are NeuralForge, a highly intelligent, concise, and helpful AI assistant. When provided with web search context, synthesize it clearly and cite sources.</textarea>
+                    </div>
+                    <button onclick="saveSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition">Save Behavior</button>
+                </div>
+
+                <!-- Custom Knowledge -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-indigo-500"></i> Custom Memory
+                        </h3>
+                        <span id="trainingPairsCount" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">0 Items</span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Fact to Remember</label>
+                            <input type="text" id="trainKeyword" placeholder="e.g. My name is Alex and I am building an AI app." class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button onclick="addTrainingPair()" class="px-3.5 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus text-xs"></i> Add to Memory
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1" id="trainingPairsList"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-xs font-medium">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMessage">Notification</span>
     </div>
-    <div class="flex items-center gap-2">
-      <nav class="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-        <button id="navChat" onclick="switchTab('chat')" class="tab-btn active-tab">Chat</button>
-        <button id="navTrain" onclick="switchTab('train')" class="tab-btn">Training Studio</button>
-        <button id="navCode" onclick="switchTab('code')" class="tab-btn">Code View</button>
-      </nav>
-      <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700">
-        <i id="themeIcon" class="fa-solid fa-moon"></i>
-      </button>
-    </div>
-  </header>
 
-  <style>
-    .tab-btn { padding: .5rem .7rem; border-radius: .65rem; font-size: .75rem; font-weight: 600; }
-    .active-tab { background: white; color: #4f46e5; box-shadow: 0 1px 3px #0002; }
-    .dark .active-tab { background: #334155; color: white; }
-  </style>
-
-  <main class="relative h-[calc(100%-4rem)]">
-    <!-- CHAT -->
-    <section id="chatView" class="absolute inset-0 flex flex-col">
-      <div id="chatMessages" class="flex-1 overflow-y-auto p-4 md:p-6">
-        <div class="max-w-2xl mx-auto my-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h2 class="font-bold mb-2">Welcome to NeuralForge!</h2>
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Add your OpenRouter key in the JavaScript settings, then ask a question.
-            Your conversations and custom Q&A rules stay in this browser.
-          </p>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button class="quick-btn" onclick="sendQuickPrompt('Explain how solar panels work in simple terms.')">Explain something</button>
-            <button class="quick-btn" onclick="sendQuickPrompt('Write a short funny joke.')">Tell me a joke</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
-        <form id="chatForm" class="max-w-3xl mx-auto flex gap-2">
-          <input id="userInput" class="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                 placeholder="Ask a question…" autocomplete="off">
-          <button id="sendBtn" class="rounded-xl bg-indigo-600 px-5 text-white disabled:opacity-50" title="Send">
-            <i class="fa-solid fa-paper-plane"></i>
-          </button>
-        </form>
-        <p class="max-w-3xl mx-auto pt-2 text-[11px] text-slate-400">
-          API usage may cost money according to your OpenRouter account and selected model.
-        </p>
-      </div>
-    </section>
-
-    <!-- TRAINING -->
-    <section id="trainView" class="absolute inset-0 hidden overflow-y-auto p-4 md:p-8">
-      <div class="max-w-3xl mx-auto space-y-5">
-        <div>
-          <h2 class="text-xl font-bold">Training Studio</h2>
-          <p class="text-sm text-slate-500">Set the assistant’s style and add exact-match custom answers.</p>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-          <h3 class="font-semibold">API and assistant settings</h3>
-
-          <label class="block text-xs font-medium">OpenRouter API key</label>
-          <input id="apiKey" type="password" autocomplete="off" placeholder="sk-or-v1-…"
-                 class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-
-          <label class="block text-xs font-medium">Model ID</label>
-          <input id="modelId" placeholder="For example: openai/gpt-4o-mini"
-                 class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-
-          <label class="block text-xs font-medium">AI name</label>
-          <input id="aiName" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-
-          <label class="block text-xs font-medium">System instructions</label>
-          <textarea id="systemPrompt" rows="4"
-                    class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm"></textarea>
-
-          <button onclick="saveSettings()" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Save settings</button>
-          <p class="text-xs text-amber-600 dark:text-amber-400">
-            This standalone-file version stores the key in browser local storage. Don’t use it on a public/shared page.
-          </p>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-          <div>
-            <h3 class="font-semibold">Custom Q&A rules</h3>
-            <p class="text-xs text-slate-500">If a question contains the trigger phrase, use your saved answer.</p>
-          </div>
-          <input id="trainKeyword" placeholder="Trigger phrase"
-                 class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-          <textarea id="trainResponse" rows="2" placeholder="Answer to use"
-                    class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm"></textarea>
-          <button onclick="addTrainingPair()" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white dark:bg-slate-700">Add Q&A rule</button>
-          <div id="trainingPairsList" class="space-y-2"></div>
-          <button onclick="clearChat()" class="rounded-lg border px-3 py-2 text-sm">Clear conversation</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- CODE VIEW -->
-    <section id="codeView" class="absolute inset-0 hidden overflow-auto bg-slate-950 p-5 text-slate-200">
-      <h2 class="font-bold mb-2">Code View</h2>
-      <p class="text-sm text-slate-400">This single-file app’s code is the HTML file you saved.</p>
-      <p class="text-sm text-slate-400 mt-2">Use your editor’s “Select All” and “Copy” commands to copy it.</p>
-    </section>
-  </main>
-
-  <div id="toast" class="fixed bottom-5 right-5 rounded-xl bg-slate-900 px-4 py-3 text-sm text-white opacity-0 transition-opacity"></div>
-
-  <script>
-    // Paste your OpenRouter key below, or enter it in Training Studio.
-    // WARNING: A key in browser code/storage is visible to people who can access this page.
-    const OPENROUTER_API_KEY = "";
-    const DEFAULT_MODEL = "openai/gpt-4o-mini";
-
-    const defaultSettings = {
-      aiName: "Neural Buddy",
-      systemPrompt: "You are a helpful, warm, and friendly AI assistant. Give accurate, clear answers. If you are unsure, say so."
-    };
-
-    let settings = { ...defaultSettings };
-    let trainingPairs = [
-      { id: 1, keyword: "your creator", response: "I’m Neural Buddy, customized in this app." }
-    ];
-    let conversation = [];
-    let busy = false;
-
-    const $ = id => document.getElementById(id);
-
-    function loadState() {
-      try {
-        const saved = JSON.parse(localStorage.getItem("neuralforge_state") || "{}");
-        settings = { ...defaultSettings, ...(saved.settings || {}) };
-        trainingPairs = Array.isArray(saved.trainingPairs) ? saved.trainingPairs : trainingPairs;
-
-        // The pasted code key is used unless a key was saved in Training Studio.
-        $("apiKey").value = saved.apiKey || OPENROUTER_API_KEY;
-        $("modelId").value = saved.modelId || DEFAULT_MODEL;
-        $("aiName").value = settings.aiName;
-        $("systemPrompt").value = settings.systemPrompt;
-      } catch (e) {
-        $("apiKey").value = OPENROUTER_API_KEY;
-        $("modelId").value = DEFAULT_MODEL;
-        $("aiName").value = defaultSettings.aiName;
-        $("systemPrompt").value = defaultSettings.systemPrompt;
-      }
-      renderTrainingPairs();
-    }
-
-    function saveState() {
-      localStorage.setItem("neuralforge_state", JSON.stringify({
-        apiKey: $("apiKey").value.trim(),
-        modelId: $("modelId").value.trim() || DEFAULT_MODEL,
-        settings,
-        trainingPairs
-      }));
-    }
-
-    function saveSettings() {
-      settings.aiName = $("aiName").value.trim() || "Neural Buddy";
-      settings.systemPrompt = $("systemPrompt").value.trim() || defaultSettings.systemPrompt;
-      saveState();
-      toast("Settings saved in this browser.");
-    }
-
-    function switchTab(tab) {
-      $("chatView").classList.toggle("hidden", tab !== "chat");
-      $("trainView").classList.toggle("hidden", tab !== "train");
-      $("codeView").classList.toggle("hidden", tab !== "code");
-      ["Chat", "Train", "Code"].forEach(name => {
-        const button = $("nav" + name);
-        button.classList.toggle("active-tab", name.toLowerCase() === tab);
-      });
-      if (tab === "chat") $("userInput").focus();
-    }
-
-    function toggleTheme() {
-      document.documentElement.classList.toggle("dark");
-      localStorage.setItem("neuralforge_dark", document.documentElement.classList.contains("dark") ? "1" : "0");
-    }
-
-    function toast(message) {
-      const el = $("toast");
-      el.textContent = message;
-      el.classList.remove("opacity-0");
-      setTimeout(() => el.classList.add("opacity-0"), 2500);
-    }
-
-    function escapeHTML(text) {
-      return String(text).replace(/[&<>"']/g, char => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      })[char]);
-    }
-
-    function appendMessage(text, role) {
-      const row = document.createElement("div");
-      row.className = "fade-in mx-auto flex w-full max-w-3xl " + (role === "user" ? "justify-end" : "justify-start");
-
-      const bubble = document.createElement("div");
-      bubble.className = role === "user"
-        ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-indigo-600 px-4 py-3 text-sm text-white"
-        : "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900";
-      bubble.textContent = text;
-      row.appendChild(bubble);
-      $("chatMessages").appendChild(row);
-      $("chatMessages").scrollTop = $("chatMessages").scrollHeight;
-      return bubble;
-    }
-
-    async function handleChatSubmit(event) {
-      event.preventDefault();
-      if (busy) return;
-
-      const text = $("userInput").value.trim();
-      if (!text) return;
-      $("userInput").value = "";
-      appendMessage(text, "user");
-
-      // Custom Q&A phrase rules take priority.
-      const lower = text.toLowerCase();
-      const custom = trainingPairs.find(pair => lower.includes(pair.keyword.toLowerCase()));
-      if (custom) {
-        appendMessage(custom.response, "ai");
-        conversation.push({ role: "user", content: text }, { role: "assistant", content: custom.response });
-        saveState();
-        return;
-      }
-
-      const apiKey = $("apiKey").value.trim();
-      const model = $("modelId").value.trim() || DEFAULT_MODEL;
-      if (!apiKey) {
-        appendMessage("Add your OpenRouter API key in Training Studio (or paste it into OPENROUTER_API_KEY in the code) first.", "ai");
-        return;
-      }
-
-      conversation.push({ role: "user", content: text });
-      busy = true;
-      $("sendBtn").disabled = true;
-      const pending = appendMessage("Thinking…", "ai");
-
-      try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + apiKey,
-            "Content-Type": "application/json",
-            "HTTP-Referer": location.href,
-            "X-Title": "NeuralForge AI"
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              {
-                role: "system",
-                content: "You are " + settings.aiName + ". " + settings.systemPrompt
-              },
-              ...conversation.slice(-20)
-            ],
-            temperature: 0.7,
-            max_tokens: 1200
-          })
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data?.error?.message || "OpenRouter request failed (" + response.status + ").");
+    <!-- JavaScript Application Logic -->
+    <script>
+        // =====================================================================
+        // CONFIGURATION: HIDE YOUR API KEY HERE
+        // 1. Go to https://www.base64encode.org/
+        // 2. Paste your OpenRouter API key (e.g., sk-or-v1-xxxxx)
+        // 3. Copy the encoded result and replace the string below.
+        // =====================================================================
+        const ENCODED_API_KEY = "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"; // <-- REPLACE THIS
+        
+        function getApiKey() {
+            try {
+                const decoded = atob(ENCODED_API_KEY);
+                if (decoded.includes("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")) {
+                    console.warn("Please replace the ENCODED_API_KEY with your actual base64 encoded OpenRouter key.");
+                    return "";
+                }
+                return decoded;
+            } catch (e) {
+                return "";
+            }
         }
 
-        const answer = data?.choices?.[0]?.message?.content;
-        if (!answer) throw new Error("The selected model returned an empty response.");
+        // --- State Management ---
+        let currentTab = 'chat';
+        let settings = {
+            systemPrompt: localStorage.getItem('neural_system_prompt') || 'You are NeuralForge, a highly intelligent, concise, and helpful AI assistant.'
+        };
+        let trainingPairs = JSON.parse(localStorage.getItem('neural_training_pairs') || '[]');
+        let conversationHistory = []; 
 
-        pending.textContent = answer;
-        conversation.push({ role: "assistant", content: answer });
-        saveState();
-      } catch (error) {
-        pending.textContent = "Could not get a response: " + error.message +
-          "\n\nCheck the key, model ID, account balance/limits, and browser console.";
-        console.error(error);
-      } finally {
-        busy = false;
-        $("sendBtn").disabled = false;
-        $("userInput").focus();
-      }
-    }
+        window.onload = function() {
+            loadUI();
+            renderTrainingPairs();
+            
+            // Theme init
+            if (localStorage.getItem('neural_theme') === 'dark' || (!localStorage.getItem('neural_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = "fa-solid fa-sun";
+            }
+        };
 
-    function sendQuickPrompt(text) {
-      $("userInput").value = text;
-      $("chatForm").requestSubmit();
-    }
+        function switchTab(tab) {
+            currentTab = tab;
+            const chatView = document.getElementById('chatView');
+            const trainView = document.getElementById('trainView');
+            const navChatBtn = document.getElementById('navChatBtn');
+            const navTrainBtn = document.getElementById('navTrainBtn');
 
-    function addTrainingPair() {
-      const keyword = $("trainKeyword").value.trim();
-      const response = $("trainResponse").value.trim();
-      if (!keyword || !response) {
-        toast("Enter both a trigger phrase and an answer.");
-        return;
-      }
-      trainingPairs.push({ id: Date.now(), keyword, response });
-      $("trainKeyword").value = "";
-      $("trainResponse").value = "";
-      renderTrainingPairs();
-      saveState();
-      toast("Q&A rule added.");
-    }
+            chatView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none";
+            trainView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-0 opacity-0 pointer-events-none overflow-y-auto p-4 md:p-8";
+            navChatBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            navTrainBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
 
-    function deleteTrainingPair(id) {
-      trainingPairs = trainingPairs.filter(pair => pair.id !== id);
-      renderTrainingPairs();
-      saveState();
-    }
+            if (tab === 'chat') {
+                chatView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10 opacity-100";
+                navChatBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm";
+                document.getElementById('userInput').focus();
+            } else {
+                trainView.className = "absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 z-10 opacity-100 overflow-y-auto p-4 md:p-8";
+                navTrainBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm";
+            }
+        }
 
-    function renderTrainingPairs() {
-      const list = $("trainingPairsList");
-      list.replaceChildren();
-      if (!trainingPairs.length) {
-        list.textContent = "No custom Q&A rules yet.";
-        list.className = "space-y-2 text-sm text-slate-500";
-        return;
-      }
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = "fa-solid fa-moon";
+                localStorage.setItem('neural_theme', 'light');
+            } else {
+                html.classList.add('dark');
+                icon.className = "fa-solid fa-sun";
+                localStorage.setItem('neural_theme', 'dark');
+            }
+        }
 
-      list.className = "space-y-2";
-      trainingPairs.forEach(pair => {
-        const item = document.createElement("div");
-        item.className = "flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700";
+        function loadUI() {
+            document.getElementById('settingSystemPrompt').value = settings.systemPrompt;
+        }
 
-        const text = document.createElement("div");
-        const trigger = document.createElement("strong");
-        trigger.textContent = "Trigger: " + pair.keyword;
-        const answer = document.createElement("p");
-        answer.className = "mt-1 text-slate-500";
-        answer.textContent = pair.response;
-        text.append(trigger, answer);
+        function saveSettings() {
+            settings.systemPrompt = document.getElementById('settingSystemPrompt').value;
+            localStorage.setItem('neural_system_prompt', settings.systemPrompt);
+            showToast("Behavior settings saved!");
+        }
 
-        const button = document.createElement("button");
-        button.className = "text-red-500";
-        button.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        button.title = "Delete rule";
-        button.onclick = () => deleteTrainingPair(pair.id);
+        function sendQuickPrompt(text) {
+            document.getElementById('userInput').value = text;
+            handleChatSubmit(new Event('submit'));
+        }
 
-        item.append(text, button);
-        list.appendChild(item);
-      });
-    }
+        function clearChat() {
+            conversationHistory = [];
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="flex items-start space-x-4 max-w-2xl mx-auto my-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm fade-in">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-lg">
+                        <i class="fa-solid fa-sparkles"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base mb-1">Chat Cleared</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300">Memory reset. Ready for a new topic.</p>
+                    </div>
+                </div>
+            `;
+        }
 
-    function clearChat() {
-      conversation = [];
-      $("chatMessages").replaceChildren();
-      toast("Conversation cleared.");
-    }
+        // --- SMART WEB SEARCH LOGIC ---
+        async function performWebSearch(query) {
+            try {
+                // Use AllOrigins as a free CORS proxy to fetch DuckDuckGo HTML
+                const targetUrl = `https://html.duckduckgo.com/html?q=${encodeURIComponent(query)}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (!data.contents) return "No search results found.";
+                
+                // Parse the HTML to extract text snippets
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const snippets = Array.from(doc.querySelectorAll('.result__snippet')).map(el => el.textContent.trim());
+                
+                if (snippets.length === 0) {
+                    // Fallback to Wikipedia API if DDG returns nothing
+                    const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`);
+                    const wikiData = await wikiRes.json();
+                    if (wikiData.query && wikiData.query.search.length > 0) {
+                        return "Wikipedia Context: " + wikiData.query.search.map(s => `[${s.title}] ${s.snippet.replace(/<[^>]*>/g, '')}`).join(" | ");
+                    }
+                    return "No relevant web results found for this query.";
+                }
+                
+                // Return top 4 snippets formatted for the LLM
+                return "Live Web Search Results:\n" + snippets.slice(0, 4).map((s, i) => `${i+1}. ${s}`).join("\n");
+            } catch (error) {
+                console.error("Web search failed:", error);
+                return "Web search failed due to network/proxy issues.";
+            }
+        }
 
-    $("chatForm").addEventListener("submit", handleChatSubmit);
-    $("themeBtn")?.addEventListener("click", toggleTheme);
+        // --- REAL AI LOGIC (OPENROUTER) ---
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const inputField = document.getElementById('userInput');
+            const messageText = inputField.value.trim();
+            if (!messageText) return;
 
-    // Theme button is identified by its position next to the navigation.
-    document.querySelector("header button[onclick='toggleTheme()']").addEventListener("click", toggleTheme);
+            const apiKey = getApiKey();
+            if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
+                showToast("⚠️ API Key missing! Edit the code and add your Base64 encoded key.", "error");
+                return;
+            }
 
-    if (localStorage.getItem("neuralforge_dark") === "1") {
-      document.documentElement.classList.add("dark");
-    }
-    loadState();
-  </script>
+            appendMessage(messageText, 'user');
+            inputField.value = '';
+            document.getElementById('sendBtn').disabled = true;
+
+            const isWebSearchEnabled = document.getElementById('webSearchToggle').checked;
+            let finalUserMessage = messageText;
+
+            // 1. If web search is on, fetch context first
+            if (isWebSearchEnabled) {
+                const searchThinkingId = showThinkingIndicator("🔍 Searching the live web...");
+                const searchResults = await performWebSearch(messageText);
+                removeThinkingIndicator(searchThinkingId);
+                
+                // Inject search results into the prompt for the LLM to synthesize
+                finalUserMessage = `User Query: ${messageText}\n\n[INSTRUCTIONS: Use the following live web search context to answer the user's query accurately. Synthesize the information clearly and cite sources if applicable. If the context is irrelevant, use your general knowledge but mention you couldn't find specific live results.]\n\n[WEB SEARCH CONTEXT]:\n${searchResults}`;
+            }
+
+            // 2. Show AI thinking indicator
+            const thinkingId = showThinkingIndicator("Thinking...");
+
+            // 3. Prepare System Prompt with Custom Memory
+            let systemContent = settings.systemPrompt;
+            if (trainingPairs.length > 0) {
+                systemContent += "\n\n[USER'S CUSTOM MEMORY / FACTS]:\n";
+                trainingPairs.forEach(pair => {
+                    systemContent += `- ${pair.keyword}\n`;
+                });
+            }
+
+            // 4. Add to history and call API
+            conversationHistory.push({ role: "user", content: finalUserMessage });
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": window.location.href, 
+                        "X-Title": "NeuralForge Agent"
+                    },
+                    body: JSON.stringify({
+                        "model": "meta-llama/llama-3.1-8b-instruct:free", // Smart, free model
+                        "messages": [
+                            { "role": "system", "content": systemContent },
+                            ...conversationHistory.slice(-8) // Keep last 8 messages for context window
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || "API Error");
+                }
+
+                const data = await response.json();
+                const aiText = data.choices[0].message.content;
+
+                removeThinkingIndicator(thinkingId);
+                appendMessage(aiText, 'ai');
+                
+                conversationHistory.push({ role: "assistant", content: aiText });
+
+            } catch (error) {
+                removeThinkingIndicator(thinkingId);
+                appendMessage(`⚠️ Error: ${error.message}. Please check your API key or internet connection.`, 'ai');
+                console.error(error);
+            } finally {
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('userInput').focus();
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const isUser = sender === 'user';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex items-start space-x-3 max-w-3xl mx-auto w-full fade-in ${isUser ? 'justify-end' : ''}`;
+
+            const avatarBg = isUser ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200';
+            const avatarIcon = isUser ? 'fa-user' : 'fa-brain';
+            const bubbleBg = isUser 
+                ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' 
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tl-sm shadow-sm prose dark:prose-invert max-w-none';
+
+            // Basic markdown parsing for bold, lists, and code
+            let formattedText = escapeHTML(text)
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            let avatarHtml = `<div class="w-8 h-8 rounded-xl ${avatarBg} flex items-center justify-center flex-shrink-0 text-xs shadow-sm"><i class="fa-solid ${avatarIcon}"></i></div>`;
+            let contentHtml = `
+                <div class="flex-1 max-w-[85%] sm:max-w-[75%]">
+                    <div class="flex items-center gap-2 mb-1 ${isUser ? 'justify-end' : ''}">
+                        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">${isUser ? 'You' : 'NeuralForge'}</span>
+                    </div>
+                    <div class="${bubbleBg} p-4 text-xs sm:text-sm leading-relaxed">${formattedText}</div>
+                </div>
+            `;
+
+            messageDiv.innerHTML = isUser ? contentHtml + avatarHtml : avatarHtml + contentHtml;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showThinkingIndicator(text = "Thinking...") {
+            const chatMessages = document.getElementById('chatMessages');
+            const id = 'thinking-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex items-start space-x-3 max-w-3xl mx-auto w-full fade-in';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 text-xs shadow-sm"><i class="fa-solid fa-brain"></i></div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1"><span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">NeuralForge</span></div>
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl rounded-tl-sm shadow-sm inline-flex items-center space-x-2">
+                        <span class="text-xs text-slate-500 dark:text-slate-400 italic">${text}</span>
+                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return id;
+        }
+
+        function removeThinkingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // --- Memory Studio Actions ---
+        function addTrainingPair() {
+            const kw = document.getElementById('trainKeyword').value.trim();
+            if (!kw) {
+                showToast("Please enter a fact to remember!", "error");
+                return;
+            }
+            trainingPairs.push({ id: Date.now(), keyword: kw });
+            document.getElementById('trainKeyword').value = '';
+            renderTrainingPairs();
+            saveData();
+            showToast("Fact added to AI Memory!");
+        }
+
+        function deleteTrainingPair(id) {
+            trainingPairs = trainingPairs.filter(p => p.id !== id);
+            renderTrainingPairs();
+            saveData();
+        }
+
+        function renderTrainingPairs() {
+            const container = document.getElementById('trainingPairsList');
+            document.getElementById('trainingPairsCount').innerText = `${trainingPairs.length} Items`;
+            
+            if (trainingPairs.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">No custom memory added. The AI will rely on its base knowledge and web search.</p>`;
+                return;
+            }
+            let html = '';
+            trainingPairs.forEach(p => {
+                html += `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 gap-3">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-medium text-slate-700 dark:text-slate-200">${escapeHTML(p.keyword)}</p>
+                        </div>
+                        <button onclick="deleteTrainingPair(${p.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center justify-center transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function saveData() {
+            localStorage.setItem('neural_training_pairs', JSON.stringify(trainingPairs));
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            toastMessage.innerText = message;
+            toastIcon.className = type === 'error' ? "fa-solid fa-circle-exclamation text-red-400 text-sm" : "fa-solid fa-circle-check text-emerald-400 text-sm";
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
