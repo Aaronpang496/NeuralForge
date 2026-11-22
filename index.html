@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .msg.ai { align-self:flex-start; align-items:flex-start; }
   @keyframes popIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   @keyframes blink { 50% { opacity:0; } }
+  
+  /* Thinking Animation */
+  @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 80%, 100% { transform: scale(2); opacity: 0; } }
+  @keyframes pulse-dot { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+  
   .bubble { padding:12px 16px; border-radius:18px; font-size:15px; line-height:1.6; word-wrap:break-word; overflow-wrap:anywhere; }
   .msg.user .bubble { background:var(--bubble-user); color:white; border-bottom-right-radius:4px; }
   .msg.ai .bubble { background:var(--bubble-ai); color:var(--text); border:1px solid var(--border); border-bottom-left-radius:4px; }
@@ -74,11 +79,42 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .bubble code { background:rgba(0,0,0,.3); padding:2px 4px; border-radius:4px; font-family:monospace; font-size:13px; }
   .retry { margin-top:8px; display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:700; color:#f59e0b; border:1px solid rgba(245,158,11,.5); background:rgba(245,158,11,.1); }
 
-  .thinking-block { background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 10px; margin: 8px 0 12px 0; overflow: hidden; }
-  .thinking-block summary { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #818cf8; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; list-style: none; }
+  /* Redesigned Thinking Box */
+  .thinking-block {
+    background: rgba(99, 102, 241, 0.05); 
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-left: 3px solid #6366f1;
+    border-radius: 8px; 
+    margin: 10px 0 14px 0; 
+    overflow: hidden;
+  }
+  .thinking-block summary {
+    padding: 10px 14px; 
+    font-size: 13px; 
+    font-weight: 600; 
+    color: #818cf8; 
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    user-select: none; 
+    list-style: none;
+    transition: background 0.2s;
+  }
+  .thinking-block summary:hover { background: rgba(99, 102, 241, 0.1); }
   .thinking-block summary::-webkit-details-marker { display: none; }
-  .thinking-block summary i { font-size: 14px; }
-  .thinking-content { padding: 0 14px 14px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.5; border-top: 1px solid rgba(99, 102, 241, 0.2); margin-top: -4px; padding-top: 10px; }
+  .thinking-block summary i { font-size: 14px; transition: transform 0.3s; }
+  .thinking-block[open] summary i { transform: rotate(90deg); }
+  .thinking-content {
+    padding: 0 14px 14px 14px; 
+    font-size: 13px; 
+    color: var(--text-muted); 
+    line-height: 1.6;
+    border-top: 1px solid rgba(99, 102, 241, 0.1); 
+    margin-top: 4px; 
+    padding-top: 12px;
+    font-style: italic;
+  }
 
   #inputArea { background:var(--header-bg); backdrop-filter:blur(10px); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; z-index:50; }
   .search-toggle { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:600; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
@@ -392,7 +428,9 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   async function runAI(text) {
     var useWeb = $('webSearchToggle').checked; var finalPrompt = text;
     if (useWeb) {
-      showTyping('🔍 Searching web...'); var results = await searchWeb(text); removeTyping();
+      showTyping('🔍 Searching web...'); 
+      var results = await searchWeb(text); 
+      removeTyping();
       finalPrompt = 'User Query: ' + text + '\n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite source titles in brackets like [Title]. If the context is irrelevant, answer from your own knowledge and say so.]\n\n[WEB CONTEXT]:\n' + results;
     }
     showTyping('Thinking...');
@@ -446,7 +484,7 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
 
   function formatText(text) {
     var html = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/<thinking>([\s\S]*?)<\/thinking>/gi, function(match, p1) { return '<details class="thinking-block"><summary><i class="fa-solid fa-brain"></i> Show thinking process</summary><div class="thinking-content">' + p1.replace(/\n/g, '<br>') + '</div></details>'; })
+      .replace(/<thinking>([\s\S]*?)<\/thinking>/gi, function(match, p1) { return '<details class="thinking-block" open><summary><i class="fa-solid fa-chevron-right"></i> Show thinking process</summary><div class="thinking-content">' + p1.replace(/\n/g, '<br>') + '</div></details>'; })
       .replace(/```([\s\S]*?)```/g, function (m, c) { return '<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0;"><code>' + c.replace(/^\n/, '').replace(/\n$/, '') + '</code></pre>'; })
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/`(.*?)`/g, '<code>$1</code>')
       .replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^# (.*$)/gim, '<h1>$1</h1>')
@@ -463,7 +501,21 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     div.innerHTML = '<div class="bubble">' + formatText(text) + '</div>';
     $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
   }
-  function showTyping(text) { var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typingIndicator'; div.innerHTML = '<div class="bubble" style="color:var(--text-muted); font-style:italic;">' + esc(text) + ' <i class="fa-solid fa-circle-notch fa-spin"></i></div>'; $('chatArea').appendChild(div); scrollToBottom(); }
+  
+  // Improved Thinking Animation
+  function showTyping(text) { 
+    var div = document.createElement('div'); 
+    div.className = 'msg ai'; 
+    div.id = 'typingIndicator'; 
+    div.innerHTML = '<div class="bubble" style="color:var(--text-muted); font-style:italic; display:flex; align-items:center; gap:10px;">' + 
+      '<div style="position:relative; width:20px; height:20px; display:flex; justify-content:center; align-items:center;">' +
+      '<div style="position:absolute; width:100%; height:100%; border-radius:50%; background:var(--violet, #6366f1); opacity:0.4; animation:pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;"></div>' +
+      '<i class="fa-solid fa-brain" style="font-size:14px; color:#6366f1; animation:pulse-dot 1.5s infinite; z-index:2;"></i>' +
+      '</div>' + esc(text) + '</div>'; 
+    $('chatArea').appendChild(div); 
+    scrollToBottom(); 
+  }
+  
   function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
   function attachLongPress(div, text, type) {
     div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
@@ -483,13 +535,28 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
     else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
   }
+  
+  // Faster Web Search (3.5s timeout instead of 7s)
   function withTimeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
   async function searchWeb(query) {
     var parts = [];
-    await safe(async function () { var wres = await withTimeout(fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*'), 7000); var wj = await wres.json(); if (wj.query && wj.query.search.length) parts.push(wj.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n')); }, null);
-    await safe(async function () { var dres = await withTimeout(fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query)), 7000); var dj = await dres.json(); if (dj.contents) { var doc = new DOMParser().parseFromString(dj.contents, 'text/html'); var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean); if (sn.length) parts.push(sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n')); } }, null);
+    await safe(async function () { 
+      var wres = await withTimeout(fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*'), 3500); 
+      var wj = await wres.json(); 
+      if (wj.query && wj.query.search.length) parts.push(wj.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n')); 
+    }, null);
+    await safe(async function () { 
+      var dres = await withTimeout(fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query)), 3500); 
+      var dj = await dres.json(); 
+      if (dj.contents) { 
+        var doc = new DOMParser().parseFromString(dj.contents, 'text/html'); 
+        var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean); 
+        if (sn.length) parts.push(sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n')); 
+      } 
+    }, null);
     return parts.length ? parts.join('\n\n') : 'No relevant results found.';
   }
+  
   function renderQuestions() { var list = $('questionList'); if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom questions yet.</p>'; return; } list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
   function addQuestion() { var input = $('questionInput'); var text = input.value.trim(); if (!text) return; var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen']; var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444']; customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] }); lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!'); }
   function renderMemory() { var list = $('memoryList'); if (!memory.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom memory yet.</p>'; return; } list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
