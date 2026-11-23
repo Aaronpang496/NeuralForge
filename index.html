@@ -10,7 +10,6 @@
     --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
     --bubble-user: #4f46e5; --bubble-ai: #1e293b; --border: #334155;
     --input-bg: #1e293b; --text-muted: #94a3b8; --modal-bg: #1e293b; --sidebar-bg: #0b1120;
-    --accent: #6366f1;
   }
   body.light {
     --bg: #f8fafc; --text: #0f172a; --header-bg: rgba(248,250,252,.98);
@@ -236,7 +235,7 @@
       <div class="input-row">
         <button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
         <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea></div>
-        <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+        <button type="button" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>
   </div>
@@ -287,7 +286,6 @@
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
         Smart Mode (step-by-step reasoning)
       </label>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">If a photo reply is empty, switch the Vision model above.</p>
     </div>
 
     <div class="setting-group">
@@ -301,7 +299,7 @@
 
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt"></textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing images, describe what you see clearly and accurately. 7) If unsure, say so rather than guessing.</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
 
@@ -426,8 +424,9 @@
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
-    $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
-    $('sendBtn').addEventListener('click', function (e) { e.preventDefault(); submitForm(); });
+    // FIXED: Only ONE handler for send — the button click. No form submit conflict.
+    $('sendBtn').onclick = function (e) { e.preventDefault(); submitForm(); };
+
     $('chatArea').addEventListener('click', function (e) {
       var b = e.target.closest('.sugg-btn');
       if (b && b.dataset.q) { $('userInput').value = b.dataset.q; submitForm(); }
