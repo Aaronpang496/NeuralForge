@@ -92,6 +92,7 @@
   .msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
   .bubble img.attached-thumb { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; }
+  .bubble img.generated-img { max-width: 100%; border-radius: 12px; margin: 8px 0; display: block; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
   .bubble strong { font-weight: 700; }
   .bubble p { margin-bottom: 8px; }
   .bubble p:last-child { margin-bottom: 0; }
@@ -212,7 +213,7 @@
       <div class="welcome" id="welcomeScreen">
         <i class="fa-solid fa-sparkles big"></i>
         <h2>How can I help?</h2>
-        <p>Tap + to attach a photo, file, or voice note.</p>
+        <p>Tap + to attach a photo, file, voice, or generate an image.</p>
         <div class="suggestions">
           <button class="sugg-btn" data-q="What are the latest AI news?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
           <button class="sugg-btn" data-q="Explain quantum computing simply"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
@@ -241,7 +242,6 @@
   </div>
 </div>
 
-<!-- Attach sheet -->
 <div id="attachSheet">
   <div class="sheet-content">
     <div class="sheet-title">Add to message</div>
@@ -250,12 +250,12 @@
       <button class="sheet-option" id="optAlbum"><i class="fa-solid fa-images" style="color:#a855f7"></i> Photo Album</button>
       <button class="sheet-option" id="optFile"><i class="fa-solid fa-file-arrow-up" style="color:#10b981"></i> Upload File</button>
       <button class="sheet-option" id="optRecord"><i class="fa-solid fa-microphone" style="color:#ef4444"></i> Record Voice</button>
+      <button class="sheet-option" id="optGenerate" style="grid-column: span 2"><i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b"></i> Generate Image</button>
     </div>
     <button class="sheet-cancel" id="attachCancel">Cancel</button>
   </div>
 </div>
 
-<!-- Hidden inputs -->
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="albumInput" accept="image/*" style="display:none">
 <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.log,.js,.py,.html,.css,.xml,.yml,.yaml,text/*" style="display:none">
@@ -334,7 +334,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Rules: use PERFECT English grammar and complete sentences; never write broken English; format for mobile with short paragraphs and bullet points; use bold for key terms; put code in fenced blocks with a language tag; be concise but complete. When given an image, describe and analyze it accurately.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing images, describe what you see clearly and accurately. 7) If unsure, say so rather than guessing.';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -355,9 +355,8 @@
   var selectedMsgEl = null;
   var longPressTimer = null;
 
-  // ---- Attachment state ----
-  var pendingImage = null; // { name, dataUrl }
-  var pendingFile = null;  // { name, text }
+  var pendingImage = null;
+  var pendingFile = null;
   var recognition = null;
   var isRecording = false;
   var recShouldKeep = false;
@@ -411,7 +410,6 @@
     $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
     $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 
-    // Attach sheet
     $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
     $('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
     $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
@@ -419,6 +417,7 @@
     $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
     $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
     $('optRecord').onclick = function () { $('attachSheet').classList.remove('open'); toggleRecording(); };
+    $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open'); promptForImageGen(); };
 
     $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
     $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
@@ -427,7 +426,6 @@
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
-    $('chatForm') && null; // (form submit handled below via element)
     $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
     $('sendBtn').addEventListener('click', function (e) { e.preventDefault(); submitForm(); });
     $('chatArea').addEventListener('click', function (e) {
@@ -444,7 +442,7 @@
       var msgs = getMessages();
       var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null); }
+      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, ''); }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -458,7 +456,6 @@
     window.__nfBooted = true;
   }
 
-  // ---- Attachments: preview chips ----
   function renderPreview() {
     var row = $('previewRow');
     row.innerHTML = '';
@@ -490,9 +487,10 @@
   function handleImageFile(file) {
     if (!file) return;
     if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
+    if (file.size > 5000000) { showToast('Image too large (max 5MB)'); return; }
     var reader = new FileReader();
     reader.onload = function (ev) {
-      compressImage(ev.target.result, 1024, 0.8, function (dataUrl) {
+      compressImage(ev.target.result, 800, 0.75, function (dataUrl) {
         pendingImage = { name: file.name || 'photo.jpg', dataUrl: dataUrl };
         renderPreview();
         showToast('Photo attached');
@@ -522,10 +520,10 @@
 
   function handleTextFile(file) {
     if (!file) return;
-    if (file.size > 200000) { showToast('File too large (max ~200KB)'); return; }
+    if (file.size > 100000) { showToast('File too large (max 100KB)'); return; }
     var reader = new FileReader();
     reader.onload = function (ev) {
-      pendingFile = { name: file.name, text: String(ev.target.result).slice(0, 12000) };
+      pendingFile = { name: file.name, text: String(ev.target.result).slice(0, 8000) };
       renderPreview();
       showToast('File attached');
     };
@@ -533,7 +531,6 @@
     reader.readAsText(file);
   }
 
-  // ---- Recording (Web Speech API) ----
   function toggleRecording() {
     if (isRecording) { stopRecording(); return; }
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -559,7 +556,6 @@
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { showToast('Mic permission denied'); stopRecording(); }
     };
     recognition.onend = function () {
-      // iOS often ends after a pause; restart if user still wants to record
       if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
       else { isRecording = false; renderPreview(); }
     };
@@ -576,7 +572,39 @@
     renderPreview();
   }
 
-  // ---- Sidebar / chat rendering ----
+  function promptForImageGen() {
+    var prompt = prompt('Describe the image you want to generate:');
+    if (prompt && prompt.trim()) {
+      generateImage(prompt.trim());
+    }
+  }
+
+  function generateImage(prompt) {
+    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai';
+    aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image for: "' + esc(prompt) + '"…</div></div>';
+    $('chatArea').appendChild(aiMsgDiv);
+    scrollToBottom();
+
+    var bubble = aiMsgDiv.querySelector('.bubble');
+    var encodedPrompt = encodeURIComponent(prompt);
+    var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true';
+
+    var img = new Image();
+    img.onload = function () {
+      bubble.innerHTML = 'Generated image for: "' + esc(prompt) + '"<img class="generated-img" src="' + imageUrl + '" alt="Generated image">';
+      var msgs = getMessages();
+      msgs.push({ role: 'assistant', content: '[Generated Image] ' + prompt, image: imageUrl });
+      setMessages(msgs);
+      scrollToBottom();
+    };
+    img.onerror = function () {
+      bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
+      aiMsgDiv.classList.add('error');
+      bubble.onclick = function () { generateImage(prompt); };
+    };
+    img.src = imageUrl;
+  }
+
   function renderSidebar() {
     var list = $('historyList');
     list.innerHTML = histories.map(function (h) {
@@ -609,7 +637,7 @@
   }
 
   function renderWelcomeScreen() {
-    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, or voice note.</p><div class="suggestions">';
+    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image.</p><div class="suggestions">';
     customQuestions.forEach(function (q) {
       html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;') + '"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>';
     });
@@ -664,9 +692,12 @@
     var streamBubble = aiMsgDiv.querySelector('.bubble');
 
     var aiText = '';
+    var retryCount = 0;
+    var maxRetries = image ? 2 : 1;
+
     try {
       var results = await searchPromise;
-      var userText = text || (image ? 'Describe and analyze this image in detail.' : (fileText ? 'Summarize this file.' : ''));
+      var userText = text || (image ? 'Describe and analyze this image in detail. What do you see? Be specific.' : (fileText ? 'Summarize this file concisely.' : ''));
       if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && results && results.indexOf('No relevant') === -1) {
         userText += '\n\n[WEB CONTEXT — cite titles like [Title]]:\n' + results;
@@ -685,42 +716,52 @@
         userContent = userText;
       }
 
-      var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
-      var res = await fetch('https://text.pollinations.ai/openai', {
-        method: 'POST', signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: modelToUse,
-          messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10).map(function (m) {
-            return { role: m.role, content: m.content };
-          })),
-          stream: true,
-          temperature: smartMode ? 0.3 : 0.7
-        })
-      });
-      clearTimeout(to); if (!res.ok) throw new Error('Server error ' + res.status);
+      while (retryCount <= maxRetries) {
+        var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
+        var res = await fetch('https://text.pollinations.ai/openai', {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10).map(function (m) {
+              return { role: m.role, content: m.content };
+            })),
+            stream: true,
+            temperature: smartMode ? 0.3 : 0.7
+          })
+        });
+        clearTimeout(to); if (!res.ok) throw new Error('Server error ' + res.status);
 
-      if (res.body && res.body.getReader) {
-        var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
-        while (true) {
-          var r = await reader.read(); if (r.done) break;
-          buffer += dec.decode(r.value, { stream: true });
-          var lines = buffer.split('\n'); buffer = lines.pop();
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (line.indexOf('data:') !== 0) continue;
-            var data = line.slice(5).trim();
-            if (data === '' || data === '[DONE]') continue;
-            safe(function () {
-              var j = JSON.parse(data); var ch = j.choices && j.choices[0]; var c = '';
-              if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-              if (c) { aiText += c; streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>'; scrollToBottom(); }
-            }, null);
+        aiText = '';
+        if (res.body && res.body.getReader) {
+          var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+          while (true) {
+            var r = await reader.read(); if (r.done) break;
+            buffer += dec.decode(r.value, { stream: true });
+            var lines = buffer.split('\n'); buffer = lines.pop();
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i].trim();
+              if (line.indexOf('data:') !== 0) continue;
+              var data = line.slice(5).trim();
+              if (data === '' || data === '[DONE]') continue;
+              safe(function () {
+                var j = JSON.parse(data); var ch = j.choices && j.choices[0]; var c = '';
+                if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
+                if (c) { aiText += c; streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>'; scrollToBottom(); }
+              }, null);
+            }
           }
+        } else {
+          var rawText = await res.text();
+          safe(function () { var j = JSON.parse(rawText); var ch = j.choices && j.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
         }
-      } else {
-        var rawText = await res.text();
-        safe(function () { var j = JSON.parse(rawText); var ch = j.choices && j.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
+
+        if (aiText.trim()) break;
+        retryCount++;
+        if (retryCount <= maxRetries) {
+          streamBubble.innerHTML = 'Retrying… (' + retryCount + '/' + maxRetries + ')';
+          await new Promise(function (r) { setTimeout(r, 1000); });
+        }
       }
 
       if (!aiText.trim()) throw new Error('empty response');
@@ -729,7 +770,7 @@
       var saved = getMessages(); saved.push({ role: 'assistant', content: aiText }); setMessages(saved); scrollToBottom();
     } catch (err) {
       var hint = image ? ' Try a different Vision model in Settings.' : '';
-      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' + hint : (err.message === 'empty response' ? 'The AI returned nothing. Tap Retry.' + hint : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
+      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' + hint : (err.message === 'empty response' ? 'The AI returned nothing after retries.' + hint : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
       streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
       aiMsgDiv.classList.add('error');
       streamBubble.querySelector('.retry').addEventListener('click', function () {
@@ -762,7 +803,7 @@
     if (animate) div.style.animation = 'popIn .2s ease-out';
     var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
     if (type === 'ai') {
-      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div></div>';
+      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + '</div></div>';
     } else {
       div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
     }
