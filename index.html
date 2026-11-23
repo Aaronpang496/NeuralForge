@@ -10,6 +10,7 @@
     --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
     --bubble-user: #4f46e5; --bubble-ai: #1e293b; --border: #334155;
     --input-bg: #1e293b; --text-muted: #94a3b8; --modal-bg: #1e293b; --sidebar-bg: #0b1120;
+    --accent: #6366f1;
   }
   body.light {
     --bg: #f8fafc; --text: #0f172a; --header-bg: rgba(248,250,252,.98);
@@ -90,6 +91,7 @@
   .msg.user .bubble { background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px; }
   .msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+  .bubble img.attached-thumb { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; }
   .bubble strong { font-weight: 700; }
   .bubble p { margin-bottom: 8px; }
   .bubble p:last-child { margin-bottom: 0; }
@@ -113,13 +115,36 @@
   .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #fff; transition: .3s; border-radius: 50%; }
   input:checked + .slider { background-color: #4f46e5; }
   input:checked + .slider:before { transform: translateX(20px); }
-  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+  .preview-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .preview-row:empty { display: none; }
+  .preview-chip { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; font-size: 13px; max-width: 100%; }
+  .preview-chip img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+  .preview-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; color: var(--text); }
+  .preview-chip .chip-x { color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+  .preview-chip .chip-x:active { color: #ef4444; }
+  .rec-chip { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #fca5a5; border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulseDot 1s infinite; }
+
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .attach-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .attach-btn:active { background: var(--border); }
   .input-wrap { flex: 1; background: var(--input-bg); border-radius: 24px; border: 1px solid var(--border); padding: 4px 4px 4px 16px; display: flex; align-items: center; }
   .input-wrap:focus-within { border-color: #4f46e5; }
   #userInput { flex: 1; background: transparent; border: none; padding: 10px 0; resize: none; max-height: 120px; outline: none; color: var(--text); }
   #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   #sendBtn:active { transform: scale(.9); }
   #sendBtn:disabled { opacity: .5; }
+
+  #attachSheet { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
+  #attachSheet.open { display: flex; }
+  .sheet-content { width: 100%; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
+  .sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
+  .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sheet-option { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+  .sheet-option:active { background: var(--border); }
+  .sheet-option i { font-size: 24px; }
+  .sheet-cancel { width: 100%; margin-top: 12px; background: var(--border); color: var(--text); padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; }
 
   #settingsModal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
   #settingsModal.open { display: flex; }
@@ -187,7 +212,7 @@
       <div class="welcome" id="welcomeScreen">
         <i class="fa-solid fa-sparkles big"></i>
         <h2>How can I help?</h2>
-        <p>Long-press any message to edit, copy, or delete.</p>
+        <p>Tap + to attach a photo, file, or voice note.</p>
         <div class="suggestions">
           <button class="sugg-btn" data-q="What are the latest AI news?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
           <button class="sugg-btn" data-q="Explain quantum computing simply"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
@@ -204,13 +229,36 @@
           <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
         </label>
       </div>
-      <form class="input-row" id="chatForm">
+
+      <div id="previewRow" class="preview-row"></div>
+
+      <div class="input-row">
+        <button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
         <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea></div>
         <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </form>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- Attach sheet -->
+<div id="attachSheet">
+  <div class="sheet-content">
+    <div class="sheet-title">Add to message</div>
+    <div class="sheet-grid">
+      <button class="sheet-option" id="optCamera"><i class="fa-solid fa-camera" style="color:#6366f1"></i> Take Photo</button>
+      <button class="sheet-option" id="optAlbum"><i class="fa-solid fa-images" style="color:#a855f7"></i> Photo Album</button>
+      <button class="sheet-option" id="optFile"><i class="fa-solid fa-file-arrow-up" style="color:#10b981"></i> Upload File</button>
+      <button class="sheet-option" id="optRecord"><i class="fa-solid fa-microphone" style="color:#ef4444"></i> Record Voice</button>
+    </div>
+    <button class="sheet-cancel" id="attachCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="albumInput" accept="image/*" style="display:none">
+<input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.log,.js,.py,.html,.css,.xml,.yml,.yaml,text/*" style="display:none">
 
 <div id="settingsModal">
   <div class="modal-content">
@@ -220,7 +268,7 @@
     </div>
 
     <div class="setting-group">
-      <div class="setting-label">AI Model & Intelligence</div>
+      <div class="setting-label">Text Model</div>
       <select class="setting-input" id="modelSelect">
         <option value="openai">Fast & balanced (openai)</option>
         <option value="openai-large">Smartest, slower (openai-large)</option>
@@ -229,11 +277,17 @@
         <option value="mistral">Mistral</option>
         <option value="qwen-coder">Qwen Coder (best for code)</option>
       </select>
+      <div class="setting-label" style="margin-top:16px">Vision Model (for photos)</div>
+      <select class="setting-input" id="visionModelSelect">
+        <option value="openai">openai (gpt-4o-mini vision)</option>
+        <option value="openai-large">openai-large (gpt-4o vision)</option>
+        <option value="gemini-flash">gemini-flash (vision)</option>
+      </select>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
         Smart Mode (step-by-step reasoning)
       </label>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Smart Mode makes the AI think first. Its reasoning shows in a collapsible box.</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">If a photo reply is empty, switch the Vision model above.</p>
     </div>
 
     <div class="setting-group">
@@ -280,7 +334,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Rules: use PERFECT English grammar and complete sentences; never write broken English; format for mobile with short paragraphs and bullet points; use bold for key terms; put code in fenced blocks with a language tag; be concise but complete.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Rules: use PERFECT English grammar and complete sentences; never write broken English; format for mobile with short paragraphs and bullet points; use bold for key terms; put code in fenced blocks with a language tag; be concise but complete. When given an image, describe and analyze it accurately.';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -294,11 +348,19 @@
   var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
   var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
   var currentModel = lsGet('nf_model', 'openai') || 'openai';
+  var visionModel = lsGet('nf_vision_model', 'openai') || 'openai';
   var smartMode = lsGet('nf_smart', '0') === '1';
 
   var isGenerating = false;
   var selectedMsgEl = null;
   var longPressTimer = null;
+
+  // ---- Attachment state ----
+  var pendingImage = null; // { name, dataUrl }
+  var pendingFile = null;  // { name, text }
+  var recognition = null;
+  var isRecording = false;
+  var recShouldKeep = false;
 
   function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
   function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
@@ -318,6 +380,7 @@
     currentChatId = id;
     lsSet('nf_current_chat', currentChatId);
     lsSet('nf_histories', JSON.stringify(histories));
+    clearAttachments();
     renderSidebar(); renderWelcomeScreen();
     if (window.innerWidth < 768) $('sidebar').classList.remove('open');
   }
@@ -334,9 +397,11 @@
     $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
 
     $('modelSelect').value = currentModel;
+    $('visionModelSelect').value = visionModel;
     $('smartMode').checked = smartMode;
     $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
-    $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Model: ' + currentModel); };
+    $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Text model: ' + currentModel); };
+    $('visionModelSelect').onchange = function () { visionModel = $('visionModelSelect').value; lsSet('nf_vision_model', visionModel); showToast('Vision model: ' + visionModel); };
     $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
 
     $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
@@ -346,10 +411,25 @@
     $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
     $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 
+    // Attach sheet
+    $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
+    $('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
+    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
+    $('optCamera').onclick = function () { $('attachSheet').classList.remove('open'); $('cameraInput').click(); };
+    $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
+    $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
+    $('optRecord').onclick = function () { $('attachSheet').classList.remove('open'); toggleRecording(); };
+
+    $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
+    $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
+    $('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
+
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
+    $('chatForm') && null; // (form submit handled below via element)
     $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
+    $('sendBtn').addEventListener('click', function (e) { e.preventDefault(); submitForm(); });
     $('chatArea').addEventListener('click', function (e) {
       var b = e.target.closest('.sugg-btn');
       if (b && b.dataset.q) { $('userInput').value = b.dataset.q; submitForm(); }
@@ -364,7 +444,7 @@
       var msgs = getMessages();
       var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0]); }
+      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null); }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -378,6 +458,125 @@
     window.__nfBooted = true;
   }
 
+  // ---- Attachments: preview chips ----
+  function renderPreview() {
+    var row = $('previewRow');
+    row.innerHTML = '';
+    if (isRecording) {
+      var rc = document.createElement('div'); rc.className = 'rec-chip';
+      rc.innerHTML = '<span class="rec-dot"></span> Listening… tap mic to stop';
+      row.appendChild(rc);
+    }
+    if (pendingImage) {
+      var chip = document.createElement('div'); chip.className = 'preview-chip';
+      chip.innerHTML = '<img src="' + pendingImage.dataUrl + '"><span class="chip-label">' + esc(pendingImage.name) + '</span><button class="chip-x" data-clear="image"><i class="fa-solid fa-xmark"></i></button>';
+      row.appendChild(chip);
+    }
+    if (pendingFile) {
+      var chip2 = document.createElement('div'); chip2.className = 'preview-chip';
+      chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
+      row.appendChild(chip2);
+    }
+  }
+  $('previewRow').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-clear]');
+    if (!b) return;
+    if (b.dataset.clear === 'image') pendingImage = null;
+    if (b.dataset.clear === 'file') pendingFile = null;
+    renderPreview();
+  });
+  function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
+
+  function handleImageFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      compressImage(ev.target.result, 1024, 0.8, function (dataUrl) {
+        pendingImage = { name: file.name || 'photo.jpg', dataUrl: dataUrl };
+        renderPreview();
+        showToast('Photo attached');
+      });
+    };
+    reader.onerror = function () { showToast('Could not read image'); };
+    reader.readAsDataURL(file);
+  }
+
+  function compressImage(dataUrl, maxDim, quality, cb) {
+    var img = new Image();
+    img.onload = function () {
+      var w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        var scale = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * scale); h = Math.round(h * scale);
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function () { cb(dataUrl); };
+    img.src = dataUrl;
+  }
+
+  function handleTextFile(file) {
+    if (!file) return;
+    if (file.size > 200000) { showToast('File too large (max ~200KB)'); return; }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      pendingFile = { name: file.name, text: String(ev.target.result).slice(0, 12000) };
+      renderPreview();
+      showToast('File attached');
+    };
+    reader.onerror = function () { showToast('Could not read file'); };
+    reader.readAsText(file);
+  }
+
+  // ---- Recording (Web Speech API) ----
+  function toggleRecording() {
+    if (isRecording) { stopRecording(); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = navigator.language || 'en-US';
+    var baseText = $('userInput').value;
+    if (baseText && !/\s$/.test(baseText)) baseText += ' ';
+    recognition.onresult = function (e) {
+      var interim = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) baseText += t + ' ';
+        else interim += t;
+      }
+      $('userInput').value = baseText + interim;
+      $('userInput').style.height = 'auto';
+      $('userInput').style.height = Math.min($('userInput').scrollHeight, 120) + 'px';
+    };
+    recognition.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { showToast('Mic permission denied'); stopRecording(); }
+    };
+    recognition.onend = function () {
+      // iOS often ends after a pause; restart if user still wants to record
+      if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
+      else { isRecording = false; renderPreview(); }
+    };
+    recShouldKeep = true;
+    isRecording = true;
+    safe(function () { recognition.start(); }, null);
+    renderPreview();
+    showToast('Recording… speak now');
+  }
+  function stopRecording() {
+    recShouldKeep = false;
+    isRecording = false;
+    if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
+    renderPreview();
+  }
+
+  // ---- Sidebar / chat rendering ----
   function renderSidebar() {
     var list = $('historyList');
     list.innerHTML = histories.map(function (h) {
@@ -405,12 +604,12 @@
   function renderChat() {
     var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
     if (msgs.length === 0) { renderWelcomeScreen(); return; }
-    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false); });
+    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false, m.image); });
     scrollToBottom();
   }
 
   function renderWelcomeScreen() {
-    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Long-press any message to edit, copy, or delete.</p><div class="suggestions">';
+    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, or voice note.</p><div class="suggestions">';
     customQuestions.forEach(function (q) {
       html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;') + '"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>';
     });
@@ -420,20 +619,37 @@
 
   function submitForm() {
     if (isGenerating) return;
-    var input = $('userInput'); var text = input.value.trim(); if (!text) return;
+    var input = $('userInput'); var text = input.value.trim();
+    if (!text && !pendingImage && !pendingFile) return;
+    if (isRecording) stopRecording();
+
     var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-    var msgs = getMessages(); msgs.push({ role: 'user', content: text }); setMessages(msgs);
-    addMessageToUI(text, 'user', true);
+
+    var displayText = text;
+    if (pendingImage && !displayText) displayText = 'Describe this image.';
+    if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n\n[FILE: ' + pendingFile.name + ']';
+    if (pendingImage) displayText = '[Image] ' + displayText;
+
+    var msgs = getMessages();
+    msgs.push({ role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
+    setMessages(msgs);
+
+    addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null);
+
+    var sendImage = pendingImage;
+    var sendFileText = pendingFile ? pendingFile.text : '';
+    var sendText = text;
+
     input.value = ''; input.style.height = 'auto';
+    clearAttachments();
+
     isGenerating = true; $('sendBtn').disabled = true;
     showTyping('Thinking...');
-    runAI(text);
+    runAI(sendText, sendImage, sendFileText);
   }
 
-  async function runAI(text) {
-    var useWeb = $('webSearchToggle').checked;
-
-    // Start search in parallel (max 2.5s total). If it fails, we proceed without it.
+  async function runAI(text, image, fileText) {
+    var useWeb = $('webSearchToggle').checked && !image;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve('');
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
@@ -447,23 +663,43 @@
     $('chatArea').appendChild(aiMsgDiv);
     var streamBubble = aiMsgDiv.querySelector('.bubble');
 
+    var aiText = '';
     try {
       var results = await searchPromise;
-      var finalPrompt = text;
+      var userText = text || (image ? 'Describe and analyze this image in detail.' : (fileText ? 'Summarize this file.' : ''));
+      if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && results && results.indexOf('No relevant') === -1) {
-        finalPrompt = 'User Query: ' + text + '\n\n[Use this web context to answer accurately. Cite titles in brackets like [Title]. If irrelevant, answer from knowledge.]\n\n[WEB CONTEXT]:\n' + results;
+        userText += '\n\n[WEB CONTEXT — cite titles like [Title]]:\n' + results;
       }
-      msgs.push({ role: 'user', content: finalPrompt });
+
+      var userContent;
+      var modelToUse;
+      if (image) {
+        modelToUse = visionModel;
+        userContent = [
+          { type: 'text', text: userText },
+          { type: 'image_url', image_url: { url: image.dataUrl } }
+        ];
+      } else {
+        modelToUse = currentModel;
+        userContent = userText;
+      }
 
       var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
       var res = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: currentModel, messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10)), stream: true, temperature: smartMode ? 0.3 : 0.7 })
+        body: JSON.stringify({
+          model: modelToUse,
+          messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10).map(function (m) {
+            return { role: m.role, content: m.content };
+          })),
+          stream: true,
+          temperature: smartMode ? 0.3 : 0.7
+        })
       });
       clearTimeout(to); if (!res.ok) throw new Error('Server error ' + res.status);
 
-      var aiText = '';
       if (res.body && res.body.getReader) {
         var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
         while (true) {
@@ -492,13 +728,14 @@
       attachLongPress(aiMsgDiv, aiText, 'ai');
       var saved = getMessages(); saved.push({ role: 'assistant', content: aiText }); setMessages(saved); scrollToBottom();
     } catch (err) {
-      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry or switch model.' : (err.message === 'empty response' ? 'The AI returned nothing. Tap Retry or switch model.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
+      var hint = image ? ' Try a different Vision model in Settings.' : '';
+      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' + hint : (err.message === 'empty response' ? 'The AI returned nothing. Tap Retry.' + hint : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
       streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
       aiMsgDiv.classList.add('error');
       streamBubble.querySelector('.retry').addEventListener('click', function () {
         var s = getMessages(); while (s.length && s[s.length - 1].role === 'assistant') s.pop(); setMessages(s); aiMsgDiv.remove();
         var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
-        if (lastUser) runAI(lastUser.content.split('\n\n[WEB CONTEXT')[0]);
+        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '');
       });
       attachLongPress(aiMsgDiv, '', 'ai');
     } finally { isGenerating = false; $('sendBtn').disabled = false; }
@@ -520,13 +757,14 @@
   }
 
   function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-  function addMessageToUI(text, type, animate) {
+  function addMessageToUI(text, type, animate, image) {
     var div = document.createElement('div'); div.className = 'msg ' + type; div.dataset.text = text;
     if (animate) div.style.animation = 'popIn .2s ease-out';
+    var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
     if (type === 'ai') {
-      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + formatText(text) + '</div></div>';
+      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div></div>';
     } else {
-      div.innerHTML = '<div class="bubble">' + formatText(text) + '</div>';
+      div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
     }
     $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
   }
@@ -556,7 +794,6 @@
     else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
   }
 
-  // FAST web search: 2.5s total timeout, runs both sources in parallel
   function searchWebFast(query) {
     var wikiP = safe(async function () {
       var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 2500);
