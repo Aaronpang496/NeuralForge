@@ -1,579 +1,819 @@
-<!DOCTYPE html>
+<!DOCTYPE html-size:18px;color:var(--text-muted)}
+.header-btn:active{background:var(--border)}>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport"
+#errorBox{display:none;margin:10 content="width=device-width, initial-scale=1.0px 16px 0;padding:10px, maximum-scale=1.0, user-scalable=no, 14px;border-radius:10px;background:#450a0a;color:#fca5a5;font-size:13px;line-height:1. viewport-fit=cover">
 <title>NeuralForge AI</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.44;border:1px solid #ef4444.0/css/all.min.css">
 <script>
-window.__nfBooted=false; window.__nfRealError=false;
-window.__nfShowError=function(m){window.__nfRealError=true;var b=document.getElementById('errorBox');if(!b){setTimeout(function(){window.__nfShowError(m);},300);return;}b.style.display='block';b.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> '+String(m).replace(/</g,'&lt;')+' <button onclick="this.parentElement.style.display=\'none\'" style="margin-left:8px;text-decoration:underline;color:inherit">dismiss</button>';};
+window}
+#errorBox i{margin-right:6px.__nfBooted=false;window.__nfRealError}
+#chatArea{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1=false;
+window.__nfShowError=function(m){window6px;display:flex;flex-direction:column;gap:.__nfRealError=true;var b=document.getElementById('errorBox');if(!b){setTimeout(function(){window.__nf16px}
+.welcome{text-align:centerShowError(m);},300);return;}b;padding:30px 20px;color:var(--text-muted);animation:popIn .3s ease.style.display='block';b.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> '+String(m-out}
+.welcome i.big{font-size:4).replace(/</g,'&lt;')+' <0px;color:#6366f1;margin-bottom:16px}
+.welcome h2{font-size:20px;color:var(--text);margin-bottom:8px}
+.suggestions{display:flexbutton onclick="this.parentElement.style.display=\'none\'" style="margin-left:8px;text-decoration:underline;color:;flex-direction:column;gap:10px;inherit">dismiss</button>';};
 window.onerror=function(m){window.__nfShowError('Startup error: '+m);return true;};
-document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(!window.__nfBooted&&!window.__nfRealError)window.__nfShowError('Engine blocked by sandbox. Open this file on github.io or as a local .html file.');},2000);});
+document.addEventListener('DOMContentLoaded',max-width:320px;margin:20pxfunction(){setTimeout(function(){if(!window.__nfBooted auto 0}
+.sugg-btn{background:var&&!window.__nfRealError)window.__nfShowError(--bubble-ai);border:1px solid var(--border);padding:14px;border-radius:12('Engine blocked. Open on github.io.');px;text-align:left;font-size:14px;font-weight},2000);});
 </script>
-
-<style>
-  :root { --bg:#0f172a; --text:#f8fafc; --header-bg:rgba(15,23,42,.98); --bubble-user:#4f46e5; --bubble-ai:#1e293b; --border:#334155; --input-bg:#1e293b; --text-muted:#94a3b8; --modal-bg:#1e293b; --sidebar-bg:#0b1120; }
-  body.light { --bg:#f8fafc; --text:#0f172a; --header-bg:rgba(248,250,252,.98); --bubble-user:#4f46e5; --bubble-ai:#ffffff; --border:#e2e8f0; --input-bg:#f1f5f9; --text-muted:#64748b; --modal-bg:#ffffff; --sidebar-bg:#f1f5f9; }
-  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  html, body { height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); transition:background .3s,color .3s; }
-  button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
-  input, textarea, select { font-family:inherit; font-size:16px; }
-
-  #app { display:flex; height:100dvh; width:100%; position:relative; }
-  #sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; z-index: 60; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-  #sidebar.open { transform: translateX(0); }
-  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .new-chat-btn { width: 100%; background: var(--bubble-user); color: white; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .new-chat-btn:active { opacity: 0.8; }
-  .close-sidebar { display: block; width: 32px; height: 32px; border-radius: 8px; align-items: center; justify-content: center; color: var(--text-muted); }
-  .close-sidebar:active { background: var(--border); }
-  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-  .history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); text-align: left; display: flex; align-items: center; gap: 10px; transition: background 0.15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .history-item:active, .history-item.active { background: var(--border); }
-  .history-item i { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
-  .history-item .del-hist { margin-left: auto; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
-  .history-item .del-hist:active { color: #ef4444; }
-
-  #main { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
-  header { height: 60px; background: var(--header-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 50; }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
-  .menu-btn:active { background: var(--border); }
-  .logo-small { width: 32px; height: 32px; flex:none; background:linear-gradient(135deg,#6366f1,#a855f7); border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; }
-  .title { font-weight:700; font-size:17px; }
-  .model-tag { font-size:11px; color:var(--text-muted); font-weight:600; }
-  .header-btns { display:flex; gap:8px; }
-  .header-btn { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text-muted); }
-  .header-btn:active { background:var(--border); }
-
-  #errorBox { display:none; margin:10px 16px 0; padding:10px 14px; border-radius:10px; background:#450a0a; color:#fca5a5; font-size:13px; line-height:1.4; border:1px solid #ef4444; }
-  #errorBox i { margin-right:6px; }
-
-  #chatArea { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; display:flex; flex-direction:column; gap:16px; }
-  .welcome { text-align:center; padding:30px 20px; color:var(--text-muted); animation:popIn .3s ease-out; }
-  .welcome i.big { font-size:40px; color:#6366f1; margin-bottom:16px; }
-  .welcome h2 { font-size:20px; color:var(--text); margin-bottom:8px; }
-  .suggestions { display:flex; flex-direction:column; gap:10px; max-width:320px; margin:20px auto 0; }
-  .sugg-btn { background:var(--bubble-ai); border:1px solid var(--border); padding:14px; border-radius:12px; text-align:left; font-size:14px; font-weight:500; display:flex; align-items:center; gap:10px; color:var(--text); width:100%; transition:transform .1s; }
-  .sugg-btn:active { transform:scale(.97); opacity:.8; }
-
-  .msg { display:flex; flex-direction:column; max-width:85%; animation:popIn .2s ease-out; }
-  .msg.user { align-self:flex-end; align-items:flex-end; }
-  .msg.ai { align-self:flex-start; align-items:flex-start; }
-  @keyframes popIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes blink { 50% { opacity:0; } }
-  @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 80%, 100% { transform: scale(2); opacity: 0; } }
-  @keyframes pulse-dot { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
-  
-  .bubble { padding:12px 16px; border-radius:18px; font-size:15px; line-height:1.6; word-wrap:break-word; overflow-wrap:anywhere; }
-  .msg.user .bubble { background:var(--bubble-user); color:white; border-bottom-right-radius:4px; }
-  .msg.ai .bubble { background:var(--bubble-ai); color:var(--text); border:1px solid var(--border); border-bottom-left-radius:4px; }
-  .msg.error .bubble { border-color:#ef4444; background:#450a0a; color:#fca5a5; }
-  .bubble strong { font-weight:700; }
-  .bubble p { margin-bottom:8px; } .bubble p:last-child { margin-bottom:0; }
-  .bubble ul, .bubble ol { margin-left:20px; margin-bottom:8px; }
-  .bubble code { background:rgba(0,0,0,.3); padding:2px 4px; border-radius:4px; font-family:monospace; font-size:13px; }
-  .retry { margin-top:8px; display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:700; color:#f59e0b; border:1px solid rgba(245,158,11,.5); background:rgba(245,158,11,.1); }
-
-  .thinking-box {
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    border-left: 3px solid #6366f1;
-    border-radius: 10px;
-    margin: 0 0 12px 0;
-    overflow: hidden;
-  }
-  .thinking-header {
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #818cf8;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    user-select: none;
-    background: rgba(99, 102, 241, 0.05);
-  }
-  .thinking-header:hover { background: rgba(99, 102, 241, 0.12); }
-  .thinking-header i { font-size: 14px; transition: transform 0.3s; }
-  .thinking-box.open .thinking-header i { transform: rotate(90deg); }
-  .thinking-content {
-    padding: 0 14px 14px 14px;
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.6;
-    border-top: 1px solid rgba(99, 102, 241, 0.15);
-    margin-top: 0;
-    padding-top: 12px;
-    font-style: italic;
-    display: none;
-  }
-  .thinking-box.open .thinking-content { display: block; }
-
-  #inputArea { background:var(--header-bg); backdrop-filter:blur(10px); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; z-index:50; }
-  .search-toggle { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:600; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
-  .toggle-switch { position:relative; width:44px; height:24px; display:inline-block; }
-  .toggle-switch input { opacity:0; width:0; height:0; }
-  .slider { position:absolute; cursor:pointer; inset:0; background-color:var(--border); transition:.3s; border-radius:24px; }
-  .slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background-color:white; transition:.3s; border-radius:50%; }
-  input:checked + .slider { background-color:#4f46e5; }
-  input:checked + .slider:before { transform:translateX(20px); }
-  .input-row { display:flex; gap:10px; align-items:flex-end; }
-  .input-wrap { flex:1; background:var(--input-bg); border-radius:24px; border:1px solid var(--border); padding:4px 4px 4px 16px; display:flex; align-items:center; }
-  .input-wrap:focus-within { border-color:#4f46e5; }
-  #userInput { flex:1; background:transparent; border:none; padding:10px 0; resize:none; max-height:120px; outline:none; color:var(--text); }
-  #sendBtn { width:44px; height:44px; border-radius:50%; background:#4f46e5; color:white; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-  #sendBtn:active { transform:scale(.9); }
-  #sendBtn:disabled { opacity:.5; }
-
-  #settingsModal { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.7); display:none; align-items:flex-end; justify-content:center; }
-  #settingsModal.open { display:flex; }
-  .modal-content { width:100%; background:var(--modal-bg); border-radius:20px 20px 0 0; padding:20px; max-height:80vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:calc(20px + env(safe-area-inset-bottom)); animation:slideUp .3s ease-out; }
-  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-  .modal-header h2 { font-size:18px; font-weight:700; color:var(--text); }
-  .close-btn { width:32px; height:32px; border-radius:50%; background:var(--border); display:flex; align-items:center; justify-content:center; color:var(--text); }
-  .setting-group { margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:20px; }
-  .setting-group:last-child { border-bottom:none; }
-  .setting-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; letter-spacing:.5px; }
-  .setting-input { width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; padding:12px; font-size:15px; outline:none; color:var(--text); }
-  .setting-input:focus { border-color:#4f46e5; }
-  textarea.setting-input { min-height:80px; resize:vertical; }
-  select.setting-input { appearance:none; -webkit-appearance:none; }
-  .btn-primary { width:100%; background:#4f46e5; color:white; padding:14px; border-radius:12px; font-weight:600; font-size:15px; margin-top:10px; }
-  .btn-primary:active { opacity:.8; }
-  .list-item { display:flex; justify-content:space-between; align-items:center; background:var(--input-bg); padding:12px; border-radius:10px; margin-bottom:8px; font-size:14px; color:var(--text); }
-  .delete-item { color:#ef4444; padding:8px; }
-  
-  #contextMenu { position:fixed; z-index:200; background:var(--modal-bg); border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.5); overflow:hidden; display:none; border:1px solid var(--border); min-width:160px; }
-  .ctx-btn { width:100%; text-align:left; padding:14px 16px; font-size:14px; font-weight:500; display:flex; align-items:center; gap:10px; color:var(--text); }
-  .ctx-btn:active { background:var(--border); }
-  .ctx-btn.danger { color:#ef4444; }
-  #toast { position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-20px); background:var(--text); color:var(--bg); padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:.3s; z-index:300; }
-  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-
-  @media (min-width: 768px) {
-    #sidebar { position: relative; transform: translateX(0); }
-    .close-sidebar { display: none; }
-    .menu-btn { display: none; }
-  }
+:500;display:flex;align-items:center;gap<style>
+:root{--bg:#0f1:10px;color:var(--text);width:72a;--text:#f8fafc;100%;transition:transform .1s}
+--header-bg:rgba(15,23,42,.98);--bubble-user:#4f.sugg-btn:active{transform:scale(.9746e5;--bubble-ai:#1e);opacity:.8}
+.msg{display:flex;flex293b;--border:#3341-direction:column;max-width:85%;animation:popIn .2s ease-out}
+.msg.user{55;--input-bg:#1e293b;--text-muted:#94a3b8align-self:flex-end;align-items:flex-end}
+.msg;--modal-bg:#1e293b;.ai{align-self:flex-start;align-items:flex-start}--sidebar-bg:#0b1120}
+@keyframes popIn{from{opacity:0
+body.light{--bg:#f8fafc;;transform:translateY(10px)}to{--text:#0f172a;--headeropacity:1;transform:translateY(0)}}
+-bg:rgba(248,250,@keyframes blink{50%{opacity:0252,.98);--bubble-user:#4}}
+@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}80f46e5;--bubble-ai:#fff%,100%{transform:scale(2);;--border:#e2e8f0;--input-bg:#f1f5f9;--textopacity:0}}
+@keyframes pulse-dot{0-muted:#64748b;--modal-bg%{transform:scale(.8);opacity:#fff;--sidebar-bg:#f1f5f:.5}50%{transform:scale(19}
+*{box-sizing:border-box;margin:0.2);opacity:1}100%{;padding:0;-webkit-tap-highlight-color:transparent}transform:scale(.8);opacity:.5}}
+.bubble{padding:12px 16px;border
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe-radius:18px;font-size:15px;line UI",Roboto,sans-serif;background:var(--bg);-height:1.6;word-wrap:break-word;color:var(--text);transition:background .3soverflow-wrap:anywhere}
+.msg.user .bubble{,color .3s}
+button{font-family:background:var(--bubble-user);color:#fff;border-bottom-right-radius:4px}
+.msg.ai .bubble{inherit;cursor:pointer;border:none;background:none;color:inherit}background:var(--bubble-ai);color:var(--
+input,textarea,select{font-family:inherit;fonttext);border:1px solid var(--border);border-size:16px}
+#app{display:flex-bottom-left-radius:4px}
+.msg.error .bubble{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+.bubble strong{font-weight:700}
+.bubble p{margin-bottom:8px;height:100dvh;width:100%;position:relative}
+#sidebar{width:280px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;position:absolute;top:0;bottom:0}.bubble p:last-child{margin-bottom:0}
+;left:0;z-index:60;transform:translate.bubble ul,.bubble ol{margin-left:20X(-100%);transition:transform .3s cubic-bezier(.16,1,.3,px;margin-bottom:8px}
+.bubble code{1)}
+#sidebar.open{transform:translateX(background:rgba(0,0,0,.3);0)}
+.sidebar-header{padding:16px;borderpadding:2px 4px;border-radius:4px;font-family:monospace;font-size:13px}-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.new
+.retry{margin-top:8px;display:inline-flex;-chat-btn{width:100%;background:varalign-items:center;gap:6px;padding:8px(--bubble-user);color:#fff;padding:10px 12px;border-radius:10px;font-size;border-radius:10px;font-weight:600:13px;font-weight:700;color:#;font-size:14px;display:flex;align-items:centerf59e0b;border:1px solid rgba(245,158,11,.;justify-content:center;gap:8px}
+.new5);background:rgba(245,15-chat-btn:active{opacity:.8}
+.close8,11,.1)}
+.thinking-box{-sidebar{display:block;width:32px;height:background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.32px;border-radius:8px;align-items:center;justify-content:center;color:var(--text-muted)}
+.close-sidebar:active{background:var(--border)}
+.history-list{flex:1;overflow-y:auto;padding:25);border-left:3px solid #6312px;display:flex;flex-direction:column;gap66f1;border-radius:10px;margin::4px}
+.history-item{padding:100 0 12px 0;overflow:hiddenpx 12px;border-radius:8px;font-size}
+.thinking-header{padding:10px:14px;color:var(--text);text-align 14px;font-size:13px;font-weight:left;display:flex;align-items:center;gap:10:600;color:#818cf8;cursor:pointer;display:flex;align-items:center;gap:1px;transition:background .15s;overflow:hidden0px;user-select:none;background:rgba(99,102,241,.05)}
+.thinking-header:hover{background:rgba(99,102,241,.1;white-space:nowrap;text-overflow:ellipsis}
+.history-item:active,.history-item.active{background:var(--border)}
+.history-item i{color:var(--text-muted);font-size:14px;flex-shrink:0}
+.history-item .del-hist{2)}
+.thinking-header i{font-size:1margin-left:auto;color:var(--text-muted);padding:4px;transition:transform .3s}
+.thinking-box.open .thinking-header i{transform:rotate(90deg)}
+.thinking-content{padding:0 14px 14px 14px;font-size:13px;color:var(--text-muted);line-height:1.6;border-top:1px solid rgba(99,102,244px;flex-shrink:0}
+.history-item .del-hist:active{color:#ef4444}
+#main{flex:1;display:flex;flex-direction:column;width:100%;position:relative}
+header{height:60px;background:var(--header-bg);backdrop-filter:blur(11,.15);margin-top:0;padding-top:0px);border-bottom:1px solid var(--border12px;font-style:italic;display:none}
+.th);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrinkinking-box.open .thinking-content{display:block}
+#:0;z-index:50}
+.brand{displayinputArea{background:var(--header-bg);backdrop-filter:blur(10px);border-top:1:flex;align-items:center;gap:12px;px solid var(--border);padding:12px min-width:0}
+.menu-btn{width:416px;padding-bottom:calc(12px + env(safe-area-inset-bottom));flex-shrink:0;z-index:50}
+.search-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;font0px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text);margin-right:4px}
+.menu-btn:active{background:var(--border)}
+.logo-small{width:3-weight:600;color:var(--text-muted);2px;height:32px;flex:none;background:flex-wrap:wrap;gap:8px}
+.toggle-switch{position:relative;width:44px;height:24px;display:inline-block}
+.toggle-switch input{opacitylinear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify:0;width:0;height:0}
+.slider{-content:center;color:#fff;font-size:16px}position:absolute;cursor:pointer;inset:0;background-color:var(--border);transition:.3s;border-radius:24px}
+.slider:before{position:absolute;content
+.title{font-weight:700;font-size:17px}
+.model-tag{font-size:11px;color:var(--text-muted);font-weight:600}
+.header-btns{display:flex;:"";height:18px;width:18pxgap:8px}
+.header-btn{width:4;left:3px;bottom:3px;background-color:#0px;height:40px;border-radius:10fff;transition:.3s;border-radius:50%}
+input:checked+.slider{background-colorpx;display:flex;align-items:center;justify-content:center;font:#4f46e5}
+input:checked+.slider:before{transform:translateX(20px)}-size:18px;color:var(--text-muted)}
+.header-btn:active{background:var(--border)}
+.input-row{display:flex;gap:10px
+#errorBox{display:none;margin:10;align-items:flex-end}
+.input-wrap{flex:px 16px 0;padding:10px1;background:var(--input-bg);border-radius:24px;border:1px solid var(--border);padding:4px 4px 4px 16px;display:flex;align-items:center}
+.input-wrap:focus 14px;border-radius:10px;background:#450a0a;color:#fca5a5;font-size:13px;line-height:1.4;border:1px solid #ef4444-within{border-color:#4f46e5}
+#errorBox i{margin-right:6px}
+#userInput{flex:1;background}
+#chatArea{flex:1;overflow-y:transparent;border:none;padding:10px 0;:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:resize:none;max-height:120px;outline16px}
+.welcome{text-align:center:none;color:var(--text)}
+#sendBtn{width:44px;height:44px;border-radius;padding:30px 20px;color:var:50%;background:#4f46e5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+#sendBtn:active{transform:scale(.9)}
+#sendBtn:disabled{opacity:.5}
+#settingsModal{position:fixed;inset:0;z-index:100;background:rgba(--text-muted);animation:popIn .3s ease-out}
+.welcome i.big{font-size:40px;color:#6366f1;margin-bottom:16px}
+.welcome h2{font-size:20px;color:var(--text);margin-bottom:8px}
+.suggestions{display:flex;flex-direction:column;gap:10px;(0,0,0,.7);display:none;max-width:320px;margin:20pxalign-items:flex-end;justify-content:center}
+#settingsModal.open{display:flex}
+.modal-content{width:100%;background:var(--modal-bg);border-radius:20px 20px 0 0;padding:20px;max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom));animation:slideUp .3s ease-out}
+@keyframes slideUp{from{transform:translateY(100% auto 0}
+.sugg-btn{background:var(--bubble-ai);border:1px solid var(--border);padding:14px;border-radius:12px;text-align:left;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;color:var(--text);width:100%;transition:transform .1s}
+.sugg-btn:active{transform:scale(.97);opacity:.8}
+.msg{display:flex;flex-direction:column;max-width:85%;animation:popIn .2s ease-out}
+.msg.user{)}to{transform:translateY(0)}}
+.modalalign-self:flex-end;align-items:flex-end}
+.msg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-header.ai{align-self:flex-start;align-items:flex-start} h2{font-size:18px;font-weight:
+@keyframes popIn{from{opacity:0700;color:var(--text)}
+.close;transform:translateY(10px)}to{-btn{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:opacity:1;transform:translateY(0)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes pulse-ring{0%{var(--text)}
+.setting-group{margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:20px}
+.setting-group:last-child{border-bottom:none}
+.setting-label{font-size:transform:scale(.8);opacity:.5}80%,100%{transform:scale(2);opacity:0}}
+@keyframes pulse-dot{0%{transform:scale(.8);opacity12px;font-weight:700;color:var:.5}50%{transform:scale(1(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:.5px}
+.setting-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius.2);opacity:1}100%{transform:scale(.8);opacity:.5}}
+.bubble{padding:12px 16px;border-radius:18px;font-size:15px;line:10px;padding:12px;font-size:-height:1.6;word-wrap:break-word;15px;outline:none;color:var(--text)}
+.setting-input:focus{border-color:#4f46e5}
+textarea.setting-input{min-height:80px;resize:vertical}
+select.setting-input{appearance:none;-webkit-appearance:none}
+.btn-primary{overflow-wrap:anywhere}
+.msg.user .bubble{background:var(--bubble-user);color:#fff;border-bottom-right-radius:4px}
+.msg.ai .bubble{background:var(--bubble-ai);color:var(--width:100%;background:#4f46text);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg.error .bubblee5;color:#fff;padding:14px;border{border-color:#ef4444;background:#450a0a;color:#fca5a5-radius:12px;font-weight:600;font}
+.bubble strong{font-weight:70-size:15px;margin-top:10px}
+.btn-primary:active{opacity:.8}
+.list0}
+.bubble p{margin-bottom:8px}.bubble p:last-child{margin-bottom:0}
+-item{display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);padding:1.bubble ul,.bubble ol{margin-left:202px;border-radius:10px;margin-bottom:8px;margin-bottom:8px}
+.bubble code{px;font-size:14px;color:var(--textbackground:rgba(0,0,0,.3);padding:2px 4px;border-radius:4px)}
+.delete-item{color:#ef444;font-family:monospace;font-size:13px}4;padding:8px}
+#contextMenu{position:fixed;z-index:200;background:var(--modal-bg);border-radius:12px;box-shadow:0 10px 25px rgba
+.retry{margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;font-size(0,0,0,.5);overflow:hidden;display:13px;font-weight:700;color:#f59e0b;border:1px solid rgba:none;border:1px solid var(--border);min-width:160px}
+.ctx-btn{width:(245,158,11,.100%;text-align:left;padding:14px5);background:rgba(245,158,11,.1)}
+.thinking-box{ 16px;font-size:14px;font-weightbackground:rgba(99,102,2:500;display:flex;align-items:center;gap:10px;color:var(--text)}
+.ctx-btn:active{background:var(--border)}
+.ctx-btn.danger{color:#ef4444}
+#toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--text);color:var(--bg);padding:10px41,.08);border:1px solid rgba(99,102,241,.25);border-left:3px solid #6366f1;border-radius:10px;margin:0 0 12px 0;overflow:hidden}
+.thinking-header{padding:10px 14px;font-size:13px;font-weight:600;color:#818cf8; 20px;border-radius:20px;font-size:13px;font-weight:600;opacitycursor:pointer;display:flex;align-items:center;gap:1:0;pointer-events:none;transition:.3s;z0px;user-select:none;background:rgba(9-index:300}
+#toast.show{opacity:1;transform:translateX(-50%) translateY9,102,241,.05)}
+.thinking-header:hover{background:rgba((0)}
+@media(min-width:768px99,102,241,.1){#sidebar{position:relative;transform:translateX(0)}.close-sidebar,.menu-btn{display:none}}
 </style>
 </head>
-<body>
-
+<body2)}
+.thinking-header i{font-size:14px;transition:transform .3s}
+.thinking-box.open .thinking-header i{transform:rotate(>
 <div id="app">
-  <aside id="sidebar">
-    <div class="sidebar-header">
-      <button id="newChatBtn" class="new-chat-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
-      <button id="closeSidebarBtn" class="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="historyList" class="history-list"></div>
-  </aside>
-
-  <div id="main">
-    <header>
-      <div class="brand">
-        <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
-        <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
-        <div style="min-width:0">
-          <div class="title">NeuralForge</div>
-          <div class="model-tag" id="modelTag">openai</div>
-        </div>
-      </div>
-      <div class="header-btns">
-        <button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
-        <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
-      </div>
-    </header>
-
-    <div id="errorBox"></div>
-    <div id="chatArea">
-      <div class="welcome" id="welcomeScreen">
-        <i class="fa-solid fa-sparkles big"></i>
-        <h2>How can I help?</h2>
-        <p>Long-press any message to edit, copy, or delete.</p>
-        <div class="suggestions">
-          <button class="sugg-btn" onclick="__nfQuick('What are the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
-          <button class="sugg-btn" onclick="__nfQuick('Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
-          <button class="sugg-btn" onclick="__nfQuick('Write a python function to reverse a string')"><i class="fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>
-          <button class="sugg-btn" onclick="__nfQuick('Give me 5 creative business ideas')"><i class="fa-solid fa-lightbulb" style="color:#f59e0b"></i> 5 business ideas</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="inputArea">
-      <div class="search-toggle">
-        <label style="display:flex; align-items:center; gap:8px;">
-          <label class="toggle-switch">
-            <input type="checkbox" id="webSearchToggle">
-            <span class="slider"></span>
-          </label>
-          <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
-        </label>
-      </div>
-      <form class="input-row" id="chatForm">
-        <div class="input-wrap">
-          <textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea>
-        </div>
-        <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </form>
-    </div>
-  </div>
+<90deg)}
+.thinking-content{padding:0aside id="sidebar">
+<div class="sidebar-header">
+<button id="newChatBtn" class="new-chat-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
+<button id="closeSidebarBtn" class="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
+</div> 14px 14px 14px;font-size:13px;color:var(--text-muted);line-height:1.6;border-top:1px solid rgba(99,102,241,.15);margin-top:0;padding-top:12px;font-style:italic;display:none}
+.th
+<div id="historyList" class="history-list"></inking-box.open .thinking-content{display:block}
+#div>
+</aside>
+<div id="main">inputArea{background:var(--header-bg);backdrop-filter:blur(10px);border-top:1
+<header>
+<div class="brand">
+<button classpx solid var(--border);padding:12px ="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+<div class="logo-small"><i class="fa-solid fa-brain16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));flex-shrink:"></i></div>
+<div style="min-width0;z-index:50}
+.search-toggle{display:0">
+<div class="title">NeuralForge</div>
+<div class="model-tag" id="modelTag">openai</div>
+</div>:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;font
 </div>
-
+<div class="header-btns">-weight:600;color:var(--text-muted);
+<button class="header-btn" id="themeBtn"><flex-wrap:wrap;gap:8px}
+.toggle-switch{position:relative;width:44px;height:2i class="fa-solid fa-sun" id="theme4px;display:inline-block}
+.toggle-switch input{opacity:0;width:0;height:0}
+.slider{Icon"></i></button>
+<button class="header-btnposition:absolute;cursor:pointer;inset:0;background-color" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+</div>
+:var(--border);transition:.3s;border-radius:</header>
+<div id="errorBox"></div>
+<div id="chatArea">
+<div class="welcome" id="welcomeScreen">
+<i class="fa-solid24px}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background-color:# fa-sparkles big"></i>
+<h2>fff;transition:.3s;border-radius:50%How can I help?</h2>
+<p>Long-press any message to edit, copy, or delete.</}
+input:checked+.slider{background-color:#4f46e5}
+input:checked+.slider:before{transform:translateX(20px)}p>
+<div class="suggestions">
+<button class
+.input-row{display:flex;gap:10px="sugg-btn" onclick="__nfQuick('What are;align-items:flex-end}
+.input-wrap{flex: the latest AI news?')"><i class="fa-solid fa-globe" style="color:#f59e1;background:var(--input-bg);border-radius:20b"></i> Latest AI news?</button>
+4px;border:1px solid var(--border);padding<button class="sugg-btn" onclick="__nfQuick(':4px 4px 4px 16Explain quantum computing simply')"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
+<button class="sugg-btn" onclick="__nfQuick('Writepx;display:flex;align-items:center}
+.input-wrap:focus-within{border-color:#4f46e5}
+#userInput{flex:1;background:transparent;border:none;padding:10px 0;resize:none;max-height:120px;outline a python function to reverse a string')"><i class=":none;color:var(--text)}
+#sendBtn{fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>width:44px;height:44px;border-radius
+<button class="sugg-btn" onclick="__nfQuick:50%;background:#4f46e5('Give me 5 creative business ideas')"><i class="fa-solid fa-lightbulb" style="color:#;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:f59e0b"></i> 5 business0}
+#sendBtn:active{transform:scale ideas</button>
+</div>
+</div>(.9)}
+#sendBtn:disabled{opacity:.5}
+#settingsModal{position:fixed;in
+</div>
+<div id="inputArea">
+set:0;z-index:100;background:rgba<div class="search-toggle">
+<label style="display:flex;align-items:center;gap:8px">
+<label(0,0,0,.7);display:none;align-items:flex-end;justify-content:center}
+# class="toggle-switch"><input type="checkbox" id="settingsModal.open{display:flex}
+.modal-content{widthwebSearchToggle"><span class="slider"></span></label>
+<span><i class="fa-solid fa-g:100%;background:var(--modal-bg);lobe" style="color:#4f46e5border-radius:20px 20px 0 0;padding:20px;max-height:"></i> Live Web Search</span>
+</label>
+</div>
+<form class="input-row80vh;overflow-y:auto;-webkit-overflow-scroll" id="chatForm">
+<div class="input-wraping:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom));animation:slideUp ."><textarea id="userInput" placeholder="Message NeuralForge3s ease-out}
+@keyframes slideUp..." rows="1"></textarea></div>
+<button type{from{transform:translateY(100%="submit" id="sendBtn"><i class="fa)}to{transform:translateY(0)}}
+.modal-solid fa-paper-plane"></i></button>
+</form>
+</div>
+</div>
+</-header{display:flex;justify-content:space-between;aligndiv>
 <div id="settingsModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Settings</h2>
-      <button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="setting-group">
-      <div class="setting-label">AI Model & Intelligence</div>
-      <select class="setting-input" id="modelSelect">
-        <option value="openai">⚡ Fast & balanced (openai)</option>
-        <option value="openai-large">🧠 Smartest, slower (openai-large)</option>
-        <option value="deepseek">🔷 DeepSeek (advanced reasoning)</option>
-        <option value="llama">🦙 Meta Llama</option>
-        <option value="mistral">🌪️ Mistral</option>
-        <option value="qwen-coder">💻 Qwen Coder (best for code)</option>
-      </select>
-      <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; font-weight:600; color:var(--text);">
-        <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
-        Smart Mode (Step-by-step reasoning)
-      </label>
-      <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Smart Mode forces the AI to "think" before answering. Its thinking steps will be hidden in a collapsible menu.</p>
-    </div>
-    <div class="setting-group">
-      <div class="setting-label">Welcome Screen Questions</div>
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1;">
-        <button id="addQuestionBtn" style="background:#4f46e5; color:white; padding:0 16px; border-radius:10px;"><i class="fa-solid fa-plus"></i></button>
-      </div>
-      <div id="questionList"></div>
-    </div>
-    <div class="setting-group">
-      <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. You MUST follow these rules:
+<div class-items:center;margin-bottom:20px}
+.modal-header h2{font-size:18px;font-weight:="modal-content">
+<div class="modal-header">
+700;color:var(--text)}
+.close<h2>Settings</h2>
+<button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="setting-group">
+<div class="setting-label">AI Model & Intelligence</div>
+<select class="setting-input" id="modelSelect">
+<option value="openai">⚡ Fast & balanced (openai)</option>
+<option value="openai-large">🧠 Smartest, slower (openai-large)</option>
+<option value="deepseek">🔷 DeepSeek (advanced reasoning)</option>
+<option value-btn{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text)}
+.setting-group{margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:20px}
+.setting-group:last-child{border-bottom:none}
+.setting-label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8="llama">🦙 Meta Llama</optionpx;letter-spacing:.5px}
+.setting-input{>
+<option value="mistral">🌪️width:100%;background:var(--input-bg Mistral</option>
+<option value="qwen-c);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:oder">💻 Qwen Coder (best for code15px;outline:none;color:var(--text)})</option>
+</select>
+<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight
+.setting-input:focus{border-color:#4f46:600;color:var(--text)">
+<label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
+Smart Mode (Step-by-step reasoning)
+</label>
+<p style="font-size:12px;color:var(--text-muted);margin-top:8px">Smart Mode forces the AI to "think" before answering. Its thinking steps will be hidden in a collapsible menu.</p>
+</div>
+<div class="settinge5}
+textarea.setting-input{min-height:80px;resize:vertical}
+select.setting-input{appearance:none;-webkit-appearance:none}
+.btn-primary{width:100%;background:#4f46e5;color:#fff;padding:14px;border-radius:12px;font-weight:600;font-size:15px;margin-top:10px}
+.btn-primary:active{opacity:.8}
+.list-item{display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);padding:12px;border-radius:10px;margin-bottom:8-group">
+<div class="setting-label">Welcome Screen Questionspx;font-size:14px;color:var(--text</div>
+<div style="display:flex;gap:)}
+.delete-item{color:#ef4448px;margin-bottom:12px">
+<input type4;padding:8px}
+#contextMenu{position="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space":fixed;z-index:200;background:var(--modal-bg);border-radius:12px;box style="flex:1">
+<button id="addQuestion-shadow:0 10px 25px rgbaBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border(0,0,0,.5);overflow:hidden;display-radius:10px"><i class="fa-solid fa:none;border:1px solid var(--border);min-width:160px}
+.ctx-btn{width:-plus"></i></button>
+</div>
+<div100%;text-align:left;padding:14px id="questionList"></div>
+</div>
+<div class="setting-group">
+<div class="setting-label 16px;font-size:14px;font-weight:500;display:flex;align-items:center;gap">System Behavior</div>
+<textarea class="setting-input:10px;color:var(--text)}
+.ctx" id="sysPrompt">You are NeuralForge, an expert AI assistant. You MUST follow these rules:
 
-CRITICAL LANGUAGE RULES:
+CR-btn:active{background:var(--border)}
+.ctx-btn.danger{color:#ef4444}ITICAL LANGUAGE RULES:
 - Use PERFECT English grammar, spelling, and punctuation
-- Write complete sentences with proper subject-verb agreement
-- Never use broken English like "I't have" or "an built"
-- Always use correct articles (a, an, the)
-- Proofread your response before sending
+- Write complete sentences with
+#toast{position:fixed;top:80px;left:50%;transform:translateX(-50 proper subject-verb agreement
+- Never use broken English like%) translateY(-20px);background:var(--text "I't have" or "an built"
+-);color:var(--bg);padding:10px Always use correct articles (a, an, the)
+ 20px;border-radius:20px;font-size- Proofread your response before sending
 
-FORMATTING RULES:
-- Format for mobile: short paragraphs, clear headings, bullet points
+FORMATTING RULE:13px;font-weight:600;opacityS:
+- Format for mobile: short paragraphs, clear:0;pointer-events:none;transition:.3s;z headings, bullet points
 - Use bold for key terms
-- For code: always use fenced code blocks with language tags
+-index:300}
+#toast.show{opacity- For code: always use fenced code blocks with language:1;transform:translateX(-50%) translateY tags
 - Be concise but complete
 
 THINKING RULES (Smart Mode only):
-- When Smart Mode is ON, you MUST write your reasoning between [[THINK]] and [[/THINK]] markers
+- When Smart Mode is(0)}
+@media(min-width:768px){#sidebar{position:relative;transform:translateX( ON, you MUST write your reasoning between [[THINK]]0)}.close-sidebar,.menu-btn{display and [[/THINK]] markers
+- Example: [[:none}}
+</style>
+</head>
+<bodyTHINK]] The user is asking about X. I should>
+<div id="app">
+< consider Y... [[/THINK]]
+- After [[/THINK]], write your final answer
+- NEVER useaside id="sidebar">
+<div class="sidebar-header"> HTML tags like &lt;thinking&gt; or &lt
+<button id="newChatBtn" class="new-chat;details&gt;
+- The [[THINK-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
+<button id="closeSidebar]] marker is NOT visible to the user</textarea>
+<button class="btn-primary" id="saveBehaviorBtn">Btn" class="close-sidebar"><i class="fa-solidSave Behavior</button>
+</div>
+<div class="setting-group">
+<div class="setting-label"> fa-xmark"></i></button>
+</div>
+<div id="historyList" class="history-list"></div>
+</aside>
+<div id="main">Custom Memory</div>
+<div style="display:flex
+<header>
+<div class="brand">
+<button class;gap:8px;margin-bottom:12px">="menu-btn" id="menuBtn"><i class="
+<input type="text" class="setting-input" idfa-solid fa-bars"></i></button>
+<div class="memInput" placeholder="e.g. My name is Alex" style="flex:1">
+<button id="="logo-small"><i class="fa-solid fa-brainaddMemBtn" style="background:#4f46"></i></div>
+<div style="min-widthe5;color:#fff;padding:0 16px:0">
+<div class="title">NeuralForge;border-radius:10px"><i class="fa</div>
+<div class="model-tag" id="-solid fa-plus"></i></button>
+</div>modelTag">openai</div>
+</div>
+<div id="memoryList"></div>
+</div
+</div>
+<div class="header-btns">
+<button class="header-btn" id="themeBtn"><>
+</div>
+</div>
+<div idi class="fa-solid fa-sun" id="theme="contextMenu">
+<button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-penIcon"></i></button>
+<button class="header-btn" id="settingsBtn"><i class="fa-solid fa"></i> Edit & Resend</button>
+<button-sliders"></i></button>
+</div>
+ class="ctx-btn" id="ctxRegen"><i</header>
+<div id="errorBox"></div> class="fa-solid fa-rotate"></i> Regenerate
+<div id="chatArea">
+<div class="welcome</button>
+<button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i" id="welcomeScreen">
+<i class="fa-solid fa-sparkles big"></i>
+<h2>> Copy Text</button>
+<button class="ctx-btnHow can I help?</h2>
+<p>Long danger" id="ctxDelete"><i class="fa-solid-press any message to edit, copy, or delete.</ fa-trash"></i> Delete</button>
+</divp>
+<div class="suggestions">
+<button class>
+<div id="toast">Notification</div>="sugg-btn" onclick="__nfQuick('What are
+<script>
+(function(){
+'use strict';
+function the latest AI news?')"><i class="fa-solid safe(fn,def){try{return fn()}catch(e){ fa-globe" style="color:#f59ereturn def}}
+function lsGet(k,def){return safe(function(){var v=localStorage.getItem(k);return v0b"></i> Latest AI news?</button>
+<button class="sugg-btn" onclick="__nfQuick('===null?def:v},def)}
+function lsSetExplain quantum computing simply')"><i class="fa-solid(k,v){safe(function(){localStorage.setItem(k,v)},null fa-atom" style="color:#8b5cf)}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/&/6"></i> Explain quantum computing</button>
+<buttong,'&amp;').replace(/</g,'& class="sugg-btn" onclick="__nfQuick('Write a python function to reverse a string')"><i class="lt;').replace(/>/g,'&gt;')}
+function jsStr(s){return String(s).fa-solid fa-code" style="color:#10breplace(/\\/g,'\\\\').replace(/'/g,"981"></i> Write Python code</button>\\'")}
+
+var DEFAULT_SYS='You are NeuralForge
+<button class="sugg-btn" onclick="__nfQuick, an expert AI assistant. You MUST follow these rules:\('Give me 5 creative business ideas')"><i class="fa-solid fa-lightbulb" style="color:#n\nCRITICAL LANGUAGE RULES:\n- Use PERFECT English grammar, spelling, and punctuation\n- Write complete sentences with proper subject-verb agreement\n- Never use broken English like "I\'t have" or "an builtf59e0b"></i> 5 business ideas</button>
+</div>
+</div>
+</div>
+<div id="inputArea">
+<div class="search-toggle">
+<label style="display:flex"\n- Always use correct articles (a, an,;align-items:center;gap:8px">
+<label the)\n- Proofread your response before sending\n\nFORMATTING RULES:\n- Format for mobile: class="toggle-switch"><input type="checkbox" id=" short paragraphs, clear headings, bullet points\n- Use bold for key terms\n- For code: always use fenced codewebSearchToggle"><span class="slider"></span></label>
+<span><i class="fa-solid fa-globe" style="color:#4f46e5 blocks with language tags\n- Be concise but complete\n\nTHINKING RULES (Smart Mode only):\n-"></i> Live Web Search</span>
+</label>
+</div>
+<form class="input-row When Smart Mode is ON, you MUST write your reasoning between" id="chatForm">
+<div class="input-wrap [[THINK]] and [[/THINK]] markers\n"><textarea id="userInput" placeholder="Message NeuralForge- Example: [[THINK]] The user is asking about X. I should consider Y... [[/THINK]]..." rows="1"></textarea></div>
+<button type\n- After [[/THINK]], write your final="submit" id="sendBtn"><i class="fa answer\n- NEVER use HTML tags like <thinking> or-solid fa-paper-plane"></i></button>
+</ <details>\n- The [[THINK]] marker isform>
+</div>
+</div>
+</div>
+<div id="settingsModal">
+<div class NOT visible to the user';
+var DEFAULT_QS=[="modal-content">
+<div class="modal-header">
+{text:'What are the latest AI news<h2>Settings</h2>
+<button class="?',icon:'fa-globe',color:'#f59e0b'},{text:'Explain quantum computing simplyclose-btn" id="closeSettings"><i class="fa',icon:'fa-atom',color:'#8b5-solid fa-xmark"></i></button>
+</divcf6'},{text:'Write a python function to reverse>
+<div class="setting-group">
+<div class=" a string',icon:'fa-code',color:'#10setting-label">AI Model & Intelligence</div>
+<selectb981'}];
+
+var histories=safe(function class="setting-input" id="modelSelect">
+<option(){var a=JSON.parse(lsGet('nf_histories value="openai">⚡ Fast & balanced (','[]'));return Array.isArray(a)?a:[]},openai)</option>
+<option value="openai-large[]);
+var currentChatId=lsGet('nf">🧠 Smartest, slower (openai-large_current_chat','')||'';
+var memory=safe)</option>
+<option value="deepseek">🔷 DeepSeek (advanced reasoning)</option>
+<option value(function(){var a=JSON.parse(lsGet('nf_memory="llama">🦙 Meta Llama</option','[]'));return Array.isArray(a)?a:[]},>
+<option value="mistral">🌪️[]);
+var customQuestions=safe(function(){var a Mistral</option>
+<option value="qwen-c=JSON.parse(lsGet('nf_questions','null'));returnoder">💻 Qwen Coder (best for code(Array.isArray(a)&&a.length)?a:DEFAULT_Q)</option>
+</select>
+<label style="displayS.slice()},DEFAULT_QS.slice());
+var sysPrompt:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight=lsGet('nf_sys',DEFAULT_SYS)||DEFAULT_SYS:600;color:var(--text)">
+<label;
+var currentModel=lsGet('nf_model',' class="toggle-switch"><input type="checkbox" id="openai')||'openai';
+var smartModesmartMode"><span class="slider"></span></label>=lsGet('nf_smart','0')==='1';
+Smart Mode (Step-by-step reasoning)
+</
+
+var isGenerating=false;
+var selectedlabel>
+<p style="font-size:12pxMsgEl=null;
+var longPressTimer=null;
+
+function today(){try{return new Date().toDateString()};color:var(--text-muted);margin-top:8px">Smart Mode forces the AI to "think" before answeringcatch(e){return''}}
+function getMessages(){var chat=histories.find(function(h){return h.id===. Its thinking steps will be hidden in a collapsible menu.</p>
+</div>
+<div class="settingcurrentChatId});return chat?chat.messages:[]}-group">
+<div class="setting-label">Welcome Screen Questions
+function setMessages(msgs){var chat=histories.find(function(h){return h.id===currentChatId});if(chat){chat.messages=msgs;if(msgs.length>0&&!chat.title)chat.title=msgs[0].content.substring(0,30)+(msgs[0].content.length>30?'...':'');lsSet('nf_histories',JSON.stringify(histories));renderSidebar()}}
+function createNewChat(){var id='chat_'+Date.now();histories.unshift({id:id,title:'New Chat',messages:[]});currentChatId=id;lsSet('nf_current_chat',currentChatId);lsSet('nf_histories',JSON.stringify(histories));</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1">
+<button id="addQuestionBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div id="questionList"></div>
+</div>
+<div class="setting-group">
+<div class="setting-labelrenderSidebar();renderWelcomeScreen();if(window.innerWidth<7">System Behavior</div>
+<textarea class="setting-input68)$('sidebar').classList.remove('open')}" id="sysPrompt">You are NeuralForge, an
+
+function boot(){
+try{
+if(!currentChatId||!histories.find(function(h){return h.id expert AI assistant. You MUST follow these rules:
+
+CRITICAL LANGUAGE RULES:
+- Use PERFECT English===currentChatId}))createNewChat();
+var is grammar, spelling, and punctuation
+- Write complete sentences withDark=lsGet('nf_theme','dark')! proper subject-verb agreement
+- Never use broken English like=='light';
+function applyTheme(){if(isDark){ "I't have" or "an built"
+-document.body.classList.remove('light');$('themeIcon').className Always use correct articles (a, an, the)
+- Proofread your response before sending
+
+FORMATTING RULE='fa-solid fa-sun'}else{document.bodyS:
+- Format for mobile: short paragraphs, clear.classList.add('light');$('themeIcon').className=' headings, bullet points
+- Use bold for key terms
+fa-solid fa-moon'}}
+applyTheme();
+- For code: always use fenced code blocks with language$('themeBtn').onclick=function(){isDark=!isDark;lsSet('nf_theme',isDark?'dark tags
+- Be concise but complete
+
+THINKING RULE':'light');applyTheme()};
+$('modelSelect').S (Smart Mode only):
+- When Smart Mode isvalue=currentModel;
+$('smartMode').checked=smartMode;
+$('modelTag').textContent=currentModel+(smartMode?' +smart':'');
+$('modelSelect').onchange=function(){currentModel=$('modelSelect').value;lsSet('nf_model',currentModel);$(' ON, you MUST write your reasoning between [[THINK]] and [[/THINK]] markers
 - Example: [[THINK]] The user is asking about X. I should consider Y... [[/THINK]]
 - After [[/THINK]], write your final answer
-- NEVER use HTML tags like <thinking> or <details>
-- The [[THINK]] marker is NOT visible to the user</textarea>
-      <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
-    </div>
-    <div class="setting-group">
-      <div class="setting-label">Custom Memory</div>
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1;">
-        <button id="addMemBtn" style="background:#4f46e5; color:white; padding:0 16px; border-radius:10px;"><i class="fa-solid fa-plus"></i></button>
-      </div>
-      <div id="memoryList"></div>
-    </div>
-  </div>
+- NEVER usemodelTag').textContent=currentModel+(smartMode?' +smart HTML tags like &lt;thinking&gt; or &lt':'');showToast('Model: '+currentModel)};;details&gt;
+- The [[THINK
+$('smartMode').onchange=function(){smartMode=$]] marker is NOT visible to the user</textarea>
+<button class="btn-primary" id="saveBehaviorBtn">('smartMode').checked;lsSet('nf_smart',Save Behavior</button>
 </div>
-
+<divsmartMode?'1':'0');$('modelTag').textContent class="setting-group">
+<div class="setting-label">=currentModel+(smartMode?' +smart':'');showToastCustom Memory</div>
+<div style="display:flex(smartMode?'Smart Mode ON':'Smart Mode off');gap:8px;margin-bottom:12px">};
+$('menuBtn').onclick=function(){$('sidebar').classList.add('open')};
+$('closeSidebarBtn').onclick=function(){$('sidebar').classList.remove('open')};
+$('newChatBtn').onclick
+<input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1">
+<button id="addMemBtn" style="background:#4f46=createNewChat;
+$('settingsBtn').onclick=function()e5;color:#fff;padding:0 16px{$('settingsModal').classList.add('open')};
+;border-radius:10px"><i class="fa$('closeSettings').onclick=function(){$('settingsModal-solid fa-plus"></i></button>
+</div>').classList.remove('open')};
+$('settingsModal').
+<div id="memoryList"></div>
+</divaddEventListener('click',function(e){if(e.target===$('settingsModal'))$('settingsModal').classList.remove('>
+</div>
+</div>
 <div id="contextMenu">
-  <button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
-  <button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
-  <button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i> Copy Text</button>
-  <button class="ctx-btn danger" id="ctxDelete"><i class="fa-solid fa-trash"></i> Delete</button>
-</div>
-
-<div id="toast">Notification</div>
-
+<button class="ctx-btn" idopen')});
+var ctxMenu=$('contextMenu');="ctxEdit"><i class="fa-solid fa-pen
+document.addEventListener('click',function(e){if(!ctx"></i> Edit & Resend</button>
+<buttonMenu.contains(e.target))ctxMenu.style.display='none'});
+$('chatForm').addEventListener('submit',function(e class="ctx-btn" id="ctxRegen"><i){e.preventDefault();submitForm()});
+$('ctxCopy class="fa-solid fa-rotate"></i> Regenerate</button>
+<button class="ctx-btn" id="').onclick=function(){copyText(selectedMsgEl.dataset.text);ctxCopy"><i class="fa-solid fa-copy"></ictxMenu.style.display='none'};
+$('ctxDelete').onclick=function(){selectedMsgEl.remove();var msgs=get> Copy Text</button>
+<button class="ctx-btnMessages().filter(function(m){return m.content!==selected danger" id="ctxDelete"><i class="fa-solidMsgEl.dataset.text});setMessages(msgs);showToast fa-trash"></i> Delete</button>
+</div('Deleted');ctxMenu.style.display='none'};
+>
+<div id="toast">Notification</div>$('ctxEdit').onclick=function(){$('userInput
 <script>
-(function () {
-  'use strict';
-  function safe(fn, def) { try { return fn(); } catch (e) { return def; } }
-  function lsGet(k, def) { return safe(function () { var v = localStorage.getItem(k); return v === null ? def : v; }, def); }
-  function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); }
-  function $(id) { return document.getElementById(id); }
-  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+(function(){
+'use strict';
+function').value=selectedMsgEl.dataset.text;selectedMsg safe(fn,def){try{return fn()}catch(e){El.remove();ctxMenu.style.display='none';$('userreturn def}}
+function lsGet(k,def){returnInput').focus()};
+$('ctxRegen'). safe(function(){var v=localStorage.getItem(k);return vonclick=function(){var msgs=getMessages();var idx=msgs.findIndex(function(m){return m.role==='assistant'&&m===null?def:v},def)}
+function lsSet(k,v){safe(function(){localStorage.setItem(k,v)},null.content===selectedMsgEl.dataset.text});ctxMenu.style.display)}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/&/='none';if(idx>0){var prev=g,'&amp;').replace(/</g,'&msgs[idx-1].content;msgs=msgs.slice(0,idx);setMessages(msgs);selectedMsgEl.remove();runAI(prev.split('\n\n[WEB CONTEXT')[lt;').replace(/>/g,'&gt;')}
+function jsStr(s){return String(s).0])}};
+$('sysPrompt').valuereplace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. You MUST follow these rules:\n\nCRITICAL LANGUAGE RULES:\n- Use PERFECT English grammar, spelling, and punctuation\n- Write complete sentences with proper subject-verb agreement\n- Never use broken English like "I\'t have" or "an built"\n- Always use correct articles (a, an, the)\n- Proofread your response before sending\n\nFORMATTING RULES:\n- Format for mobile: short paragraphs, clear headings, bullet points\n- Use bold for key terms\n- For code: always use fenced code blocks with language tags\n- Be concise but complete\n\nTHINKING RULES (Smart Mode only):\n- When Smart Mode is ON, you MUST write your reasoning between [[THINK]] and [[/THINK]] markers\n- Example: [[THINK]] The user is asking about X. I should consider Y... [[/THINK]]\n- After [[/THINK]], write your final answer\n- NEVER use HTML tags like <thinking> or <details>\n- The [[THINK]] marker is NOT visible to the user';
-  var DEFAULT_QS = [
-    { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
-    { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
-    { text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' }
-  ];
+var DEFAULT_SYS='You are NeuralForge=sysPrompt;
+$('saveBehaviorBtn').onclick=function(){, an expert AI assistant. You MUST follow these rules:\sysPrompt=$('sysPrompt').value;lsSet('nf_sys',sysPrompt);showToast('Settings savedn\nCRITICAL LANGUAGE RULES:\n- Use PERF!');$('settingsModal').classList.remove('open')};ECT English grammar, spelling, and punctuation\n- Write complete
+$('addQuestionBtn').onclick=addQuestion;
+$('addMemBtn').onclick=addMemory;
+$('questionList sentences with proper subject-verb agreement\n- Never use broken').addEventListener('click',function(e){var b=e.target English like "I\'t have" or "an built.closest('[data-q]');if(b){customQuestions.splice"\n- Always use correct articles (a, an, the)\n- Proofread your response before sending\n\nFORMATTING RULES:\n- Format for mobile:(+b.dataset.q,1);lsSet('nf_questions',JSON.stringify(customQuestions));renderQuestions()}}); short paragraphs, clear headings, bullet points\n- Use bold
+$('memoryList').addEventListener('click',function(e){ for key terms\n- For code: always use fenced code blocks with language tags\n- Be concise but complete\n\nvar b=e.target.closest('[data-m]');if(bTHINKING RULES (Smart Mode only):\n-){memory.splice(+b.dataset.m,1);lsSet When Smart Mode is ON, you MUST write your reasoning between('nf_memory',JSON.stringify(memory));renderMemory()}} [[THINK]] and [[/THINK]] markers\n);
+renderSidebar();renderQuestions();renderMemory();renderChat();
+window.__nfBooted=true;
+- Example: [[THINK]] The user is asking about}catch(err){window.__nfShowError('Init X. I should consider Y... [[/THINK]]\n- After [[/THINK]], write your final crashed: '+(err&&err.message?err answer\n- NEVER use HTML tags like <thinking> or.message:err))}
+}
 
-  var histories = safe(function () { var a = JSON.parse(lsGet('nf_histories', '[]')); return Array.isArray(a) ? a : []; }, []);
-  var currentChatId = lsGet('nf_current_chat', '') || '';
-  var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
-  var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
-  var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
-  var currentModel = lsGet('nf_model', 'openai') || 'openai';
-  var smartMode = lsGet('nf_smart', '0') === '1';
+function renderSidebar(){
+var list=$('historyList');
+list.innerHTML= <details>\n- The [[THINK]] marker is NOT visible to the user';
+var DEFAULT_QS=[histories.map(function(h){var isActive=h.id===current{text:'What are the latest AI newsChatId?' active':'';return'<div class="history?',icon:'fa-globe',color:'#f59-item'+isActive+'" data-id="'+h.id+'"><ie0b'},{text:'Explain quantum computing simply class="fa-regular fa-message"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis',icon:'fa-atom',color:'#8b5;white-space:nowrap">'+esc(h.title)cf6'},{text:'Write a python function to reverse a string',icon:'fa-code',color:'#10+'</span><button class="del-hist" data-delb981'}];
 
-  var isGenerating = false;
-  var selectedMsgEl = null;
-  var longPressTimer = null;
+var histories=safe(function="'+h.id+'"><i class="fa-solid fa-trash"></i></button></div>'}).join('');
+(){var a=JSON.parse(lsGet('nf_historieslist.querySelectorAll('.history-item').forEach(function(el){el.addEventListener('click',function(e){if(e.target.closest('.del-hist'))return;currentChatId=el.dataset.id;lsSet('nf_current_chat',currentChatId);renderSidebar();renderChat();if(window.innerWidth<7','[]'));return Array.isArray(a)?a:[]},[]);
+var currentChatId=lsGet('nf_current_chat','')||'';
+var memory=safe(function(){var a=JSON.parse(lsGet('nf_memory','[]'));return Array.isArray(a)?a:[]},68)$('sidebar').classList.remove('open')})[]);
+var customQuestions=safe(function(){var a=JSON.parse(lsGet('nf_questions','null'));return});
+list.querySelectorAll('.del-hist').forEach(function(Array.isArray(a)&&a.length)?a:DEFAULT_Q(btn){btn.addEventListener('click',function(e){e.stopPropagationS.slice()},DEFAULT_QS.slice());
+var sysPrompt();var id=btn.dataset.del;histories=hist=lsGet('nf_sys',DEFAULT_SYS)||DEFAULT_SYSories.filter(function(h){return h.id!==id});ls;
+var currentModel=lsGet('nf_model','Set('nf_histories',JSON.stringify(histories));ifopenai')||'openai';
+var smartMode(currentChatId===id)createNewChat();else render=lsGet('nf_smart','0')==='1';Sidebar()})});
+}
 
-  function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
-  function getMessages() { var chat = histories.find(h => h.id === currentChatId); return chat ? chat.messages : []; }
-  function setMessages(msgs) {
-    var chat = histories.find(h => h.id === currentChatId);
-    if (chat) {
-      chat.messages = msgs;
-      if (msgs.length > 0 && !chat.title) chat.title = msgs[0].content.substring(0, 30) + (msgs[0].content.length > 30 ? '...' : '');
-      lsSet('nf_histories', JSON.stringify(histories));
-      renderSidebar();
-    }
-  }
-  function createNewChat() {
-    var id = 'chat_' + Date.now();
-    histories.unshift({ id: id, title: 'New Chat', messages: [] });
-    currentChatId = id;
-    lsSet('nf_current_chat', currentChatId);
-    lsSet('nf_histories', JSON.stringify(histories));
-    renderSidebar();
-    renderWelcomeScreen();
-    if (window.innerWidth < 768) $('sidebar').classList.remove('open');
-  }
+function renderChat(){var
 
-  function boot() {
-    try {
-      if (!currentChatId || !histories.find(h => h.id === currentChatId)) createNewChat();
-      var isDark = lsGet('nf_theme', 'dark') !== 'light';
-      function applyTheme() {
-        if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
-        else { document.body.classList.add('light'); $('themeIcon').className = 'fa-solid fa-moon'; }
-      }
-      applyTheme();
-      $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
-      $('modelSelect').value = currentModel;
-      $('smartMode').checked = smartMode;
-      $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
-      $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Model: ' + currentModel); };
-      $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
-      $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
-      $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
-      $('newChatBtn').onclick = createNewChat;
-      $('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); };
-      $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
-      $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
-      var ctxMenu = $('contextMenu');
-      document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
-      $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
-      $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
-      $('ctxDelete').onclick = function () { selectedMsgEl.remove(); var msgs = getMessages().filter(m => m.content !== selectedMsgEl.dataset.text); setMessages(msgs); showToast('Deleted'); ctxMenu.style.display = 'none'; };
-      $('ctxEdit').onclick = function () { $('userInput').value = selectedMsgEl.dataset.text; selectedMsgEl.remove(); ctxMenu.style.display = 'none'; $('userInput').focus(); };
-      $('ctxRegen').onclick = function () {
-        var msgs = getMessages();
-        var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
-        ctxMenu.style.display = 'none';
-        if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0]); }
-      };
-      $('sysPrompt').value = sysPrompt;
-      $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; lsSet('nf_sys', sysPrompt); showToast('Settings saved!'); $('settingsModal').classList.remove('open'); };
-      $('addQuestionBtn').onclick = addQuestion;
-      $('addMemBtn').onclick = addMemory;
-      $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); } });
-      $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
-      renderSidebar(); renderQuestions(); renderMemory(); renderChat();
-      window.__nfBooted = true;
-    } catch (err) { window.__nfShowError('Init crashed: ' + (err && err.message ? err.message : err)); }
-  }
+var isGenerating=false;
+var selected msgs=getMessages();var chatArea=$('chatArea');chatArea.innerHTML='';if(msgs.length===MsgEl=null;
+var longPressTimer=null;
 
-  function renderSidebar() {
-    var list = $('historyList');
-    list.innerHTML = histories.map(function (h) {
-      var isActive = h.id === currentChatId ? ' active' : '';
-      return '<div class="history-item' + isActive + '" data-id="' + h.id + '"><i class="fa-regular fa-message"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(h.title) + '</span><button class="del-hist" data-del="' + h.id + '"><i class="fa-solid fa-trash"></i></button></div>';
-    }).join('');
-    list.querySelectorAll('.history-item').forEach(function (el) {
-      el.addEventListener('click', function (e) {
-        if (e.target.closest('.del-hist')) return;
-        currentChatId = el.dataset.id; lsSet('nf_current_chat', currentChatId); renderSidebar(); renderChat();
-        if (window.innerWidth < 768) $('sidebar').classList.remove('open');
-      });
-    });
-    list.querySelectorAll('.del-hist').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation(); var id = btn.dataset.del; histories = histories.filter(h => h.id !== id); lsSet('nf_histories', JSON.stringify(histories));
-        if (currentChatId === id) createNewChat(); else renderSidebar();
-      });
-    });
-  }
+function today(){try{return new Date().toDateString()}0){renderWelcomeScreen();return}msgs.forEach(function(mcatch(e){return''}}
+function getMessages(){var){addMessageToUI(m.content,m.role,false)} chat=histories.find(function(h){return h.id===);scrollToBottom()}
 
-  function renderChat() {
-    var msgs = getMessages(); var chatArea = $('chatArea'); chatArea.innerHTML = '';
-    if (msgs.length === 0) { renderWelcomeScreen(); return; }
-    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false); }); scrollToBottom();
-  }
+function renderWelcomeScreen(){varcurrentChatId});return chat?chat.messages:[]} html='<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Long-press any message to edit, copy, or delete.</p><div class="suggestions">';customQuestions.forEach(function(q){html+='<button class="sugg-btn" onclick="__nfQuick(\''+jsStr(q.text)+'\')"><i class="fa-solid '+esc(q.icon)+'" style="color:'+esc(q.color)+'"></i> '+esc(q.text)+'</button>'});html+='</div></div>';$('chatArea').innerHTML=html}
 
-  function renderWelcomeScreen() {
-    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Long-press any message to edit or delete.</p><div class="suggestions">';
-    customQuestions.forEach(function (q) { html += '<button class="sugg-btn" onclick="__nfQuick(\'' + jsStr(q.text) + '\')"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>'; });
-    html += '</div></div>'; $('chatArea').innerHTML = html;
-  }
+function
+function setMessages(msgs){var chat=histories.find(function(h){return h.id===currentChatId});if(chat){chat.messages=msgs;if(msgs.length>0&&!chat.title)chat.title=msgs[0].content.substring(0,30)+(msgs[0].content.length>30?'...':'');lsSet('nf_histories',JSON.stringify(histories));renderSidebar()}}
+function createNewChat(){var id='chat_'+Date.now();histories.unshift({id:id,title:'New Chat',messages:[]});currentChatId=id;lsSet('nf_current_chat',currentChatId);lsSet('nf_histories',JSON.stringify(histories)); submitForm(){
+if(isGenerating)return;
+var inputrenderSidebar();renderWelcomeScreen();if(window.innerWidth<7=$('userInput');var text=input.value.trim();if(!text)return;
+var welcome=$('welcomeScreen68)$('sidebar').classList.remove('open')}
 
-  function submitForm() {
-    if (isGenerating) return;
-    var input = $('userInput'); var text = input.value.trim(); if (!text) return;
-    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-    var msgs = getMessages(); msgs.push({ role: 'user', content: text }); setMessages(msgs);
-    addMessageToUI(text, 'user', true); input.value = ''; input.style.height = 'auto';
-    isGenerating = true; $('sendBtn').disabled = true;
-    showTyping('Thinking...');
-    runAI(text);
-  }
-  window.__nfQuick = function(t) { $('userInput').value = t; submitForm(); };
+function boot(){
+try{
+if(!currentChat');if(welcome)welcome.remove();
+var msgs=getId||!histories.find(function(h){return h.idMessages();msgs.push({role:'user',content:text===currentChatId}))createNewChat();
+var is});setMessages(msgs);
+addMessageToUI(textDark=lsGet('nf_theme','dark')!,'user',true);input.value='';input.style.height='auto';
+isGenerating=true;$('sendBtn').=='light';
+function applyTheme(){if(isDark){disabled=true;
+showTyping('Thinking...');
+document.body.classList.remove('light');$('themeIcon').classNamerunAI(text);
+}
+window.__nfQuick=function(t){$('userInput').value=t;submitForm()};
 
-  async function runAI(text) {
-    var useWeb = $('webSearchToggle').checked; var finalPrompt = text;
-    if (useWeb) {
-      var results = await searchWeb(text);
-      finalPrompt = 'User Query: ' + text + '\n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite source titles in brackets like [Title]. If the context is irrelevant, answer from your own knowledge and say so.]\n\n[WEB CONTEXT]:\n' + results;
-    }
-    var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
-    if (smartMode) {
-      systemMsg += '\n\nSMART MODE IS ON. You MUST use [[THINK]] and [[/THINK]] markers for reasoning. NEVER use HTML tags.';
-    }
-    if (memory.length) systemMsg += '\n\n[USER MEMORY - Always remember these facts]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
-    var msgs = getMessages(); msgs.push({ role: 'user', content: finalPrompt });
-    var aiText = '', rawBuf = '';
-    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.innerHTML = '<div class="bubble"></div>';
-    $('chatArea').appendChild(aiMsgDiv); var streamBubble = aiMsgDiv.querySelector('.bubble'); removeTyping();
-    try {
-      var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
-      var res = await fetch('https://text.pollinations.ai/openai', { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: currentModel, messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10)), stream: true, temperature: smartMode ? 0.3 : 0.7 }) });
-      clearTimeout(to); if (!res.ok) throw new Error('Server error ' + res.status);
-      if (res.body && res.body.getReader) {
-        var reader = res.body.getReader(), dec = new TextDecoder();
-        while (true) {
-          var r = await reader.read(); if (r.done) break;
-          var chunk = dec.decode(r.value, { stream: true }); rawBuf += chunk; var lines = chunk.split('\n');
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            if (line.indexOf('data: ') === 0) {
-              var data = line.slice(6); if (data === '[DONE]') continue;
-              safe(function () {
-                var j = JSON.parse(data); var ch = j.choices && j.choices[0];
-                var c = (ch && ch.delta && ch.delta.content) || (ch && ch.message && ch.message.content) || '';
-                if (c) { aiText += c; streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite;"></span>'; scrollToBottom(); }
-              }, null);
-            }
-          }
-        }
-      } else { rawBuf = await res.text(); }
-      if (!aiText.trim()) { safe(function () { var j = JSON.parse(rawBuf); var ch = j.choices && j.choices[0]; aiText = (ch && ch.message && ch.message.content) || (ch && ch.delta && ch.delta.content) || ''; }, null); if (!aiText.trim()) aiText = rawBuf; }
-      if (!aiText.trim()) throw new Error('empty response');
-      streamBubble.innerHTML = formatText(aiText); attachLongPress(aiMsgDiv, aiText, 'ai');
-      var savedMsgs = getMessages(); savedMsgs.push({ role: 'assistant', content: aiText }); setMessages(savedMsgs); scrollToBottom();
-    } catch (err) {
-      removeTyping();
-      var friendly = err.name === 'AbortError' ? 'Timed out — the free server is busy. Tap Retry or switch model in Settings.' : (err.message === 'empty response' ? 'The AI returned nothing. Tap Retry or switch model.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open this file on your github.io to use the AI.' : err.message));
-      streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
-      aiMsgDiv.classList.add('error');
-      streamBubble.querySelector('.retry').addEventListener('click', function () {
-        var savedMsgs = getMessages(); while (savedMsgs.length && savedMsgs[savedMsgs.length - 1].role === 'assistant') savedMsgs.pop(); setMessages(savedMsgs); aiMsgDiv.remove();
-        var lastUser = savedMsgs.slice().reverse().find(function (m) { return m.role === 'user'; }); if (lastUser) runAI(lastUser.content.split('\n\n[WEB CONTEXT')[0]);
-      });
-      attachLongPress(aiMsgDiv, '', 'ai');
-    } finally { isGenerating = false; $('sendBtn').disabled = false; }
-  }
+async function runAI(text){
+var useWeb=$('webSearchToggle').checked;var finalPrompt=text;
+if(useWeb){var results=await searchWeb(text);finalPrompt='User Query: '+text+'\='fa-solid fa-sun'}else{document.body.classList.add('light');$('themeIcon').className='fa-solid fa-moon'}}
+applyTheme();
+$('themeBtn').onclick=function(){isDark=!isDark;lsSet('nf_theme',isDark?'dark':'light');applyTheme()};
+$('modelSelect').value=currentModel;
+$('smartMode').checked=n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite source titles in brackets like [Title]. If thesmartMode;
+$('modelTag').textContent=currentModel+(smartMode?' +smart':'');
+$('modelSelect').onchange=function(){currentModel=$('modelSelect'). context is irrelevant, answer from your own knowledge and say so.]\n\n[WEB CONTEXT]:\n'+resultsvalue;lsSet('nf_model',currentModel);$('}
+var systemMsg=sysPrompt+'\n\nmodelTag').textContent=currentModel+(smartMode?' +smart':'');showToast('Model: '+currentModel)};Current date: '+today()+'.';
 
-  function formatText(text) {
-    var html = String(text)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/&lt;\/?(details|summary|thinking|analysis)[^&]*?&gt;/gi, '')
-      .replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function(match, p1) {
-        var content = p1.replace(/\n/g, '<br>').trim();
-        return '<div class="thinking-box"><div class="thinking-header" onclick="this.parentElement.classList.toggle(\'open\')"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + content + '</div></div>';
-      })
-      .replace(/```([\s\S]*?)```/g, function (m, c) { return '<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0;"><code>' + c.replace(/^\n/, '').replace(/\n$/, '') + '</code></pre>'; })
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>').replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>').replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
-    html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
-    html = html.split('\n\n').map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
-    return html;
-  }
+$('smartMode').onchange=function(){smartMode=$if(smartMode)systemMsg+='\n\nSMART('smartMode').checked;lsSet('nf_smart', MODE IS ON. You MUST use [[THINK]] and [[/THINK]] markers for reasoning. NEVER use HTMLsmartMode?'1':'0');$('modelTag').textContent tags.';
+if(memory.length)systemMsg+='\n\n[USER MEMORY - Always remember these facts]:\n'+memory.map(function(m){return'- '+m}).join('\n');
+var msgs=getMessages();msgs.push({role:'user',content:finalPrompt});
 
-  function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-  function addMessageToUI(text, type, animate) {
-    var div = document.createElement('div'); div.className = 'msg ' + type; div.dataset.text = text;
-    if (animate) div.style.animation = 'popIn .2s ease-out';
-    div.innerHTML = '<div class="bubble">' + formatText(text) + '</div>';
-    $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
-  }
-  function showTyping(text) { 
-    var div = document.createElement('div'); 
-    div.className = 'msg ai'; 
-    div.id = 'typingIndicator'; 
-    div.innerHTML = '<div class="bubble" style="color:var(--text-muted); font-style:italic; display:flex; align-items:center; gap:10px;">' + 
-      '<div style="position:relative; width:20px; height:20px; display:flex; justify-content:center; align-items:center;">' +
-      '<div style="position:absolute; width:100%; height:100%; border-radius:50%; background:#6366f1; opacity:0.4; animation:pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;"></div>' +
-      '<i class="fa-solid fa-brain" style="font-size:14px; color:#6366f1; animation:pulse-dot 1.5s infinite; z-index:2;"></i>' +
-      '</div>' + esc(text) + '</div>'; 
-    $('chatArea').appendChild(div); 
-    scrollToBottom(); 
-  }
-  function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
-  function attachLongPress(div, text, type) {
-    div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
-    div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
-    div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
-    div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
-  }
-  function showContextMenu(e, el, text, type) {
-    selectedMsgEl = el; var touch = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    $('contextMenu').style.left = Math.min(touch.clientX || 20, window.innerWidth - 170) + 'px';
-    $('contextMenu').style.top = Math.min(touch.clientY || 20, window.innerHeight - 200) + 'px';
-    $('contextMenu').style.display = 'block';
-    $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
-    $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
-  }
-  function copyText(t) {
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
-    else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
-  }
-  function withTimeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
-  async function searchWeb(query) {
-    var parts = [];
-    await safe(async function () { 
-      var wres = await withTimeout(fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*'), 3500); 
-      var wj = await wres.json(); 
-      if (wj.query && wj.query.search.length) parts.push(wj.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n')); 
-    }, null);
-    await safe(async function () { 
-      var dres = await withTimeout(fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query)), 3500); 
-      var dj = await dres.json(); 
-      if (dj.contents) { 
-        var doc = new DOMParser().parseFromString(dj.contents, 'text/html'); 
-        var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean); 
-        if (sn.length) parts.push(sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n')); 
-      } 
-    }, null);
-    return parts.length ? parts.join('\n\n') : 'No relevant results found.';
-  }
-  function renderQuestions() { var list = $('questionList'); if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom questions yet.</p>'; return; } list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
-  function addQuestion() { var input = $('questionInput'); var text = input.value.trim(); if (!text) return; var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen']; var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444']; customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] }); lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!'); }
-  function renderMemory() { var list = $('memoryList'); if (!memory.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom memory yet.</p>'; return; } list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
-  function addMemory() { var input = $('memInput'); var text = input.value.trim(); if (!text) return; memory.push(text); lsSet('nf_memory', JSON.stringify(memory)); input.value = ''; renderMemory(); showToast('Memory added!'); }
-  function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
+var aiMsgDiv=document.createElement('div');aiMsgDiv.className='msg ai';aiMsgDiv.innerHTML=currentModel+(smartMode?' +smart':'');showToast(smartMode?'Smart Mode ON':'Smart Mode off')};
+$('menuBtn').onclick=function()='<div class="bubble"></div>';
+$('chatArea').appendChild(aiMsgDiv);var streamBubble=ai{$('sidebar').classList.add('open')};
+$('closeSidebarBtn').onclick=function(){$('sidebar').classList.remove('open')};
+$('newChatBtn').onclick=createNewChat;
+$('settingsBtn').onclick=function(){$('settingsModal').classList.add('open')};
+$('closeSettings').onclick=function(){$('settingsModal').classList.remove('open')};
+$('settingsModal').MsgDiv.querySelector('.bubble');
+removeTyping();
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+addEventListener('click',function(e){if(e.target==var aiText='';
+try{
+var controller=new AbortController();var to=setTimeout(function(){controller.abort()},60000);
+var res=await fetch('https://text.pollinations.ai/openai',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({model:currentModel,messages:[{role:'system',content:systemMsg}].concat(msgs.slice(-10)),stream:true,temperature:smartMode?0.3:0.7})});
+clearTimeout(to);if(!res.ok)throw new Error('Server error '+res.status);
+
+if(res.body&&res.body.getReader){
+var reader=res.body.getReader(),dec=new TextDecoder=$('settingsModal'))$('settingsModal').classList.remove('open')});
+var ctxMenu=$('contextMenu');
+document.addEventListener('click',function(e){if(!ctxMenu.contains(e.target))ctxMenu.style.display='none'});
+$('chatForm').addEventListener('submit',function(e){e.preventDefault();submitForm()});
+$('ctxCopy').onclick=function(){copyText(selectedMsgEl.dataset.text);ctxMenu.style.display='none'};
+$('ctxDelete').onclick=function(){selectedMsgEl.remove();var msgs=getMessages().filter(function(m){return m.content!==selectedMsgEl.dataset.text});setMessages(msgs);showToast('Deleted');ctxMenu.style.display='none'};
+$('ctxEdit').onclick=function(){$('userInput();
+var buffer='';
+while(true){
+var').value=selectedMsgEl.dataset.text;selectedMsg r=await reader.read();if(r.done)break;
+buffer+=dec.decode(r.value,{stream:true});
+El.remove();ctxMenu.style.display='none';$('uservar lines=buffer.split('\n');
+buffer=linesInput').focus()};
+$('ctxRegen')..pop();
+for(var i=0;i<lines.length;i++){
+var line=lines[i].trim();
+onclick=function(){var msgs=getMessages();var idx=msgs.findIndex(function(m){return m.role==='assistant'&&m.content===selectedMsgEl.dataset.text});ctxMenu.style.displayif(line.indexOf('data: ')!==0)continue;='none';if(idx>0){var prev=
+var data=line.slice(6).trim();
+if(data===''||data==='[DONE]')continuemsgs[idx-1].content;msgs=msgs.slice(0,idx);setMessages(msgs);selectedMsgEl.remove;
+try{
+var j=JSON.parse(data);();runAI(prev.split('\n\n[WEB CONTEXT')[
+var ch=j.choices&&j.choices[0];
+0])}};
+$('sysPrompt').valuevar c='';
+if(ch){
+if(ch.delta&&ch.delta.content)c=ch.delta.content;
+else=sysPrompt;
+$('saveBehaviorBtn').onclick=function(){sysPrompt=$('sysPrompt').value;lsSet if(ch.message&&ch.message.content)c=ch.message.content('nf_sys',sysPrompt);showToast('Settings saved;
+}
+if(c){aiText+=c;streamBubble.innerHTML=formatText(aiText)+'<span style="!');$('settingsModal').classList.remove('open')};display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;
+$('addQuestionBtn').onclick=addQuestion;
+$('addMemBtn').onclick=addMemory;
+$('questionList').addEventListener('click',function(e){var b=e.targetanimation:blink 1s infinite"></span>';scroll.closest('[data-q]');if(b){customQuestions.spliceToBottom()}
+}catch(e){}
+}(+b.dataset.q,1);lsSet('nf
+}
+}else{
+var rawText=await res.text();
+try{var j2=JSON.parse(rawText);var ch2=j2.choices&&j2.choices[0];if(ch2)aiText=(ch2.message&&ch2.message.content)||(ch2.delta&&ch2.delta.content)||''}catch(e){aiText=rawText}
+}
+
+if(!aiText.trim())throw new Error('empty response');
+stream_questions',JSON.stringify(customQuestions));renderQuestions()}});
+$('memoryList').addEventListener('click',function(e){var b=e.target.closest('[data-m]');if(b){memory.splice(+b.dataset.m,1);lsSet('nf_memory',JSON.stringify(memory));renderMemory()}});
+renderSidebar();renderQuestions();renderMemory();renderChat();
+window.__nfBooted=true;
+}catch(err){window.__nfShowError('InitBubble.innerHTML=formatText(aiText);
+attachLongPress(ai crashed: '+(err&&err.message?errMsgDiv,aiText,'ai');
+var savedMsgs=getMessages();savedMsgs.push({role.message:err))}
+}
+
+function renderSidebar(){:'assistant',content:aiText});setMessages(savedMsg
+var list=$('historyList');
+list.innerHTML=histories.map(function(h){var isActive=h.id===currents);scrollToBottom();
+}catch(err){
+removeChatId?' active':'';return'<div class="historyTyping();
+var friendly=err.name==='AbortError'?'Timed out — the free server is busy.-item'+isActive+'" data-id="'+h.id+'"><i Tap Retry or switch model in Settings.':(err.message class="fa-regular fa-message"></i><span style==='empty response'?'The AI returned nothing. Tap Retry="flex:1;overflow:hidden;text-overflow:ellipsis or switch model.':(/Failed to fetch|NetworkError|;white-space:nowrap">'+esc(h.title)Load failed/i.test(err.message)?'Network blocked. Open+'</span><button class="del-hist" data-del this file on your github.io to use the AI.':="'+h.id+'"><i class="fa-solid fa-trash"></i></button></div>'}).join('');
+err.message));
+streamBubble.innerHTML='⚠️list.querySelectorAll('.history-item').forEach(function(el){el '+esc(friendly)+' <button class="retry"><i.addEventListener('click',function(e){if(e.target.closest('. class="fa-solid fa-rotate"></i> Retry</button>';
+aiMsgDiv.classList.add('error');
+del-hist'))return;currentChatId=el.datasetstreamBubble.querySelector('.retry').addEventListener('click',function(){.id;lsSet('nf_current_chat',currentChatIdvar savedMsgs=getMessages();while(savedMsgs.length);renderSidebar();renderChat();if(window.innerWidth<768)$('sidebar').classList.remove('open')})&&savedMsgs[savedMsgs.length-1].});
+list.querySelectorAll('.del-hist').forEach(functionrole==='assistant')savedMsgs.pop();setMessages(saved(btn){btn.addEventListener('click',function(e){e.stopPropagationMsgs);aiMsgDiv.remove();var lastUser=s();var id=btn.dataset.del;histories=histavedMsgs.slice().reverse().find(function(m){returnories.filter(function(h){return h.id!==id});ls m.role==='user'});if(lastUser)runAI(lastUser.content.split('\n\n[WEB CONTEXT')[0])});
+attachLongPress(aiMsgDiv,'','Set('nf_histories',JSON.stringify(histories));if(currentChatId===id)createNewChat();else renderai');
+}finally{isGenerating=false;$('sendSidebar()})});
+}
+
+function renderChat(){var msgs=getMessages();var chatArea=$('chatArea');Btn').disabled=false}
+}
+
+function formatTextchatArea.innerHTML='';if(msgs.length===(text){
+var html=String(text)0){renderWelcomeScreen();return}msgs.forEach(function(m
+.replace(/&/g,'&amp;').replace){addMessageToUI(m.content,m.role,false)}(/</g,'&lt;').replace(/>/);scrollToBottom()}
+
+function renderWelcomeScreen(){varg,'&gt;')
+.replace(/&lt; html='<div class="welcome" id="welcomeScreen"><\/?(details|summary|thinking|analysis)[^&i class="fa-solid fa-sparkles big"></i]*?&gt;/gi,'')
+.replace(/\><h2>How can I help?</h2><[\[THINK\]\]([\s\S]*?)p>Long-press any message to edit, copy,\[\[\/THINK\]\]/gi,function or delete.</p><div class="suggestions">';(match,p1){var content=p1.replace(/\ncustomQuestions.forEach(function(q){html+='<button class="/g,'<br>').trim();return'<div class="sugg-btn" onclick="__nfQuick(\''+jsthinking-box"><div class="thinking-header" onclick="thisStr(q.text)+'\')"><i class="fa-solid.parentElement.classList.toggle(\'open\')"><i class="fa-solid fa-chevron-right"></i> Show thinking process</ '+esc(q.icon)+'" style="color:'+esc(q.color)+'"></i> '+esc(q.text)div><div class="thinking-content">'+content+'</div></+'</button>'});html+='</div></div>'div>'})
+.replace(/```([\s\S]*?)```/g,function(m,c){return'<pre style=";$('chatArea').innerHTML=html}
+
+functionbackground:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0"><code>'+c.replace(/^\n/,'').replace(/\n$/,'')+'</code></pre>'})
+ submitForm(){
+if(isGenerating)return;
+var input=$('userInput');var text=input.value.trim();if(!text)return;
+var welcome=$('welcomeScreen');if(welcome)welcome.remove();
+var msgs=getMessages();msgs.push({role:'user',content:text.replace(/\*\*(.*?)\*\*/g,'});setMessages(msgs);
+addMessageToUI(text<strong>$1</strong>').replace(/\*(.*?)\,'user',true);input.value='';input.style.height*/g,'<em>$1</em>').replace(/='auto';
+isGenerating=true;$('sendBtn').`(.*?)`/g,'<code>$1</codedisabled=true;
+showTyping('Thinking...');
+>')
+.replace(/^### (.*$)/gimrunAI(text);
+}
+window.__nfQuick,'<h3>$1</h3>').replace(/^## (.*$)/gim,'<h2>$=function(t){$('userInput').value=t;submitForm()};
+
+async function runAI(text){
+var use1</h2>').replace(/^# (.*$)/Web=$('webSearchToggle').checked;var finalPromptgim,'<h1>$1</h1>')
+.replace(/^\- (.*$)/gim,'<ul><li>$1</li></ul>').replace(/^\* (.*$)/gim,'<ul><li=text;
+if(useWeb){var results=await searchWeb(text);finalPrompt='User Query: '+text+'\n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite source titles in brackets like [Title]. If the>$1</li></ul>').replace(/^\d+\. (.*$)/gim,'<ol><li>$ context is irrelevant, answer from your own knowledge and say so1</li></ol>');
+html=html.replace(/.]\n\n[WEB CONTEXT]:\n'+results<\/ul>\s*<ul>/g,'').replace}
+var systemMsg=sysPrompt+'\n\n(/<\/ol>\s*<ol>/g,'');Current date: '+today()+'.';
+
+html=html.split('\n\n').map(function(pif(smartMode)systemMsg+='\n\nSMART){return'<p>'+p.replace(/\n/g,'< MODE IS ON. You MUST use [[THINK]] andbr>')+'</p>'}).join('');
+return [[/THINK]] markers for reasoning. NEVER use HTML tags.';
+if(memory.length)systemMsg+ html;
+}
+
+function scrollToBottom(){var c=$='\n\n[USER MEMORY - Always remember these facts]:('chatArea');c.scrollTop=c.scrollHeight}
+function addMessageToUI(text,type,animate){var div=document.createElement('div');div.className='msg '+type\n'+memory.map(function(m){return'- '+m}).join('\n');
+var msgs=getMessages();;div.dataset.text=text;if(animate)divmsgs.push({role:'user',content:finalPrompt});.style.animation='popIn .2s ease-out';div.innerHTML='<div class="bubble">'+formatText(text)
+
+var aiMsgDiv=document.createElement('div');aiMsgDiv.className='msg ai';aiMsgDiv.innerHTML='<div class="bubble"></div>';
+$('chatArea+'</div>';$('chatArea').appendChild(div);scrollToBottom();attachLongPress(div,text,type)}
+').appendChild(aiMsgDiv);var streamBubble=aifunction showTyping(text){removeTyping();varMsgDiv.querySelector('.bubble');
+removeTyping();
+
+ div=document.createElement('div');div.className='msg ai';var aiText='';
+try{
+var controllerdiv.id='typingIndicator';div.innerHTML='<div class="=new AbortController();var to=setTimeout(function(){controller.abort()},60000);
+var res=awaitbubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap: fetch('https://text.pollinations.ai/openai',{method:'POST',signal:controller.signal,headers:{'Content10px"><div style="position:relative;width:20px;height:20px;display:flex;-Type':'application/json'},body:JSON.stringify({model:currentModel,messages:[{role:'system',content:justify-content:center;align-items:center"><div style="position:absolute;width:100%;height:1systemMsg}].concat(msgs.slice(-10)),stream:true,temperature:smartMode?0.3:00%;border-radius:50%;background:#60.7})});
+clearTimeout(to);if366f1;opacity:.4;animation:pulse-ring 1.5s cubic-bezier(.(!res.ok)throw new Error('Server error '+res.status);
+
+if(res.body&&res.body.getReader){215,.61,.355,1
+var reader=res.body.getReader(),dec=new TextDecoder) infinite"></div><i class="fa-solid();
+var buffer='';
+while(true){
+var fa-brain" style="font-size:14px;color:#6366f1;animation:pulse r=await reader.read();if(r.done)break;
+buffer+=dec.decode(r.value,{stream:true});
+-dot 1.5s infinite;z-index:2"></var lines=buffer.split('\n');
+buffer=linesi></div>'+esc(text)+'</div>'.pop();
+for(var i=0;i<lines.length;$('chatArea').appendChild(div);scrollToBottom()};i++){
+var line=lines[i].trim();
+
+function removeTyping(){var el=$('typingIndicator');if(el)el.remove()}
+function attachLongPressif(line.indexOf('data: ')!==0)continue;
+var data=line.slice(6).trim();
+if(div,text,type){div.addEventListener('touchstart',function(e(data===''||data==='[DONE]')continue){longPressTimer=setTimeout(function(){showContextMenu(e,;
+try{
+var j=JSON.parse(data);div,text,type)},500)},{passive:true
+var ch=j.choices&&j.choices[0];
+});div.addEventListener('touchend',function(){clearTimeout(longvar c='';
+if(ch){
+if(ch.deltaPressTimer)});div.addEventListener('touchmove',function(){&&ch.delta.content)c=ch.delta.content;
+elseclearTimeout(longPressTimer)});div.addEventListener('touchcancel if(ch.message&&ch.message.content)c=ch.message.content',function(){clearTimeout(longPressTimer)})}
+function showContextMenu(e,el,text,type){selectedMsgEl=;
+}
+if(c){aiText+=c;streamBubble.innerHTML=formatText(aiText)+'<span style="el;var touch=(e.touches&&e.touches[0display:inline-block;width:2px;height:14px])?e.touches[0]:e;$('contextMenu;background:var(--text);margin-left:2px;').style.left=Math.min(touch.clientX||20,windowanimation:blink 1s infinite"></span>';scroll.innerWidth-170)+'px';$('contextMenu').ToBottom()}
+}catch(e){}
+}style.top=Math.min(touch.clientY||20,window.innerHeight
+}
+}else{
+var rawText=await res-200)+'px';$('contextMenu').style.text();
+try{var j2=JSON.parse(raw.display='block';$('ctxEdit').style.display=Text);var ch2=j2.choices&&j2type==='user'?'flex':'none';$('ctxReg.choices[0];if(ch2)aiText=(chen').style.display=type==='ai'?'flex':'none'}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.write2.message&&ch2.message.content)||(ch2.delta&&ch2.delta.content)||''}catch(e){aiText=rawText}
+}
+
+if(!aiText(t).then(function(){showToast('Copied!Text.trim())throw new Error('empty response');
+stream')},function(){showToast('Copy failed')});else{var ta=document.createElement('textarea');ta.value=t;Bubble.innerHTML=formatText(aiText);
+attachLongPress(aidocument.body.appendChild(ta);ta.select();safe(function(){MsgDiv,aiText,'ai');
+vardocument.execCommand('copy');showToast('Copied! savedMsgs=getMessages();savedMsgs.push({role')},null);ta.remove()}}
+function withTimeout(p,ms){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},ms)})])}
+async function searchWeb(query){
+var parts=[];:'assistant',content:aiText});setMessages(savedMsgs);scrollToBottom();
+}catch(err){
+removeTyping();
+var friendly=err.name==='AbortError'?'Timed out — the free server is busy. Tap Retry or switch model in Settings.':(err.message
+await safe(async function(){var wres=await==='empty response'?'The AI returned nothing. Tap Retry withTimeout(fetch('https://en.wikipedia.org/w/api.php or switch model.':(/Failed to fetch|NetworkError|?action=query&list=search&srsearch='+encodeURIComponent(queryLoad failed/i.test(err.message)?'Network blocked. Open this file on your github.io to use the AI.':)+'&srlimit=3&format=json&originerr.message));
+streamBubble.innerHTML='⚠️=*'),3500);var wj=await wres.json();if(wj.query&&wj.query.search.length)parts.push(wj.query.search.map(function(s){return'['+s.title+'] '+s '+esc(friendly)+' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+aiMsgDiv.classList.add('error');
+streamBubble.querySelector('.retry').addEventListener('click',function(){.snippet.replace(/<[^>]*>/g,'var savedMsgs=getMessages();while(savedMsgs.length')}).join('\n\n'))},null);
+await safe(async function(){var dres=await withTimeout(fetch&&savedMsgs[savedMsgs.length-1].('https://api.allorigins.win/get?url='+role==='assistant')savedMsgs.pop();setMessages(savedMsgs);aiMsgDiv.remove();var lastUser=savedMsgs.slice().reverse().find(function(m){return m.role==='user'});if(lastUser)runAI(lastUser.content.split('\n\n[WEB CONTEXT')[0])});
+attachLongPress(aiMsgDiv,'','ai');
+}finally{isGenerating=false;$('sendBtn').disabled=false}
+}
+
+function formatText(text){
+var html=String(text)
+.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+.replace(/&lt;\/?(details|summary|thinking|analysis)[^&]*?&gt;/gi,'')
+.replace(/\[\[THINK\]\]([\s\S]*?)encodeURIComponent('https://html.duckduckgo.com/html/?\[\[\/THINK\]\]/gi,function(match,p1){var content=p1.replace(/\n/g,'<br>').trim();return'<div class="thinking-box"><div class="thinking-header" onclick="this.parentElement.classList.toggle(\'open\')"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">'+content+'</div></div>'})
+.replace(/```([\s\S]*?)```/g,function(m,c){return'<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0"><code>'+c.replace(/^\n/,'').replace(/\n$/,'')+'</code></pre>'})
+.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>')
+.replace(/^### (.*$)/gim,'<h3>$1</h3>').replace(/^## (.*$)/gim,'<h2>$1</h2>').replace(/^# (.*$)/gim,'<h1>$1</h1>')
+.replace(/^\- (.*$)/gim,'<ul><li>$1</li></ul>').replace(/^\* (.*$)/gim,'<ul><li>$1</li></ul>').replace(/^\d+\. (.*$)/gim,'<ol><li>$1</li></ol>');
+html=html.replace(/<\/ul>\s*<ul>/g,'').replace(/<\/ol>\s*<ol>/g,'');
+html=html.split('\n\n').map(function(p){return'<p>'+p.replace(/\n/g,'<br>')+'</p>'}).join('');
+return html;
+}
+
+function scrollToBottom(){var c=$('chatArea');c.scrollTop=c.scrollHeight}
+function addMessageToUI(text,type,animate){var div=document.createElement('div');div.className='msg '+type;div.dataset.text=text;if(animate)div.style.animation='popIn .2s ease-out';div.innerHTML='<div class="bubble">'+formatText(text)+'</div>';$('chatArea').appendChild(div);scrollToBottom();attachLongPress(div,text,type)}
+function showTyping(text){removeTyping();var div=document.createElement('div');div.className='msg ai';div.id='typingIndicator';div.innerHTML='<div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulse-ring 1.5s cubic-bezier(.215,.61,.355,1) infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulse-dot 1.5s infinite;z-index:2"></i></div>'+esc(text)+'</div>';$('chatArea').appendChild(div);scrollToBottom()}
+function removeTyping(){var el=$('typingIndicator');if(el)el.remove()}
+function attachLongPress(div,text,type){div.addEventListener('touchstart',function(e){longPressTimer=setTimeout(function(){showContextMenu(e,div,text,type)},500)},{passive:true});div.addEventListener('touchend',function(){clearTimeout(longPressTimer)});div.addEventListener('touchmove',function(){clearTimeout(longPressTimer)});div.addEventListener('touchcancel',function(){clearTimeout(longPressTimer)})}
+function showContextMenu(e,el,text,type){selectedMsgEl=el;var touch=(e.touches&&e.touches[0])?e.touches[0]:e;$('contextMenu').style.left=Math.min(touch.clientX||20,window.innerWidth-170)+'px';$('contextMenu').style.top=Math.min(touch.clientY||20,window.innerHeight-200)+'px';$('contextMenu').style.display='block';$('ctxEdit').style.display=type==='user'?'flex':'none';$('ctxRegen').style.display=type==='ai'?'flex':'none'}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){showToast('Copied!q='+query)),3500);var dj')},function(){showToast('Copy failed')});else{var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();safe(function(){document.execCommand('copy');showToast('Copied!')},null);ta.remove()}}
+function withTimeout(p,ms){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},ms)})])}
+async function searchWeb(query){
+var parts=[];
+await safe(async function(){var wres=await withTimeout(fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(query)+'&srlimit=3&format=json&origin=*'),3500);var wj=await wres.json();if(wj.query&&wj.query.search.length)parts.push(wj.query.search.map(function(s){return'['+s.title+'] '+s.snippet.replace(/<[^>]*>/g,'')}).join('\n\n'))},null);
+await safe(async function(){var dres=await withTimeout(fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://html.duckduckgo.com/html/?q='+query)),3500);var dj=await dres.json();if(dj.contents){var=await dres.json();if(dj.contents){var doc=new DOMParser().parseFromString(dj.contents,'text doc=new DOMParser().parseFromString(dj.contents,'text/html');var sn=Array.from(doc.querySelectorAll('.result/html');var sn=Array.from(doc.querySelectorAll('.result__snippet')).map(function(el){return el.textContent.trim()__snippet')).map(function(el){return el.textContent.trim()}).filter(Boolean);if(sn.length)parts.push(sn.slice}).filter(Boolean);if(sn.length)parts.push(sn.slice(0,3).map(function(s,i){return(i(0,3).map(function(s,i){return(i+1)+'. '+s}).join('\n'))+1)+'. '+s}).join('\n'))}},null);
+return parts.length?parts.join('\n}},null);
+return parts.length?parts.join('\n\n'):'No relevant results found.';
+\n'):'No relevant results found.';
+}
+function renderQuestions(){var list=$('questionList}
+function renderQuestions(){var list=$('questionList');if(!customQuestions.length){list.innerHTML='<p style');if(!customQuestions.length){list.innerHTML='<p style="font-size:13px;color:var(--text="font-size:13px;color:var(--text-muted);text-align:center">No custom questions yet.</p-muted);text-align:center">No custom questions yet.</p>';return}list.innerHTML=customQuestions.map(function(q,i>';return}list.innerHTML=customQuestions.map(function(q,i){return'<div class="list-item"><span style="){return'<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(q.text)white-space:nowrap">'+esc(q.text)+'</span><button class="delete-item" data-q="'++'</span><button class="delete-item" data-q="'+i+'"><i class="fa-solid fa-trash"></i+'"><i class="fa-solid fa-trash"></i></button></div>'}).join('')}
+functioni></button></div>'}).join('')}
+function addQuestion(){var input=$('questionInput');var text addQuestion(){var input=$('questionInput');var text=input.value.trim();if(!text)return;var icons=['=input.value.trim();if(!text)return;var icons=['fa-comment','fa-lightbulb','fa-rocket','fa-comment','fa-lightbulb','fa-rocket','fa-code','fa-book','fa-pen'];var colorsfa-code','fa-book','fa-pen'];var colors=['#10b981','#f59=['#10b981','#f59e0b','#8b5cf6','#3be0b','#8b5cf6','#3b82f6','#ec4899','#ef82f6','#ec4899','#ef4444'];customQuestions.push({text:text,4444'];customQuestions.push({text:text,icon:icons[Math.floor(Math.random()*icons.length)],coloricon:icons[Math.floor(Math.random()*icons.length)],color:colors[Math.floor(Math.random()*colors.length)]});:colors[Math.floor(Math.random()*colors.length)]});lsSet('nf_questions',JSON.stringify(customQuestions));inputlsSet('nf_questions',JSON.stringify(customQuestions));input.value='';renderQuestions();renderWelcomeScreen();showToast.value='';renderQuestions();renderWelcomeScreen();showToast('Question added!')}
+function renderMemory(){var('Question added!')}
+function renderMemory(){var list=$('memoryList');if(!memory.length){list list=$('memoryList');if(!memory.length){list.innerHTML='<p style="font-size:13px;color.innerHTML='<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom:var(--text-muted);text-align:center">No custom memory yet.</p>';return}list.innerHTML=memory memory yet.</p>';return}list.innerHTML=memory.map(function(m,i){return'<div class="list-item.map(function(m,i){return'<div class="list-item"><span style="flex:1;overflow:hidden;text-"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m)overflow:ellipsis;white-space:nowrap">'+esc(m)+'</span><button class="delete-item" data-m="'++'</span><button class="delete-item" data-m="'+i+'"><i class="fa-solid fa-trash"></ii+'"><i class="fa-solid fa-trash"></i></button></div>'}).join('')}
+function add></button></div>'}).join('')}
+function addMemory(){var input=$('memInput');var text=inputMemory(){var input=$('memInput');var text=input.value.trim();if(!text)return;memory.push(text);.value.trim();if(!text)return;memory.push(text);lsSet('nf_memory',JSON.stringify(memory));input.valuelsSet('nf_memory',JSON.stringify(memory));input.value='';renderMemory();showToast('Memory added!')}='';renderMemory();showToast('Memory added!')}
+function showToast(msg){var t=$('toast');t
+function showToast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}t.classList.remove('show')},2500)}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>boot);else boot();
 })();
 </script>
 </body>
