@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NeuralForge">
 <title>NeuralForge AI</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
     --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
@@ -32,15 +34,16 @@
     width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; z-index: 60;
     transform: translateX(-100%); transition: transform .3s cubic-bezier(.16,1,.3,1);
+    padding-top: env(safe-area-inset-top);
   }
   #sidebar.open { transform: translateX(0); }
-  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .new-chat-btn { width: 100%; background: var(--bubble-user); color: #fff; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .new-chat-btn:active { opacity: .8; }
   .close-sidebar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
   .close-sidebar:active { background: var(--border); }
   .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-  .history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; transition: background .15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; transition: background .15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
   .history-item:active, .history-item.active { background: var(--border); }
   .history-item i.msg-ico { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
   .history-item .del-hist { margin-left: auto; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
@@ -49,9 +52,9 @@
   #main { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
 
   header {
-    height: 60px; background: var(--header-bg); backdrop-filter: blur(10px);
+    min-height: 60px; background: var(--header-bg); backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border); display: flex; align-items: center;
-    justify-content: space-between; padding: 0 16px; flex-shrink: 0; z-index: 50;
+    justify-content: space-between; padding: env(safe-area-inset-top) 16px 0; flex-shrink: 0; z-index: 50;
   }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
@@ -63,9 +66,6 @@
   .header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
   .header-btn:active { background: var(--border); }
 
-  #errorBox { display: none; margin: 10px 16px 0; padding: 10px 14px; border-radius: 10px; background: #450a0a; color: #fca5a5; font-size: 13px; line-height: 1.4; border: 1px solid #ef4444; }
-  #errorBox i { margin-right: 6px; }
-
   #chatArea { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
   .welcome { text-align: center; padding: 30px 20px; color: var(--text-muted); animation: popIn .3s ease-out; }
   .welcome i.big { font-size: 40px; color: #6366f1; margin-bottom: 16px; }
@@ -74,10 +74,10 @@
   .sugg-btn { background: var(--bubble-ai); border: 1px solid var(--border); padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); width: 100%; transition: transform .1s; }
   .sugg-btn:active { transform: scale(.97); opacity: .8; }
 
-  .msg { display: flex; flex-direction: column; max-width: 85%; animation: popIn .2s ease-out; }
+  .msg { display: flex; flex-direction: column; max-width: 88%; animation: popIn .2s ease-out; }
   .msg.user { align-self: flex-end; align-items: flex-end; }
   .msg.ai { align-self: flex-start; align-items: flex-start; }
-  .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
   .msg.ai .msg-row { flex-direction: row; }
   .msg.user .msg-row { flex-direction: row-reverse; }
   .brain-icon { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; flex-shrink: 0; margin-bottom: 4px; }
@@ -87,7 +87,7 @@
   @keyframes pulseRing { 0% { transform: scale(.8); opacity: .5; } 80%, 100% { transform: scale(2); opacity: 0; } }
   @keyframes pulseDot { 0%, 100% { transform: scale(.8); opacity: .5; } 50% { transform: scale(1.2); opacity: 1; } }
 
-  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; overflow-wrap: anywhere; }
+  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; }
   .msg.user .bubble { background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px; }
   .msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
   .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
@@ -96,12 +96,22 @@
   .bubble strong { font-weight: 700; }
   .bubble p { margin-bottom: 8px; }
   .bubble p:last-child { margin-bottom: 0; }
+  .bubble h1, .bubble h2, .bubble h3 { margin: 10px 0 6px; line-height: 1.3; }
+  .bubble h1 { font-size: 18px; } .bubble h2 { font-size: 16px; } .bubble h3 { font-size: 15px; }
   .bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 8px; }
-  .bubble code { background: rgba(0,0,0,.3); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+  .bubble code { background: rgba(127,127,127,.2); padding: 2px 5px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+  .code-wrap { background: #090d16; border: 1px solid #1e293b; border-radius: 10px; margin: 8px 0; overflow: hidden; }
+  .code-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #131b2e; border-bottom: 1px solid #1e293b; font-size: 11px; color: #94a3b8; font-family: monospace; }
+  .copy-code-btn { color: #cbd5e1; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,.08); }
+  .copy-code-btn:active { background: rgba(255,255,255,.2); }
+  .code-wrap pre { padding: 12px; overflow-x: auto; margin: 0; color: #e2e8f0; font-size: 13px; line-height: 1.45; }
+  .code-wrap pre code { background: none; padding: 0; color: inherit; }
+
   .retry { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #f59e0b; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); }
 
   .source-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .source-link:active { background: rgba(99,102,241,.25); }
   .source-link i { font-size: 10px; flex-shrink: 0; }
 
@@ -135,16 +145,16 @@
   .input-row { display: flex; gap: 8px; align-items: flex-end; }
   .attach-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   .attach-btn:active { background: var(--border); }
-  .input-wrap { flex: 1; background: var(--input-bg); border-radius: 24px; border: 1px solid var(--border); padding: 4px 4px 4px 16px; display: flex; align-items: center; }
+  .input-wrap { flex: 1; background: var(--input-bg); border-radius: 22px; border: 1px solid var(--border); padding: 4px 14px; display: flex; align-items: center; }
   .input-wrap:focus-within { border-color: #4f46e5; }
-  #userInput { flex: 1; background: transparent; border: none; padding: 10px 0; resize: none; max-height: 120px; outline: none; color: var(--text); }
-  #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  #userInput { flex: 1; background: transparent; border: none; padding: 8px 0; resize: none; max-height: 120px; line-height: 1.4; outline: none; color: var(--text); }
+  #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background .2s, transform .1s; }
+  #sendBtn.stop { background: #ef4444; }
   #sendBtn:active { transform: scale(.9); }
-  #sendBtn:disabled { opacity: .5; }
 
   #attachSheet { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
   #attachSheet.open { display: flex; }
-  .sheet-content { width: 100%; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
+  .sheet-content { width: 100%; max-width: 500px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
   .sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
   .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .sheet-option { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
@@ -154,7 +164,7 @@
 
   #settingsModal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
   #settingsModal.open { display: flex; }
-  .modal-content { width: 100%; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
+  .modal-content { width: 100%; max-width: 540px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; max-height: 82vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
@@ -171,7 +181,7 @@
   .list-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: var(--text); }
   .delete-item { color: #ef4444; padding: 8px; }
 
-  #contextMenu { position: fixed; z-index: 200; background: var(--modal-bg); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,.5); overflow: hidden; display: none; border: 1px solid var(--border); min-width: 160px; }
+  #contextMenu { position: fixed; z-index: 200; background: var(--modal-bg); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,.5); overflow: hidden; display: none; border: 1px solid var(--border); min-width: 170px; }
   .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); }
   .ctx-btn:active { background: var(--border); }
   .ctx-btn.danger { color: #ef4444; }
@@ -183,6 +193,8 @@
   @media (min-width: 768px) {
     #sidebar { position: relative; transform: translateX(0); }
     .close-sidebar, .menu-btn { display: none; }
+    #settingsModal, #attachSheet { align-items: center; }
+    .modal-content, .sheet-content { border-radius: 20px; }
   }
 </style>
 </head>
@@ -213,26 +225,12 @@
       </div>
     </header>
 
-    <div id="errorBox"></div>
-
-    <div id="chatArea">
-      <div class="welcome" id="welcomeScreen">
-        <i class="fa-solid fa-sparkles big"></i>
-        <h2>How can I help?</h2>
-        <p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p>
-        <div class="suggestions">
-          <button class="sugg-btn" data-q="What are the latest news in Hong Kong?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest HK news?</button>
-          <button class="sugg-btn" data-q="Explain quantum computing simply"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
-          <button class="sugg-btn" data-q="Write a python function to reverse a string"><i class="fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>
-          <button class="sugg-btn" data-q="Give me 5 creative business ideas"><i class="fa-solid fa-lightbulb" style="color:#f59e0b"></i> 5 business ideas</button>
-        </div>
-      </div>
-    </div>
+    <div id="chatArea"></div>
 
     <div id="inputArea">
       <div class="search-toggle">
-        <label style="display:flex;align-items:center;gap:8px">
-          <label class="toggle-switch"><input type="checkbox" id="webSearchToggle" checked><span class="slider"></span></label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <span class="toggle-switch"><input type="checkbox" id="webSearchToggle" checked><span class="slider"></span></span>
           <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
         </label>
       </div>
@@ -283,8 +281,8 @@
         <option value="mistral">Mistral</option>
         <option value="qwen-coder">Qwen Coder (code)</option>
       </select>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
-        <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">
+        <span class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></span>
         Smart Mode (step-by-step reasoning)
       </label>
     </div>
@@ -343,15 +341,29 @@
   function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
 
-  // Detect URLs in text
-  function detectUrls(text) {
-    var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
-    var matches = text.match(urlRegex);
-    return matches || [];
+  // Lazy-load Tesseract only when an image is actually attached
+  var tesseractPromise = null;
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (tesseractPromise) return tesseractPromise;
+    tesseractPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = function () { resolve(window.Tesseract); };
+      s.onerror = function () { tesseractPromise = null; reject(new Error('Failed to load OCR engine')); };
+      document.head.appendChild(s);
+    });
+    return tesseractPromise;
   }
 
-  var DEFAULT_SYS = $('sysPrompt') ? $('sysPrompt').value : 'You are NeuralForge, an expert AI assistant. CRITICAL RULES:\n1) Use PERFECT English grammar.\n2) Format for mobile: short paragraphs, bullet points, bold key terms.\n3) For code: use fenced blocks with language tags.\n4) You MUST use the web search results and website content provided in the user message. Never say "I cannot browse" — the information is already provided. Answer based on the provided context.';
+  function detectUrls(text) {
+    var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+    return text.match(urlRegex) || [];
+  }
+
+  var DEFAULT_SYS = $('sysPrompt') ? $('sysPrompt').value : '';
   var DEFAULT_QS = [
     { text: 'What are the latest news in Hong Kong?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -368,6 +380,7 @@
   var smartMode = lsGet('nf_smart', '0') === '1';
 
   var isGenerating = false;
+  var activeController = null;
   var selectedMsgEl = null;
   var longPressTimer = null;
 
@@ -379,22 +392,60 @@
 
   function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
   function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
+
+  function saveHistoriesSafe() {
+    // Save normally first; if quota exceeded (5MB limit from base64 images), strip base64 data URLs and retry
+    try {
+      localStorage.setItem('nf_histories', JSON.stringify(histories));
+    } catch (e) {
+      var trimmed = histories.map(function (h) {
+        return {
+          id: h.id,
+          title: h.title,
+          messages: h.messages.map(function (m) {
+            var copy = Object.assign({}, m);
+            if (copy.image && copy.image.indexOf('data:') === 0) delete copy.image;
+            return copy;
+          })
+        };
+      });
+      safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
+    }
+  }
+
   function setMessages(msgs) {
     var c = histories.find(function (h) { return h.id === currentChatId; });
     if (c) {
       c.messages = msgs;
       var fu = msgs.find(function (m) { return m.role === 'user'; });
       c.title = fu ? (fu.content.length > 34 ? fu.content.slice(0, 34) + '…' : fu.content) : 'New Chat';
-      lsSet('nf_histories', JSON.stringify(histories));
+      saveHistoriesSafe();
       renderSidebar();
     }
   }
+
+  function setGeneratingState(active) {
+    isGenerating = active;
+    var btn = $('sendBtn');
+    if (active) {
+      btn.classList.add('stop');
+      btn.type = 'button';
+      btn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+    } else {
+      btn.classList.remove('stop');
+      btn.type = 'submit';
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+      activeController = null;
+    }
+  }
+
   function createNewChat() {
+    if (isGenerating && activeController) activeController.abort();
     var id = 'chat_' + Date.now();
     histories.unshift({ id: id, title: 'New Chat', messages: [] });
     currentChatId = id;
     lsSet('nf_current_chat', currentChatId);
-    lsSet('nf_histories', JSON.stringify(histories));
+    saveHistoriesSafe();
     clearAttachments();
     renderSidebar(); renderWelcomeScreen();
     if (window.innerWidth < 768) $('sidebar').classList.remove('open');
@@ -437,6 +488,21 @@
     $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
     $('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
 
+    // Auto-expanding textarea
+    var userInput = $('userInput');
+    userInput.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Stop button click handler
+    $('sendBtn').addEventListener('click', function (e) {
+      if (isGenerating) {
+        e.preventDefault();
+        if (activeController) activeController.abort();
+      }
+    });
+
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
@@ -447,11 +513,44 @@
       if (b && b.dataset.q) { $('userInput').value = b.dataset.q; submitForm(); }
       var h = e.target.closest('.thinking-header');
       if (h) h.parentElement.classList.toggle('open');
+      var copyBtn = e.target.closest('.copy-code-btn');
+      if (copyBtn) {
+        var codeEl = copyBtn.closest('.code-wrap').querySelector('code');
+        if (codeEl) {
+          copyText(codeEl.textContent);
+          copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+          setTimeout(function () { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy'; }, 1500);
+        }
+      }
     });
 
     $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
-    $('ctxDelete').onclick = function () { selectedMsgEl.remove(); var msgs = getMessages().filter(function (m) { return m.content !== selectedMsgEl.dataset.text; }); setMessages(msgs); showToast('Deleted'); ctxMenu.style.display = 'none'; };
-    $('ctxEdit').onclick = function () { $('userInput').value = selectedMsgEl.dataset.text; selectedMsgEl.remove(); ctxMenu.style.display = 'none'; $('userInput').focus(); };
+    $('ctxDelete').onclick = function () {
+      var targetId = selectedMsgEl.dataset.id;
+      selectedMsgEl.remove();
+      var msgs = getMessages().filter(function (m) { return m.id !== targetId; });
+      setMessages(msgs);
+      if (msgs.length === 0) renderWelcomeScreen();
+      showToast('Deleted');
+      ctxMenu.style.display = 'none';
+    };
+    $('ctxEdit').onclick = function () {
+      var targetId = selectedMsgEl.dataset.id;
+      $('userInput').value = selectedMsgEl.dataset.text.replace(/^\[Image\]\s*/, '');
+      $('userInput').dispatchEvent(new Event('input'));
+      var msgs = getMessages();
+      var idx = msgs.findIndex(function (m) { return m.id === targetId; });
+      if (idx !== -1) {
+        // Remove this message and any subsequent messages in the turn
+        msgs = msgs.slice(0, idx);
+        setMessages(msgs);
+        renderChat();
+      } else {
+        selectedMsgEl.remove();
+      }
+      ctxMenu.style.display = 'none';
+      $('userInput').focus();
+    };
     $('ctxTeach').onclick = function () {
       var correction = prompt('What is the correct information?');
       if (correction && correction.trim()) {
@@ -460,22 +559,34 @@
         renderMemory();
         showToast('AI learned: ' + correction.trim().substring(0, 30) + '…');
         ctxMenu.style.display = 'none';
+        var targetId = selectedMsgEl.dataset.id;
         var msgs = getMessages();
-        var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
+        var idx = msgs.findIndex(function (m) { return m.id === targetId; });
         if (idx > 0) {
-          var prev = msgs[idx - 1].content;
+          var prev = msgs[idx - 1];
           msgs = msgs.slice(0, idx);
           setMessages(msgs);
           selectedMsgEl.remove();
-          runAI(prev, null, '', [], null);
+          setGeneratingState(true);
+          showTyping('Thinking...');
+          runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
         }
       }
     };
     $('ctxRegen').onclick = function () {
+      var targetId = selectedMsgEl.dataset.id;
       var msgs = getMessages();
-      var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
+      var idx = msgs.findIndex(function (m) { return m.id === targetId; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev, null, '', [], null); }
+      if (idx > 0) {
+        var prev = msgs[idx - 1];
+        msgs = msgs.slice(0, idx);
+        setMessages(msgs);
+        selectedMsgEl.remove();
+        setGeneratingState(true);
+        showTyping('Thinking...');
+        runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
+      }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -499,12 +610,12 @@
     }
     if (pendingImage) {
       var chip = document.createElement('div'); chip.className = 'preview-chip';
-      chip.innerHTML = '<img src="' + pendingImage.dataUrl + '"><span class="chip-label">' + esc(pendingImage.name) + '</span><button class="chip-x" data-clear="image"><i class="fa-solid fa-xmark"></i></button>';
+      chip.innerHTML = '<img src="' + pendingImage.dataUrl + '"><span class="chip-label">' + esc(pendingImage.name) + '</span><button type="button" class="chip-x" data-clear="image"><i class="fa-solid fa-xmark"></i></button>';
       row.appendChild(chip);
     }
     if (pendingFile) {
       var chip2 = document.createElement('div'); chip2.className = 'preview-chip';
-      chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
+      chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button type="button" class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
       row.appendChild(chip2);
     }
   }
@@ -520,10 +631,11 @@
   function handleImageFile(file) {
     if (!file) return;
     if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
-    if (file.size > 5000000) { showToast('Image too large (max 5MB)'); return; }
+    if (file.size > 8000000) { showToast('Image too large (max 8MB)'); return; }
+    loadTesseract(); // Preload OCR engine in background
     var reader = new FileReader();
     reader.onload = function (ev) {
-      compressImage(ev.target.result, 800, 0.75, function (dataUrl) {
+      compressImage(ev.target.result, 720, 0.7, function (dataUrl) {
         pendingImage = { name: file.name || 'photo.jpg', dataUrl: dataUrl };
         renderPreview();
         showToast('Photo attached');
@@ -582,6 +694,7 @@
         else interim += t;
       }
       $('userInput').value = baseText + interim;
+      $('userInput').dispatchEvent(new Event('input'));
     };
     recognition.onerror = function (e) {
       if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
@@ -603,11 +716,10 @@
     renderPreview();
   }
 
-  // FIXED: Image generation using a modal instead of prompt()
   function generateImageFromPrompt() {
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML = '<div style="background:var(--modal-bg);border-radius:16px;padding:20px;width:100%;max-width:400px;"><h3 style="margin-bottom:12px;color:var(--text)">Describe the image</h3><textarea id="genPromptInput" style="width:100%;min-height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;outline:none;" placeholder="e.g. a futuristic city at sunset"></textarea><div style="display:flex;gap:8px;margin-top:12px;"><button id="genCancel" style="flex:1;padding:12px;background:var(--border);color:var(--text);border-radius:10px;font-weight:600;">Cancel</button><button id="genConfirm" style="flex:1;padding:12px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;">Generate</button></div></div>';
+    overlay.innerHTML = '<div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px;"><h3 style="margin-bottom:12px;color:var(--text)">Describe the image</h3><textarea id="genPromptInput" style="width:100%;min-height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;outline:none;" placeholder="e.g. a futuristic city at sunset"></textarea><div style="display:flex;gap:8px;margin-top:12px;"><button id="genCancel" style="flex:1;padding:12px;background:var(--border);color:var(--text);border-radius:10px;font-weight:600;">Cancel</button><button id="genConfirm" style="flex:1;padding:12px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;">Generate</button></div></div>';
     document.body.appendChild(overlay);
     var input = overlay.querySelector('#genPromptInput');
     input.focus();
@@ -621,7 +733,9 @@
   }
 
   function generateImage(prompt) {
-    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai';
+    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
+    var msgId = uid();
+    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
     aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image…</div></div>';
     $('chatArea').appendChild(aiMsgDiv);
     scrollToBottom();
@@ -632,16 +746,19 @@
 
     var img = new Image();
     img.onload = function () {
+      var content = '[Generated Image] ' + prompt;
+      aiMsgDiv.dataset.text = content;
       bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
+      attachLongPress(aiMsgDiv, content, 'ai');
       var msgs = getMessages();
-      msgs.push({ role: 'assistant', content: '[Generated Image] ' + prompt, image: imageUrl });
+      msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
       setMessages(msgs);
       scrollToBottom();
     };
     img.onerror = function () {
       bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
       aiMsgDiv.classList.add('error');
-      bubble.onclick = function () { generateImage(prompt); };
+      bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
     };
     img.src = imageUrl;
   }
@@ -664,7 +781,7 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation(); var id = btn.dataset.del;
         histories = histories.filter(function (h) { return h.id !== id; });
-        lsSet('nf_histories', JSON.stringify(histories));
+        saveHistoriesSafe();
         if (currentChatId === id) createNewChat(); else renderSidebar();
       });
     });
@@ -673,7 +790,10 @@
   function renderChat() {
     var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
     if (msgs.length === 0) { renderWelcomeScreen(); return; }
-    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false, m.image, m.sources); });
+    msgs.forEach(function (m) {
+      if (!m.id) m.id = uid();
+      addMessageToUI(m.content, m.role, false, m.image, m.sources, m.id);
+    });
     scrollToBottom();
   }
 
@@ -694,7 +814,6 @@
 
     var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 
-    // FIXED: Auto-detect URLs in the user's message
     var urlsInText = detectUrls(text);
     var urlToFetch = urlsInText.length > 0 ? urlsInText[0] : null;
 
@@ -703,29 +822,30 @@
     if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n\n[FILE: ' + pendingFile.name + ']';
     if (pendingImage) displayText = '[Image] ' + displayText;
 
+    var msgId = uid();
     var msgs = getMessages();
-    msgs.push({ role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
+    msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
     setMessages(msgs);
 
-    addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null);
+    addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null, null, msgId);
 
     var sendImage = pendingImage;
     var sendFileText = pendingFile ? pendingFile.text : '';
-    var sendText = text;
+    var sendText = text || displayText;
 
     input.value = ''; input.style.height = 'auto';
     clearAttachments();
 
-    isGenerating = true; $('sendBtn').disabled = true;
+    setGeneratingState(true);
     showTyping('Thinking...');
     runAI(sendText, sendImage, sendFileText, [], urlToFetch);
   }
 
-  // FIXED: OCR with English + Chinese
   async function extractTextFromImage(imageDataUrl) {
     try {
-      var result = await Tesseract.recognize(imageDataUrl, 'eng+chi_sim', {
-        logger: function(m) {
+      var T = await loadTesseract();
+      var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
+        logger: function (m) {
           if (m.status === 'recognizing text') {
             showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
           }
@@ -738,17 +858,16 @@
     }
   }
 
-  // FIXED: Better website fetching with multiple proxy fallbacks
   async function fetchWebsiteContent(url) {
     var proxies = [
       'https://api.allorigins.win/get?url=',
       'https://corsproxy.io/?',
       'https://api.codetabs.com/v1/proxy?quest='
     ];
-    
+
     for (var i = 0; i < proxies.length; i++) {
       try {
-        showTyping('Fetching website… (attempt ' + (i+1) + ')');
+        showTyping('Fetching website… (attempt ' + (i + 1) + ')');
         var proxyUrl = proxies[i] + encodeURIComponent(url);
         var response = await fetch(proxyUrl);
         var data;
@@ -758,26 +877,21 @@
         } else {
           data = await response.text();
         }
-        
+
         if (!data || data.length < 100) continue;
-        
+
         var parser = new DOMParser();
         var doc = parser.parseFromString(data, 'text/html');
-        
-        // Remove junk
+
         var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
-        elementsToRemove.forEach(function(el) { el.remove(); });
-        
-        // Get main content
+        elementsToRemove.forEach(function (el) { el.remove(); });
+
         var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
         var text = mainContent ? mainContent.textContent : '';
-        
-        // Clean up
-        text = text.replace(/\s+/g, ' ').trim();
-        text = text.substring(0, 8000);
-        
+
+        text = text.replace(/\s+/g, ' ').trim().substring(0, 8000);
         var title = doc.title || url;
-        
+
         if (text.length > 100) {
           return { text: text, title: title };
         }
@@ -789,7 +903,7 @@
   }
 
   async function runAI(text, image, fileText, sources, urlToFetch) {
-    var useWeb = $('webSearchToggle').checked && !image;
+    var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
@@ -797,11 +911,20 @@
     if (memory.length) systemMsg += '\n\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
 
     var msgs = getMessages();
+    var aiMsgId = uid();
+    var aiMsgDiv = null;
+    var streamBubble = null;
 
-    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai';
-    aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
-    $('chatArea').appendChild(aiMsgDiv);
-    var streamBubble = aiMsgDiv.querySelector('.bubble');
+    function ensureAiBubble() {
+      if (aiMsgDiv) return;
+      removeTyping();
+      aiMsgDiv = document.createElement('div');
+      aiMsgDiv.className = 'msg ai';
+      aiMsgDiv.dataset.id = aiMsgId;
+      aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
+      $('chatArea').appendChild(aiMsgDiv);
+      streamBubble = aiMsgDiv.querySelector('.bubble');
+    }
 
     var aiText = '';
     var retryCount = 0;
@@ -815,14 +938,12 @@
       var websiteContent = '';
       var websiteTitle = '';
 
-      // OCR for images
       if (image) {
         showTyping('Reading image with OCR (English + Chinese)…');
         ocrText = await extractTextFromImage(image.dataUrl);
         if (!ocrText) ocrText = '[No text detected in image]';
       }
 
-      // FIXED: Fetch website if URL detected
       if (urlToFetch) {
         var websiteData = await fetchWebsiteContent(urlToFetch);
         websiteContent = websiteData.text;
@@ -830,34 +951,24 @@
         if (!websiteContent) websiteContent = '[Could not extract content from ' + urlToFetch + ']';
       }
 
-      // Web search
+      if (useWeb && !image && !urlToFetch) showTyping('Searching the web…');
       var results = await searchPromise;
       var webText = results.text || '';
       var webSources = results.sources || [];
 
-      // Build user message with ALL context
       var userText = text || '';
-      
-      if (ocrText) {
-        userText += '\n\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
-      }
-      if (websiteContent) {
-        userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
-      }
+      if (ocrText) userText += '\n\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
+      if (websiteContent) userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
       if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && webText && webText.indexOf('No relevant') === -1) {
         userText += '\n\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
       }
 
-      // If no context was added, add a note
-      if (!ocrText && !websiteContent && !fileText && (!useWeb || !webText || webText.indexOf('No relevant') !== -1)) {
-        // No extra context, just use the text
-      }
-
       var modelToUse = modelList[currentModelIdx];
 
       while (retryCount <= maxRetries) {
-        var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
+        activeController = new AbortController();
+        var to = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
 
         var apiMessages = [{ role: 'system', content: systemMsg }];
         var historyMsgs = msgs.slice(-8);
@@ -866,11 +977,10 @@
           var m = historyMsgs[i];
           apiMessages.push({ role: m.role, content: m.content });
         }
-        // Replace last user message with enriched content
         apiMessages[apiMessages.length - 1].content = userText;
 
         var res = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST', signal: controller.signal,
+          method: 'POST', signal: activeController.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: modelToUse,
@@ -879,7 +989,8 @@
             temperature: smartMode ? 0.3 : 0.7
           })
         });
-        clearTimeout(to); if (!res.ok) throw new Error('Server error ' + res.status);
+        clearTimeout(to);
+        if (!res.ok) throw new Error('Server error ' + res.status);
 
         aiText = '';
         if (res.body && res.body.getReader) {
@@ -896,7 +1007,12 @@
               safe(function () {
                 var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
                 if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-                if (c) { aiText += c; streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>'; scrollToBottom(); }
+                if (c) {
+                  ensureAiBubble();
+                  aiText += c;
+                  streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+                  scrollToBottom();
+                }
               }, null);
             }
           }
@@ -911,18 +1027,19 @@
         if (retryCount <= maxRetries) {
           currentModelIdx = (currentModelIdx + 1) % modelList.length;
           modelToUse = modelList[currentModelIdx];
-          streamBubble.innerHTML = 'Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')';
+          showTyping('Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')');
           await new Promise(function (r) { setTimeout(r, 800); });
         }
       }
 
       if (!aiText.trim()) throw new Error('empty response');
-      
+
+      ensureAiBubble();
       var allSources = webSources.concat(sources || []);
       if (urlToFetch) {
         allSources.push({ label: websiteTitle || urlToFetch, url: urlToFetch });
       }
-      
+
       var sourceHtml = '';
       if (allSources.length > 0) {
         sourceHtml = '<div class="source-links">';
@@ -931,42 +1048,94 @@
         });
         sourceHtml += '</div>';
       }
-      
+
+      aiMsgDiv.dataset.text = aiText;
       streamBubble.innerHTML = formatText(aiText) + sourceHtml;
       attachLongPress(aiMsgDiv, aiText, 'ai');
-      var saved = getMessages(); saved.push({ role: 'assistant', content: aiText, sources: allSources }); setMessages(saved); scrollToBottom();
+      var saved = getMessages();
+      saved.push({ id: aiMsgId, role: 'assistant', content: aiText, sources: allSources });
+      setMessages(saved);
+      scrollToBottom();
     } catch (err) {
-      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' : (err.message === 'empty response' ? 'The AI returned nothing after retries.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
-      streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
-      aiMsgDiv.classList.add('error');
-      streamBubble.querySelector('.retry').addEventListener('click', function () {
-        var s = getMessages(); while (s.length && s[s.length - 1].role === 'assistant') s.pop(); setMessages(s); aiMsgDiv.remove();
-        var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
-        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], null);
-      });
-      attachLongPress(aiMsgDiv, '', 'ai');
-    } finally { isGenerating = false; $('sendBtn').disabled = false; }
+      removeTyping();
+      if (err.name === 'AbortError' && aiText.trim()) {
+        // User tapped Stop mid-stream — keep what was generated so far
+        ensureAiBubble();
+        aiMsgDiv.dataset.text = aiText;
+        streamBubble.innerHTML = formatText(aiText);
+        attachLongPress(aiMsgDiv, aiText, 'ai');
+        var savedPartial = getMessages();
+        savedPartial.push({ id: aiMsgId, role: 'assistant', content: aiText });
+        setMessages(savedPartial);
+      } else {
+        ensureAiBubble();
+        var friendly = err.name === 'AbortError' ? 'Generation stopped.' : (err.message === 'empty response' ? 'The AI returned nothing after retries.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
+        streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+        aiMsgDiv.classList.add('error');
+        streamBubble.querySelector('.retry').addEventListener('click', function () {
+          aiMsgDiv.remove();
+          var s = getMessages();
+          var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
+          if (lastUser) {
+            setGeneratingState(true);
+            showTyping('Thinking...');
+            runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], detectUrls(lastUser.content)[0] || null);
+          }
+        });
+        attachLongPress(aiMsgDiv, '', 'ai');
+      }
+    } finally {
+      setGeneratingState(false);
+    }
   }
 
   function formatText(text) {
-    var html = String(text)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    var codeBlocks = [];
+    // 1. Extract fenced code blocks BEFORE escaping/markdown so #, *, - inside code don't break
+    var raw = String(text).replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, function (m, lang, code) {
+      var idx = codeBlocks.length;
+      var cleanCode = esc(code.replace(/\n$/, ''));
+      var label = lang ? esc(lang) : 'code';
+      codeBlocks.push(
+        '<div class="code-wrap"><div class="code-head"><span>' + label + '</span><button type="button" class="copy-code-btn"><i class="fa-solid fa-copy"></i> Copy</button></div><pre><code>' + cleanCode + '</code></pre></div>'
+      );
+      return '@@CODEBLOCK_' + idx + '@@';
+    });
+
+    // 2. Escape HTML & format remaining prose
+    var html = esc(raw)
       .replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function (m, p1) {
         return '<div class="thinking-box"><div class="thinking-header"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + p1.replace(/\n/g, '<br>').trim() + '</div></div>';
       })
-      .replace(/```([\s\S]*?)```/g, function (m, c) { return '<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0"><code>' + c.replace(/^\n/, '').replace(/\n$/, '') + '</code></pre>'; })
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>').replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>').replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
+      .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
+      .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+
     html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
     html = html.split('\n\n').map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+
+    // 3. Re-inject protected code blocks
+    html = html.replace(/@@CODEBLOCK_(\d+)@@/g, function (m, idx) {
+      return codeBlocks[+idx] || '';
+    });
+
     return html;
   }
 
   function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-  function addMessageToUI(text, type, animate, image, sources) {
-    var div = document.createElement('div'); div.className = 'msg ' + type; div.dataset.text = text;
+
+  function addMessageToUI(text, type, animate, image, sources, id) {
+    var div = document.createElement('div');
+    div.className = 'msg ' + type;
+    div.dataset.text = text;
+    if (id) div.dataset.id = id;
     if (animate) div.style.animation = 'popIn .2s ease-out';
+
     var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
     var sourceHtml = '';
     if (sources && sources.length > 0 && type === 'ai') {
@@ -981,39 +1150,65 @@
     } else {
       div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
     }
-    $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
+    $('chatArea').appendChild(div);
+    scrollToBottom();
+    attachLongPress(div, text, type);
   }
+
   function showTyping(text) {
-    removeTyping();
+    var existing = $('typingIndicator');
+    if (existing) {
+      var label = existing.querySelector('.typing-label');
+      if (label) label.textContent = text;
+      scrollToBottom();
+      return;
+    }
     var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typingIndicator';
-    div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div>' + esc(text) + '</div></div>';
+    div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div><span class="typing-label">' + esc(text) + '</span></div></div>';
     $('chatArea').appendChild(div); scrollToBottom();
   }
   function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
+
   function attachLongPress(div, text, type) {
     div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
     div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
     div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
     div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
+    div.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('a, button')) return;
+      e.preventDefault();
+      showContextMenu(e, div, text, type);
+    });
   }
+
   function showContextMenu(e, el, text, type) {
     selectedMsgEl = el; var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    $('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 170) + 'px';
-    $('contextMenu').style.top = Math.min(t.clientY || 20, window.innerHeight - 200) + 'px';
+    $('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 180) + 'px';
+    $('contextMenu').style.top = Math.min(t.clientY || 20, window.innerHeight - 210) + 'px';
     $('contextMenu').style.display = 'block';
     $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
     $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
     $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
   }
+
   function copyText(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
     else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
   }
 
-  // FIXED: Better web search with multiple sources
+  function extractRealDdgUrl(rawHref) {
+    if (!rawHref) return 'https://duckduckgo.com';
+    if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
+    var match = rawHref.match(/[?&]uddg=([^&]+)/);
+    if (match && match[1]) {
+      return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
+    }
+    return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
+  }
+
   function searchWebFast(query) {
     var wikiP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
       try {
         var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
         clearTimeout(t); var j = await r.json();
@@ -1024,19 +1219,20 @@
       } catch (e) {}
       return { text: '', sources: [] };
     }, { text: '', sources: [] });
-    
+
     var ddgP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 4000);
       try {
         var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
         clearTimeout(t); var j = await r.json();
         if (j.contents) {
           var doc = new DOMParser().parseFromString(j.contents, 'text/html');
           var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
-          var sources = results.map(function (r) {
-            var link = r.querySelector('.result__url');
-            var title = r.querySelector('.result__title');
-            return { label: title ? title.textContent.trim().substring(0, 30) : 'DuckDuckGo', url: link ? link.href : 'https://duckduckgo.com' };
+          var sources = results.map(function (resItem) {
+            var anchor = resItem.querySelector('.result__a');
+            var rawHref = anchor ? anchor.getAttribute('href') : '';
+            var title = anchor ? anchor.textContent.trim().substring(0, 30) : 'Web Source';
+            return { label: title, url: extractRealDdgUrl(rawHref) };
           });
           var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
           if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
@@ -1045,17 +1241,7 @@
       return { text: '', sources: [] };
     }, { text: '', sources: [] });
 
-    var newsP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
-      try {
-        var r = await fetch('https://newsapi.org/v2/everything?q=' + encodeURIComponent(query) + '&sortBy=publishedAt&pageSize=5&apiKey=demo', { signal: c.signal });
-        clearTimeout(t);
-        // newsapi demo key is limited, so this is a fallback
-      } catch (e) {}
-      return { text: '', sources: [] };
-    }, { text: '', sources: [] });
-
-    return Promise.all([wikiP, ddgP, newsP]).then(function (r) {
+    return Promise.all([wikiP, ddgP]).then(function (r) {
       var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
       var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
       return { text: texts.length ? texts.join('\n\n') : 'No relevant results found.', sources: allSources };
