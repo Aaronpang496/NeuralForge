@@ -64,8 +64,6 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .msg.ai { align-self:flex-start; align-items:flex-start; }
   @keyframes popIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   @keyframes blink { 50% { opacity:0; } }
-  
-  /* Thinking Animation */
   @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 80%, 100% { transform: scale(2); opacity: 0; } }
   @keyframes pulse-dot { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
   
@@ -79,42 +77,41 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   .bubble code { background:rgba(0,0,0,.3); padding:2px 4px; border-radius:4px; font-family:monospace; font-size:13px; }
   .retry { margin-top:8px; display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:700; color:#f59e0b; border:1px solid rgba(245,158,11,.5); background:rgba(245,158,11,.1); }
 
-  /* Redesigned Thinking Box */
-  .thinking-block {
-    background: rgba(99, 102, 241, 0.05); 
-    border: 1px solid rgba(99, 102, 241, 0.2);
+  .thinking-box {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.25);
     border-left: 3px solid #6366f1;
-    border-radius: 8px; 
-    margin: 10px 0 14px 0; 
+    border-radius: 10px;
+    margin: 0 0 12px 0;
     overflow: hidden;
   }
-  .thinking-block summary {
-    padding: 10px 14px; 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: #818cf8; 
+  .thinking-header {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #818cf8;
     cursor: pointer;
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    user-select: none; 
-    list-style: none;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+    background: rgba(99, 102, 241, 0.05);
   }
-  .thinking-block summary:hover { background: rgba(99, 102, 241, 0.1); }
-  .thinking-block summary::-webkit-details-marker { display: none; }
-  .thinking-block summary i { font-size: 14px; transition: transform 0.3s; }
-  .thinking-block[open] summary i { transform: rotate(90deg); }
+  .thinking-header:hover { background: rgba(99, 102, 241, 0.12); }
+  .thinking-header i { font-size: 14px; transition: transform 0.3s; }
+  .thinking-box.open .thinking-header i { transform: rotate(90deg); }
   .thinking-content {
-    padding: 0 14px 14px 14px; 
-    font-size: 13px; 
-    color: var(--text-muted); 
+    padding: 0 14px 14px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
     line-height: 1.6;
-    border-top: 1px solid rgba(99, 102, 241, 0.1); 
-    margin-top: 4px; 
+    border-top: 1px solid rgba(99, 102, 241, 0.15);
+    margin-top: 0;
     padding-top: 12px;
     font-style: italic;
+    display: none;
   }
+  .thinking-box.open .thinking-content { display: block; }
 
   #inputArea { background:var(--header-bg); backdrop-filter:blur(10px); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; z-index:50; }
   .search-toggle { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:600; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
@@ -259,12 +256,27 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     </div>
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. Follow these rules strictly:
-1. Be accurate and honest. If unsure, say so instead of guessing.
-2. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.
-3. For any code, always use a fenced code block with the language tag, then explain briefly.
-4. Use perfect grammar and punctuation. Match the user's language.
-5. Be concise but complete.</textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. You MUST follow these rules:
+
+CRITICAL LANGUAGE RULES:
+- Use PERFECT English grammar, spelling, and punctuation
+- Write complete sentences with proper subject-verb agreement
+- Never use broken English like "I't have" or "an built"
+- Always use correct articles (a, an, the)
+- Proofread your response before sending
+
+FORMATTING RULES:
+- Format for mobile: short paragraphs, clear headings, bullet points
+- Use bold for key terms
+- For code: always use fenced code blocks with language tags
+- Be concise but complete
+
+THINKING RULES (Smart Mode only):
+- When Smart Mode is ON, you MUST write your reasoning between [[THINK]] and [[/THINK]] markers
+- Example: [[THINK]] The user is asking about X. I should consider Y... [[/THINK]]
+- After [[/THINK]], write your final answer
+- NEVER use HTML tags like <thinking> or <details>
+- The [[THINK]] marker is NOT visible to the user</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
     <div class="setting-group">
@@ -297,7 +309,7 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. Follow these rules strictly:\n1. Be accurate and honest. If unsure, say so instead of guessing.\n2. Format for a phone screen: short paragraphs, clear headings, and bullet points. Use bold for key terms.\n3. For any code, always use a fenced code block with the language tag, then explain briefly.\n4. Use perfect grammar and punctuation. Match the user’s language.\n5. Be concise but complete.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. You MUST follow these rules:\n\nCRITICAL LANGUAGE RULES:\n- Use PERFECT English grammar, spelling, and punctuation\n- Write complete sentences with proper subject-verb agreement\n- Never use broken English like "I\'t have" or "an built"\n- Always use correct articles (a, an, the)\n- Proofread your response before sending\n\nFORMATTING RULES:\n- Format for mobile: short paragraphs, clear headings, bullet points\n- Use bold for key terms\n- For code: always use fenced code blocks with language tags\n- Be concise but complete\n\nTHINKING RULES (Smart Mode only):\n- When Smart Mode is ON, you MUST write your reasoning between [[THINK]] and [[/THINK]] markers\n- Example: [[THINK]] The user is asking about X. I should consider Y... [[/THINK]]\n- After [[/THINK]], write your final answer\n- NEVER use HTML tags like <thinking> or <details>\n- The [[THINK]] marker is NOT visible to the user';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -421,22 +433,21 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
     var msgs = getMessages(); msgs.push({ role: 'user', content: text }); setMessages(msgs);
     addMessageToUI(text, 'user', true); input.value = ''; input.style.height = 'auto';
-    isGenerating = true; $('sendBtn').disabled = true; runAI(text);
+    isGenerating = true; $('sendBtn').disabled = true;
+    showTyping('Thinking...');
+    runAI(text);
   }
   window.__nfQuick = function(t) { $('userInput').value = t; submitForm(); };
 
   async function runAI(text) {
     var useWeb = $('webSearchToggle').checked; var finalPrompt = text;
     if (useWeb) {
-      showTyping('🔍 Searching web...'); 
-      var results = await searchWeb(text); 
-      removeTyping();
+      var results = await searchWeb(text);
       finalPrompt = 'User Query: ' + text + '\n\n[INSTRUCTIONS: Use the following verified web context to answer accurately. Keep it concise, use perfect grammar, and cite source titles in brackets like [Title]. If the context is irrelevant, answer from your own knowledge and say so.]\n\n[WEB CONTEXT]:\n' + results;
     }
-    showTyping('Thinking...');
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
     if (smartMode) {
-      systemMsg += '\n\nSMART MODE: Before answering, you MUST think step-by-step inside <thinking> and </thinking> tags. The user will see this as a collapsible section. After thinking, provide the final clear answer.';
+      systemMsg += '\n\nSMART MODE IS ON. You MUST use [[THINK]] and [[/THINK]] markers for reasoning. NEVER use HTML tags.';
     }
     if (memory.length) systemMsg += '\n\n[USER MEMORY - Always remember these facts]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
     var msgs = getMessages(); msgs.push({ role: 'user', content: finalPrompt });
@@ -483,8 +494,13 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
   }
 
   function formatText(text) {
-    var html = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/<thinking>([\s\S]*?)<\/thinking>/gi, function(match, p1) { return '<details class="thinking-block" open><summary><i class="fa-solid fa-chevron-right"></i> Show thinking process</summary><div class="thinking-content">' + p1.replace(/\n/g, '<br>') + '</div></details>'; })
+    var html = String(text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;\/?(details|summary|thinking|analysis)[^&]*?&gt;/gi, '')
+      .replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function(match, p1) {
+        var content = p1.replace(/\n/g, '<br>').trim();
+        return '<div class="thinking-box"><div class="thinking-header" onclick="this.parentElement.classList.toggle(\'open\')"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + content + '</div></div>';
+      })
       .replace(/```([\s\S]*?)```/g, function (m, c) { return '<pre style="background:rgba(0,0,0,.4);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap;margin:6px 0;"><code>' + c.replace(/^\n/, '').replace(/\n$/, '') + '</code></pre>'; })
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/`(.*?)`/g, '<code>$1</code>')
       .replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^# (.*$)/gim, '<h1>$1</h1>')
@@ -501,21 +517,18 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     div.innerHTML = '<div class="bubble">' + formatText(text) + '</div>';
     $('chatArea').appendChild(div); scrollToBottom(); attachLongPress(div, text, type);
   }
-  
-  // Improved Thinking Animation
   function showTyping(text) { 
     var div = document.createElement('div'); 
     div.className = 'msg ai'; 
     div.id = 'typingIndicator'; 
     div.innerHTML = '<div class="bubble" style="color:var(--text-muted); font-style:italic; display:flex; align-items:center; gap:10px;">' + 
       '<div style="position:relative; width:20px; height:20px; display:flex; justify-content:center; align-items:center;">' +
-      '<div style="position:absolute; width:100%; height:100%; border-radius:50%; background:var(--violet, #6366f1); opacity:0.4; animation:pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;"></div>' +
+      '<div style="position:absolute; width:100%; height:100%; border-radius:50%; background:#6366f1; opacity:0.4; animation:pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;"></div>' +
       '<i class="fa-solid fa-brain" style="font-size:14px; color:#6366f1; animation:pulse-dot 1.5s infinite; z-index:2;"></i>' +
       '</div>' + esc(text) + '</div>'; 
     $('chatArea').appendChild(div); 
     scrollToBottom(); 
   }
-  
   function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
   function attachLongPress(div, text, type) {
     div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
@@ -535,8 +548,6 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
     else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
   }
-  
-  // Faster Web Search (3.5s timeout instead of 7s)
   function withTimeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
   async function searchWeb(query) {
     var parts = [];
@@ -556,7 +567,6 @@ document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if
     }, null);
     return parts.length ? parts.join('\n\n') : 'No relevant results found.';
   }
-  
   function renderQuestions() { var list = $('questionList'); if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom questions yet.</p>'; return; } list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
   function addQuestion() { var input = $('questionInput'); var text = input.value.trim(); if (!text) return; var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen']; var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444']; customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] }); lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!'); }
   function renderMemory() { var list = $('memoryList'); if (!memory.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted); text-align:center;">No custom memory yet.</p>'; return; } list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join(''); }
