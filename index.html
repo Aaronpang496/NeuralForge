@@ -161,7 +161,6 @@ textarea.setting-input { min-height: 80px; resize: vertical; }
 select.setting-input { appearance: none; -webkit-appearance: none; }
 .btn-primary { width: 100%; background: #4f46e5; color: #fff; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; margin-top: 10px; }
 .btn-primary:active { opacity: .8; }
-.btn-secondary { width: 100%; background: var(--border); color: var(--text); padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; margin-top: 8px; }
 .list-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: var(--text); }
 .delete-item { color: #ef4444; padding: 8px; }
 .key-hint { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25); border-radius: 10px; font-size: 13px; color: #818cf8; text-decoration: none; }
@@ -280,6 +279,20 @@ When the free server is busy, your key is used automatically. You get higher lim
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
 <div class="setting-group">
+<div class="setting-label">CORSProxy API Key (for reading websites)</div>
+<input type="password" class="setting-input" id="corsproxyKeyInput" placeholder="Optional — for corsproxy.io" autocomplete="off">
+<a href="https://corsproxy.io/" target="_blank" rel="noopener" class="key-hint">
+<i class="fa-solid fa-globe"></i>
+<span>Get free key at corsproxy.io</span>
+<i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
+</a>
+<div id="corsproxyStatus" class="key-status">
+<i class="fa-solid fa-circle-info"></i>
+<span>Using free proxies (allorigins, codetabs). Add key for better reliability.</span>
+</div>
+<button class="btn-primary" id="saveCorsproxyKeyBtn">Save CORSProxy Key</button>
+</div>
+<div class="setting-group">
 <div class="setting-label">Welcome Questions</div>
 <div style="display:flex;gap:8px;margin-bottom:12px">
 <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1">
@@ -366,6 +379,7 @@ var currentModel = lsGet('nf_model', 'openai') || 'openai';
 var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var openrouterModel = lsGet('nf_openrouter_model', 'openai/gpt-4o-mini') || 'openai/gpt-4o-mini';
+var corsproxyKey = lsGet('nf_corsproxy_key', '') || '';
 
 var isGenerating = false;
 var activeController = null;
@@ -403,7 +417,7 @@ var c = histories.find(function (h) { return h.id === currentChatId; });
 if (c) {
 c.messages = msgs;
 var fu = msgs.find(function (m) { return m.role === 'user'; });
-c.title = fu ? (fu.content.length > 34 ? fu.content.slice(0, 34) + '...' : fu.content) : 'New Chat';
+c.title = fu ? (fu.content.length > 34 ? fu.content.slice(0, 34) + '…' : fu.content) : 'New Chat';
 saveHistoriesSafe();
 renderSidebar();
 }
@@ -432,7 +446,8 @@ currentChatId = id;
 lsSet('nf_current_chat', currentChatId);
 saveHistoriesSafe();
 clearAttachments();
-renderSidebar(); renderWelcomeScreen();
+renderSidebar();
+renderWelcomeScreen();
 if (window.innerWidth < 768) $('sidebar').classList.remove('open');
 }
 
@@ -441,11 +456,23 @@ var el = $('keyStatus');
 if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
-var masked = openrouterKey.substring(0, 8) + '......' + openrouterKey.substring(openrouterKey.length - 4);
+var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
 el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + '</span>';
 } else {
 el.className = 'key-status';
 el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (rate-limited).</span>';
+}
+}
+
+function updateCorsproxyStatus() {
+var el = $('corsproxyStatus');
+if (!el) return;
+if (corsproxyKey) {
+el.className = 'key-status active';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>CORSProxy key saved. Website reading more reliable.</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>Using free proxies (allorigins, codetabs). Add key for better reliability.</span>';
 }
 }
 
@@ -466,7 +493,7 @@ $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSe
 $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
 $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
 $('newChatBtn').onclick = createNewChat;
-$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); };
+$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); updateCorsproxyStatus(); };
 $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
 $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
@@ -545,7 +572,7 @@ if (correction && correction.trim()) {
 memory.push(correction.trim());
 lsSet('nf_memory', JSON.stringify(memory));
 renderMemory();
-showToast('AI learned: ' + correction.trim().substring(0, 30) + '...');
+showToast('AI learned: ' + correction.trim().substring(0, 30) + '…');
 ctxMenu.style.display = 'none';
 var targetId = selectedMsgEl.dataset.id;
 var msgs = getMessages();
@@ -591,11 +618,24 @@ showToast(val ? 'OpenRouter key saved!' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
 
+$('saveCorsproxyKeyBtn').onclick = function () {
+var val = $('corsproxyKeyInput').value.trim();
+corsproxyKey = val;
+lsSet('nf_corsproxy_key', val);
+updateCorsproxyStatus();
+showToast(val ? 'CORSProxy key saved!' : 'CORSProxy key removed');
+};
+$('corsproxyKeyInput').value = corsproxyKey;
+
 $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
 $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
 
-renderSidebar(); renderQuestions(); renderMemory(); renderChat();
+renderSidebar();
+renderQuestions();
+renderMemory();
+renderChat();
 updateKeyStatus();
+updateCorsproxyStatus();
 window.__nfBooted = true;
 }
 
@@ -604,7 +644,7 @@ var row = $('previewRow');
 row.innerHTML = '';
 if (isRecording) {
 var rc = document.createElement('div'); rc.className = 'rec-chip';
-rc.innerHTML = '<span class="rec-dot"></span> Listening...';
+rc.innerHTML = '<span class="rec-dot"></span> Listening…';
 row.appendChild(rc);
 }
 if (pendingImage) {
@@ -707,7 +747,7 @@ recShouldKeep = true;
 isRecording = true;
 safe(function () { recognition.start(); }, null);
 renderPreview();
-showToast('Recording...');
+showToast('Recording…');
 }
 
 function stopRecording() {
@@ -737,7 +777,7 @@ function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
 var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image...</div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image…</div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
@@ -838,7 +878,7 @@ var T = await loadTesseract();
 var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
 logger: function (m) {
 if (m.status === 'recognizing text') {
-showTyping('Reading image (EN+中文)... ' + Math.round(m.progress * 100) + '%');
+showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
 }
 }
 });
@@ -850,57 +890,105 @@ return '';
 }
 
 async function fetchWebsiteContent(url) {
-var proxies = [
-'https://api.allorigins.win/get?url=',
-'https://corsproxy.io/?',
-'https://api.codetabs.com/v1/proxy?quest='
-];
+var proxies = [];
+if (corsproxyKey) {
+proxies.push({
+name: 'corsproxy-key',
+url: 'https://corsproxy.io/?' + encodeURIComponent(url),
+headers: { 'x-cors-api-key': corsproxyKey },
+parse: function (t) { return t; }
+});
+}
+proxies.push({
+name: 'allorigins',
+url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+headers: {},
+parse: function (raw) { try { var j = JSON.parse(raw); return j.contents || ''; } catch (e) { return raw; } }
+});
+proxies.push({
+name: 'codetabs',
+url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+headers: {},
+parse: function (t) { return t; }
+});
+proxies.push({
+name: 'direct',
+url: url,
+headers: {},
+parse: function (t) { return t; }
+});
+
 for (var i = 0; i < proxies.length; i++) {
 try {
-showTyping('Fetching website... (attempt ' + (i + 1) + ')');
-var proxyUrl = proxies[i] + encodeURIComponent(url);
-var response = await fetch(proxyUrl);
-var data;
-if (proxies[i].indexOf('allorigins') !== -1) {
-data = await response.json();
-data = data.contents;
-} else {
-data = await response.text();
-}
-if (!data || data.length < 100) continue;
+showTyping('Fetching website… (attempt ' + (i + 1) + '/' + proxies.length + ')');
+var opts = { headers: proxies[i].headers };
+var response = await fetch(proxies[i].url, opts);
+if (!response.ok) continue;
+var raw = await response.text();
+var data = proxies[i].parse(raw);
+if (!data || data.length < 200) continue;
 var parser = new DOMParser();
 var doc = parser.parseFromString(data, 'text/html');
-var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
-elementsToRemove.forEach(function (el) { el.remove(); });
-var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
+var noise = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation, .cookie, .popup, .modal, .overlay, .banner');
+noise.forEach(function (el) { el.remove(); });
+var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main, .article, .story-body, .story-content') || doc.body;
 var text = mainContent ? mainContent.textContent : '';
-text = text.replace(/\s+/g, ' ').trim().substring(0, 8000);
+text = text.replace(/\s+/g, ' ').trim().substring(0, 10000);
 var title = doc.title || url;
-if (text.length > 100) {
-return { text: text, title: title };
+if (text.length > 150) {
+return { text: text, title: title, success: true };
 }
 } catch (e) {
-console.error('Proxy ' + i + ' failed:', e);
+console.error('Proxy ' + proxies[i].name + ' failed:', e);
 }
 }
-return { text: '', title: url };
+return { text: '', title: url, success: false };
 }
 
-function extractRealDdgUrl(rawHref) {
-if (!rawHref) return 'https://duckduckgo.com';
-if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
-var match = rawHref.match(/[?&]uddg=([^&]+)/);
-if (match && match[1]) {
-return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
+function generateSearchQueries(userMessage, chatHistory) {
+var queries = [];
+var lastFewMessages = chatHistory.slice(-4);
+var contextText = lastFewMessages.map(function (m) { return m.content; }).join(' ');
+var words = userMessage.toLowerCase().replace(/[^\w\s\u4e00-\u9fff]/g, '').split(/\s+/).filter(function (w) { return w.length > 2; });
+var stopWords = ['what', 'how', 'why', 'when', 'where', 'who', 'which', 'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'did', 'she', 'too', 'use', 'about', 'would', 'there', 'their', 'does', 'tell', 'me', 'please', 'give', 'find', 'search', 'look', 'know', 'think', 'say', 'going', 'just', 'like', 'make', 'made', 'also', 'into', 'over', 'such', 'take', 'than', 'them', 'then', 'this', 'very', 'well', 'were', 'will', 'with', 'have', 'from', 'they', 'been', 'more', 'some', 'time', 'other', 'could', 'should', 'after', 'before', 'between', 'under', 'without', 'within', 'along', 'following', 'across', 'behind', 'beyond', 'plus', 'except', 'upon', 'against', 'among', 'throughout', 'towards', 'until', 'during', 'around', 'above', 'below', 'up', 'down', 'in', 'on', 'at', 'to', 'of', 'by', 'an', 'a', 'is', 'am', 'it', 'as', 'if', 'or', 'so', 'no', 'yes', 'do', 'doing', 'done', 'being', 'be', 'that', 'these', 'those', 'here', 'first', 'last', 'next', 'previous', 'current', 'present', 'past', 'future', 'recent', 'latest', 'modern', 'traditional', 'classic', 'popular', 'famous', 'important', 'significant', 'major', 'minor', 'big', 'small', 'large', 'huge', 'tiny', 'great', 'good', 'bad', 'better', 'best', 'worse', 'worst', 'high', 'low', 'long', 'short', 'wide', 'narrow', 'deep', 'shallow', 'thick', 'thin', 'heavy', 'light', 'dark', 'bright', 'hot', 'cold', 'warm', 'cool', 'fast', 'slow', 'quick', 'rapid', 'swift', 'sudden', 'gradual', 'steady', 'stable', 'constant', 'variable', 'changing', 'growing', 'declining', 'increasing', 'decreasing', 'rising', 'falling', 'improving', 'worsening', 'developing', 'evolving', 'emerging', 'disappearing', 'appearing', 'happening', 'occurring', 'taking', 'place', 'going', 'on', 'off', 'up', 'down', 'in', 'out', 'over', 'under', 'through', 'around', 'about', 'against', 'between', 'among', 'within', 'without', 'beyond', 'beside', 'besides', 'except', 'including', 'excluding', 'according', 'due', 'because', 'since', 'although', 'though', 'while', 'whereas', 'however', 'nevertheless', 'nonetheless', 'therefore', 'thus', 'hence', 'consequently', 'accordingly', 'meanwhile', 'furthermore', 'moreover', 'additionally', 'also', 'too', 'as', 'well', 'likewise', 'similarly', 'instead', 'rather', 'otherwise', 'else', 'anyway', 'anyhow', 'anywhere', 'everywhere', 'nowhere', 'somewhere', 'here', 'there', 'where', 'when', 'why', 'how', 'what', 'which', 'who', 'whom', 'whose', 'that', 'this', 'these', 'those', 'it', 'he', 'she', 'they', 'we', 'you', 'I', 'me', 'him', 'her', 'them', 'us', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'hers', 'ours', 'theirs', 'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves', 'themselves'];
+var keyWords = words.filter(function (w) { return stopWords.indexOf(w) === -1; });
+var isNews = /news|latest|today|recent|happening|update|breaking|current/i.test(userMessage);
+var isChinese = /[\u4e00-\u9fff]/.test(userMessage);
+var isHongKong = /hong kong|hk|香港|hkdc|hkd/i.test(userMessage + ' ' + contextText);
+var isTech = /tech|technology|software|hardware|ai|artificial|computer|phone|app|game|coding|programming|developer/i.test(userMessage);
+var isReddit = /reddit|opinion|discussion|people say|community|forum/i.test(userMessage + ' ' + contextText);
+
+var baseQuery = keyWords.slice(0, 6).join(' ');
+if (!baseQuery) baseQuery = userMessage.substring(0, 50);
+
+queries.push({ query: baseQuery, source: 'general', label: 'Web' });
+if (isNews || keyWords.length > 0) {
+queries.push({ query: baseQuery + ' latest news', source: 'news', label: 'News' });
+queries.push({ query: baseQuery + ' today', source: 'news', label: 'Today' });
 }
-return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
+if (isHongKong || isChinese) {
+queries.push({ query: baseQuery + ' 明報', source: 'chinese-news', label: '明報' });
+queries.push({ query: baseQuery + ' site:mingpao.com', source: 'chinese-news', label: 'MingPao' });
+queries.push({ query: baseQuery + ' CNN', source: 'news', label: 'CNN' });
+}
+if (isReddit || keyWords.length > 2) {
+queries.push({ query: baseQuery + ' site:reddit.com', source: 'reddit', label: 'Reddit' });
+}
+if (keyWords.length >= 2) {
+queries.push({ query: keyWords.slice(0, 3).join(' '), source: 'wikipedia', label: 'Wiki' });
+}
+if (isTech) {
+queries.push({ query: baseQuery + ' tech news', source: 'tech', label: 'Tech' });
+queries.push({ query: baseQuery, source: 'hackernews', label: 'HN' });
+}
+return queries.slice(0, 6);
 }
 
 async function searchWikipedia(query) {
 var c = new AbortController();
 var t = setTimeout(function () { c.abort(); }, 4000);
 try {
-var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=4&format=json&origin=*', { signal: c.signal });
+var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
 clearTimeout(t);
 var j = await r.json();
 if (j.query && j.query.search && j.query.search.length) {
@@ -908,7 +996,7 @@ var sources = j.query.search.map(function (s) {
 return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) };
 });
 var text = j.query.search.map(function (s) {
-return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, '');
+return '[Wikipedia: ' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, '');
 }).join('\n');
 return { text: text, sources: sources, engine: 'Wikipedia' };
 }
@@ -916,66 +1004,37 @@ return { text: text, sources: sources, engine: 'Wikipedia' };
 return { text: '', sources: [], engine: 'Wikipedia' };
 }
 
-async function searchDdgInstant(query) {
-var c = new AbortController();
-var t = setTimeout(function () { c.abort(); }, 3500);
-try {
-var r = await fetch('https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1', { signal: c.signal });
-clearTimeout(t);
-var j = await r.json();
-var parts = [];
-var sources = [];
-if (j.AbstractText) {
-parts.push('[Quick Answer] ' + j.AbstractText);
-if (j.AbstractURL) sources.push({ label: j.AbstractSource || 'Source', url: j.AbstractURL });
-}
-if (j.Answer) {
-parts.push('[Answer] ' + j.Answer);
-}
-if (j.RelatedTopics && j.RelatedTopics.length) {
-var related = j.RelatedTopics.filter(function (t) { return t.Text; }).slice(0, 4);
-related.forEach(function (t) {
-parts.push('• ' + t.Text);
-if (t.FirstURL) sources.push({ label: (t.Text || '').substring(0, 30), url: t.FirstURL });
-});
-}
-if (j.Definition) {
-parts.push('[Definition] ' + j.Definition);
-if (j.DefinitionURL) sources.push({ label: 'Definition', url: j.DefinitionURL });
-}
-return { text: parts.join('\n'), sources: sources.slice(0, 5), engine: 'DuckDuckGo Instant' };
-} catch (e) { clearTimeout(t); }
-return { text: '', sources: [], engine: 'DuckDuckGo Instant' };
-}
-
-async function searchDdgHtml(query) {
+async function searchDuckDuckGo(query) {
 var proxies = [
-{ name: 'allorigins', url: function (q) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (j) { return j.contents; } },
-{ name: 'corsproxy', url: function (q) { return 'https://corsproxy.io/?' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (t) { return t; } },
+{ name: 'allorigins', url: function (q) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (j) { try { return JSON.parse(j).contents; } catch (e) { return j; } } },
 { name: 'codetabs', url: function (q) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (t) { return t; } }
 ];
+if (corsproxyKey) {
+proxies.unshift({ name: 'corsproxy', url: function (q) { return 'https://corsproxy.io/?' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, headers: { 'x-cors-api-key': corsproxyKey }, parse: function (t) { return t; } });
+}
 for (var i = 0; i < proxies.length; i++) {
 var c = new AbortController();
 var t = setTimeout(function () { c.abort(); }, 5000);
 try {
-var r = await fetch(proxies[i].url(query), { signal: c.signal });
+var opts = proxies[i].headers ? { headers: proxies[i].headers, signal: c.signal } : { signal: c.signal };
+var r = await fetch(proxies[i].url(query), opts);
 clearTimeout(t);
-var raw;
-if (proxies[i].name === 'allorigins') {
-var j = await r.json();
-raw = proxies[i].parse(j);
-} else {
-raw = proxies[i].parse(await r.text());
-}
-if (!raw || raw.length < 100) continue;
-var doc = new DOMParser().parseFromString(raw, 'text/html');
+var raw = await r.text();
+var data = proxies[i].parse(raw);
+if (!data || data.length < 100) continue;
+var doc = new DOMParser().parseFromString(data, 'text/html');
 var results = Array.from(doc.querySelectorAll('.result')).slice(0, 6);
 if (!results.length) continue;
 var sources = results.map(function (resItem) {
 var anchor = resItem.querySelector('.result__a');
 var rawHref = anchor ? anchor.getAttribute('href') : '';
 var title = anchor ? anchor.textContent.trim().substring(0, 40) : 'Web Source';
-return { label: title, url: extractRealDdgUrl(rawHref) };
+if (rawHref && rawHref.indexOf('uddg=') !== -1) {
+var match = rawHref.match(/[?&]uddg=([^&]+)/);
+if (match) { try { rawHref = decodeURIComponent(match[1]); } catch (e) {} }
+}
+if (!rawHref || rawHref.indexOf('http') !== 0) rawHref = 'https://duckduckgo.com';
+return { label: title, url: rawHref };
 });
 var snippets = Array.from(doc.querySelectorAll('.result__snippet'))
 .map(function (el) { return el.textContent.trim(); })
@@ -983,75 +1042,146 @@ var snippets = Array.from(doc.querySelectorAll('.result__snippet'))
 .slice(0, 6);
 if (snippets.length) {
 var text = snippets.map(function (s, idx) { return (idx + 1) + '. ' + s; }).join('\n');
-return { text: text, sources: sources, engine: 'DuckDuckGo Web' };
+return { text: text, sources: sources, engine: 'DuckDuckGo' };
 }
 } catch (e) { clearTimeout(t); }
 }
-return { text: '', sources: [], engine: 'DuckDuckGo Web' };
+return { text: '', sources: [], engine: 'DuckDuckGo' };
 }
 
-async function searchWikipediaFull(query) {
+async function searchReddit(query) {
 var c = new AbortController();
 var t = setTimeout(function () { c.abort(); }, 4000);
 try {
-var r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(query), { signal: c.signal });
+var r = await fetch('https://www.reddit.com/search.json?q=' + encodeURIComponent(query) + '&limit=5&sort=relevance', {
+signal: c.signal,
+headers: { 'User-Agent': 'NeuralForge/1.0' }
+});
 clearTimeout(t);
-if (r.ok) {
+if (!r.ok) return { text: '', sources: [], engine: 'Reddit' };
 var j = await r.json();
-if (j.extract && j.extract.length > 50) {
-return {
-text: '[' + (j.title || query) + ' — Wikipedia Summary]\n' + j.extract,
-sources: [{ label: j.title || query, url: j.content_urls ? j.content_urls.desktop.page : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(query) }],
-engine: 'Wikipedia Summary'
-};
-}
+if (j.data && j.data.children && j.data.children.length) {
+var posts = j.data.children.map(function (p) { return p.data; }).filter(function (p) { return p.title && !p.stickied; });
+var sources = posts.slice(0, 5).map(function (p) {
+return { label: 'r/' + p.subreddit + ': ' + p.title.substring(0, 35), url: 'https://reddit.com' + p.permalink };
+});
+var text = posts.slice(0, 5).map(function (p) {
+return '[Reddit r/' + p.subreddit + '] ' + p.title + (p.selftext ? ' — ' + p.selftext.substring(0, 200) : '');
+}).join('\n');
+return { text: text, sources: sources, engine: 'Reddit' };
 }
 } catch (e) { clearTimeout(t); }
-return { text: '', sources: [], engine: 'Wikipedia Summary' };
+return { text: '', sources: [], engine: 'Reddit' };
 }
 
-async function searchBraveAlternative(query) {
+async function searchHackerNews(query) {
 var c = new AbortController();
-var t = setTimeout(function () { c.abort(); }, 3500);
+var t = setTimeout(function () { c.abort(); }, 4000);
 try {
-var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&titles=' + encodeURIComponent(query) + '&prop=extracts&exintro=1&explaintext=1&format=json&origin=*', { signal: c.signal });
+var r = await fetch('https://hn.algolia.com/api/v1/search?query=' + encodeURIComponent(query) + '&tags=story&hitsPerPage=5', { signal: c.signal });
 clearTimeout(t);
 var j = await r.json();
-if (j.query && j.query.pages) {
-var pages = Object.values(j.query.pages);
-var page = pages.find(function (p) { return p.extract && p.pageid; });
-if (page && page.extract) {
-return {
-text: '[Detailed: ' + page.title + ']\n' + page.extract.substring(0, 800),
-sources: [{ label: page.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(page.title.replace(/ /g, '_')) }],
-engine: 'Wikipedia Detail'
-};
-}
+if (j.hits && j.hits.length) {
+var sources = j.hits.slice(0, 5).map(function (h) {
+return { label: 'HN: ' + (h.title || '').substring(0, 40), url: h.url || 'https://news.ycombinator.com/item?id=' + h.objectID };
+});
+var text = j.hits.slice(0, 5).map(function (h) {
+return '[HackerNews] ' + h.title + (h.url ? ' (' + h.url + ')' : '');
+}).join('\n');
+return { text: text, sources: sources, engine: 'HackerNews' };
 }
 } catch (e) { clearTimeout(t); }
-return { text: '', sources: [], engine: 'Wikipedia Detail' };
+return { text: '', sources: [], engine: 'HackerNews' };
 }
 
-async function searchWebFast(query) {
-var results = await Promise.allSettled([
-searchWikipedia(query),
-searchDdgInstant(query),
-searchDdgHtml(query),
-searchWikipediaFull(query),
-searchBraveAlternative(query)
-]);
+async function searchGoogleNews(query) {
+var proxies = [
+{ name: 'allorigins', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&hl=en-US&gl=US&ceid=US:en'), parse: function (raw) { try { return JSON.parse(raw).contents; } catch (e) { return raw; } } },
+{ name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&hl=en-US&gl=US&ceid=US:en'), parse: function (t) { return t; } }
+];
+if (corsproxyKey) {
+proxies.unshift({ name: 'corsproxy', url: 'https://corsproxy.io/?' + encodeURIComponent('https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&hl=en-US&gl=US&ceid=US:en'), headers: { 'x-cors-api-key': corsproxyKey }, parse: function (t) { return t; } });
+}
+for (var i = 0; i < proxies.length; i++) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 4000);
+try {
+var opts = proxies[i].headers ? { headers: proxies[i].headers, signal: c.signal } : { signal: c.signal };
+var r = await fetch(proxies[i].url, opts);
+clearTimeout(t);
+var raw = await r.text();
+var data = proxies[i].parse(raw);
+if (!data || data.indexOf('<item>') === -1) continue;
+var items = [];
+var itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+var match;
+while ((match = itemRegex.exec(data)) !== null && items.length < 5) {
+var item = match[1];
+var titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+var linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+var descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+if (titleMatch && linkMatch) {
+var title = titleMatch[1].replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '').trim();
+var link = linkMatch[1].trim();
+var desc = descMatch ? descMatch[1].replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '').replace(/<[^>]*>/g, '').trim().substring(0, 200) : '';
+items.push({ title: title, link: link, desc: desc });
+}
+}
+if (items.length) {
+var sources = items.map(function (it) { return { label: it.title.substring(0, 40), url: it.link }; });
+var text = items.map(function (it) { return '[News] ' + it.title + (it.desc ? ' — ' + it.desc : ''); }).join('\n');
+return { text: text, sources: sources, engine: 'GoogleNews' };
+}
+} catch (e) { clearTimeout(t); }
+}
+return { text: '', sources: [], engine: 'GoogleNews' };
+}
 
+async function searchWebIntelligent(userMessage, chatHistory) {
+var queries = generateSearchQueries(userMessage, chatHistory);
+showTyping('Generating ' + queries.length + ' targeted searches…');
+var searchPromises = [];
+var seenEngines = {};
+queries.forEach(function (q) {
+var key = q.source + ':' + q.query.substring(0, 30);
+if (seenEngines[key]) return;
+seenEngines[key] = true;
+switch (q.source) {
+case 'wikipedia':
+searchPromises.push(searchWikipedia(q.query));
+break;
+case 'reddit':
+searchPromises.push(searchReddit(q.query));
+break;
+case 'hackernews':
+searchPromises.push(searchHackerNews(q.query));
+break;
+case 'news':
+case 'chinese-news':
+case 'tech':
+searchPromises.push(searchGoogleNews(q.query));
+break;
+case 'general':
+default:
+searchPromises.push(searchDuckDuckGo(q.query));
+break;
+}
+});
+if (searchPromises.length < 2) {
+searchPromises.push(searchWikipedia(userMessage));
+searchPromises.push(searchDuckDuckGo(userMessage));
+}
+var results = await Promise.allSettled(searchPromises);
 var allTexts = [];
 var allSources = [];
 var seenUrls = {};
 var enginesUsed = [];
-
 results.forEach(function (r) {
 if (r.status === 'fulfilled' && r.value) {
 var v = r.value;
 if (v.text && v.text.length > 10) {
 allTexts.push(v.text);
-enginesUsed.push(v.engine);
+if (enginesUsed.indexOf(v.engine) === -1) enginesUsed.push(v.engine);
 }
 if (v.sources && v.sources.length) {
 v.sources.forEach(function (s) {
@@ -1063,11 +1193,10 @@ allSources.push(s);
 }
 }
 });
-
-var combinedText = allTexts.length ? allTexts.join('\n\n') : 'No relevant results found.';
+var combinedText = allTexts.length ? allTexts.join('\n\n---\n\n') : 'No relevant results found.';
 return {
 text: combinedText,
-sources: allSources.slice(0, 8),
+sources: allSources.slice(0, 10),
 engines: enginesUsed
 };
 }
@@ -1137,9 +1266,9 @@ if (c) onChunk(c);
 
 async function runAI(text, image, fileText, sources, urlToFetch) {
 var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
-var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [], engines: [] });
+var searchPromise = useWeb ? searchWebIntelligent(text, getMessages()) : Promise.resolve({ text: '', sources: [], engines: [] });
 var systemMsg = sysPrompt + '\nCurrent date: ' + today() + '.';
-if (smartMode) systemMsg += '\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
+if (smartMode) systemMsg += '\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] and [[/THINK]] tags (each on its own line). Then write the final answer after the closing tag.';
 if (memory.length) systemMsg += '\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
 
 var msgs = getMessages();
@@ -1160,7 +1289,6 @@ streamBubble = aiMsgDiv.querySelector('.bubble');
 
 var aiText = '';
 var usedOpenRouter = false;
-
 var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
 var currentModelIdx = modelList.indexOf(currentModel);
 if (currentModelIdx === -1) currentModelIdx = 0;
@@ -1170,7 +1298,7 @@ var ocrText = '';
 var websiteContent = '';
 var websiteTitle = '';
 if (image) {
-showTyping('Reading image with OCR (English + Chinese)...');
+showTyping('Reading image with OCR (English + Chinese)…');
 ocrText = await extractTextFromImage(image.dataUrl);
 if (!ocrText) ocrText = '[No text detected in image]';
 }
@@ -1180,14 +1308,13 @@ websiteContent = websiteData.text;
 websiteTitle = websiteData.title;
 if (!websiteContent) websiteContent = '[Could not extract content from ' + urlToFetch + ']';
 }
-if (useWeb && !image && !urlToFetch) showTyping('Searching the web...');
+if (useWeb && !image && !urlToFetch) showTyping('Searching intelligently across multiple sources…');
 var results = await searchPromise;
 var webText = results.text || '';
 var webSources = results.sources || [];
 var enginesUsed = results.engines || [];
-
 if (useWeb && enginesUsed.length) {
-showTyping('Searched ' + enginesUsed.length + ' sources...');
+showTyping('Searched ' + enginesUsed.length + ' sources: ' + enginesUsed.join(', '));
 }
 
 var userText = text || '';
@@ -1195,7 +1322,7 @@ if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
 if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
 if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
 if (useWeb && webText && webText.indexOf('No relevant') === -1) {
-userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
+userText += '\n[LIVE WEB SEARCH RESULTS from ' + enginesUsed.join(', ') + ' — you MUST use this information]:\n' + webText;
 }
 
 var modelToUse = modelList[currentModelIdx];
@@ -1214,7 +1341,6 @@ var m = historyMsgs[i];
 apiMessages.push({ role: m.role, content: m.content });
 }
 apiMessages[apiMessages.length - 1].content = userText;
-
 var res = await fetch('https://text.pollinations.ai/openai', {
 method: 'POST', signal: activeController.signal,
 headers: { 'Content-Type': 'application/json' },
@@ -1226,9 +1352,7 @@ temperature: smartMode ? 0.3 : 0.7
 })
 });
 clearTimeout(to);
-
 if (!res.ok) throw new Error('Server error ' + res.status);
-
 aiText = '';
 if (res.body && res.body.getReader) {
 var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
@@ -1257,7 +1381,6 @@ scrollToBottom();
 var rawText = await res.text();
 safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
 }
-
 if (aiText.trim()) {
 freeServerWorked = true;
 } else {
@@ -1268,7 +1391,7 @@ retryCount++;
 if (retryCount <= maxRetries) {
 currentModelIdx = (currentModelIdx + 1) % modelList.length;
 modelToUse = modelList[currentModelIdx];
-showTyping('Retrying free server (' + modelToUse + ')... ' + retryCount + '/' + maxRetries);
+showTyping('Retrying free server (' + modelToUse + ')… ' + retryCount + '/' + maxRetries);
 await new Promise(function (r) { setTimeout(r, 600); });
 }
 }
@@ -1276,7 +1399,7 @@ await new Promise(function (r) { setTimeout(r, 600); });
 
 if (!freeServerWorked) {
 if (openrouterKey) {
-showTyping('Free server busy. Using your OpenRouter key...');
+showTyping('Free server busy. Using your OpenRouter key…');
 try {
 activeController = new AbortController();
 var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
@@ -1287,19 +1410,16 @@ var mm = historyMsgs2[k];
 apiMessages2.push({ role: mm.role, content: mm.content });
 }
 apiMessages2[apiMessages2.length - 1].content = userText;
-
 var orRes = await callOpenRouter(apiMessages2);
 clearTimeout(to2);
 aiText = '';
 usedOpenRouter = true;
-
 await streamOpenRouter(orRes, function (chunk) {
 ensureAiBubble();
 aiText += chunk;
 streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
 scrollToBottom();
 });
-
 if (!aiText.trim()) throw new Error('OpenRouter returned empty response');
 } catch (orErr) {
 throw new Error('OpenRouter failed: ' + orErr.message + '. Please check your API key in Settings.');
@@ -1310,7 +1430,6 @@ throw { code: 'FREE_SERVER_BUSY', message: 'The free server is currently busy or
 }
 
 if (!aiText.trim()) throw new Error('empty response');
-
 ensureAiBubble();
 var allSources = webSources.concat(sources || []);
 if (urlToFetch) {
@@ -1324,9 +1443,7 @@ sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" 
 });
 sourceHtml += '</div>';
 }
-
 var providerTag = usedOpenRouter ? '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-style:italic"><i class="fa-solid fa-key" style="color:#10b981"></i> via OpenRouter</div>' : '';
-
 aiMsgDiv.dataset.text = aiText;
 streamBubble.innerHTML = formatText(aiText) + sourceHtml + providerTag;
 attachLongPress(aiMsgDiv, aiText, 'ai');
@@ -1393,10 +1510,13 @@ codeBlocks.push(
 );
 return '@@CODEBLOCK_' + idx + '@@';
 });
+var thinkingBlocks = [];
+raw = raw.replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function (m, p1) {
+var idx = thinkingBlocks.length;
+thinkingBlocks.push('<div class="thinking-box open"><div class="thinking-header"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + p1.replace(/\n/g, '<br>').trim() + '</div></div>');
+return '@@THINKING_' + idx + '@@';
+});
 var html = esc(raw)
-.replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function (m, p1) {
-return '<div class="thinking-box"><div class="thinking-header"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + p1.replace(/\n/g, '<br>').trim() + '</div></div>';
-})
 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
 .replace(/`([^`\n]+)`/g, '<code>$1</code>')
 .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -1409,6 +1529,9 @@ html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
 html = html.split('\n').map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
 html = html.replace(/@@CODEBLOCK_(\d+)@@/g, function (m, idx) {
 return codeBlocks[+idx] || '';
+});
+html = html.replace(/@@THINKING_(\d+)@@/g, function (m, idx) {
+return thinkingBlocks[+idx] || '';
 });
 return html;
 }
