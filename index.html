@@ -9,296 +9,287 @@
 <title>NeuralForge AI</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  :root {
-    --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
-    --bubble-user: #4f46e5; --bubble-ai: #1e293b; --border: #334155;
-    --input-bg: #1e293b; --text-muted: #94a3b8; --modal-bg: #1e293b; --sidebar-bg: #0b1120;
-  }
-  body.light {
-    --bg: #f8fafc; --text: #0f172a; --header-bg: rgba(248,250,252,.98);
-    --bubble-user: #4f46e5; --bubble-ai: #ffffff; --border: #e2e8f0;
-    --input-bg: #f1f5f9; --text-muted: #64748b; --modal-bg: #ffffff; --sidebar-bg: #f1f5f9;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    transition: background .3s, color .3s;
-  }
-  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-  input, textarea, select { font-family: inherit; font-size: 16px; }
-
-  #app { display: flex; height: 100dvh; width: 100%; position: relative; }
-
-  #sidebar {
-    width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; z-index: 60;
-    transform: translateX(-100%); transition: transform .3s cubic-bezier(.16,1,.3,1);
-    padding-top: env(safe-area-inset-top);
-  }
-  #sidebar.open { transform: translateX(0); }
-  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .new-chat-btn { width: 100%; background: var(--bubble-user); color: #fff; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .new-chat-btn:active { opacity: .8; }
-  .close-sidebar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
-  .close-sidebar:active { background: var(--border); }
-  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-  .history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; transition: background .15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
-  .history-item:active, .history-item.active { background: var(--border); }
-  .history-item i.msg-ico { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
-  .history-item .del-hist { margin-left: auto; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
-  .history-item .del-hist:active { color: #ef4444; }
-
-  #main { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
-
-  header {
-    min-height: 60px; background: var(--header-bg); backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border); display: flex; align-items: center;
-    justify-content: space-between; padding: env(safe-area-inset-top) 16px 0; flex-shrink: 0; z-index: 50;
-  }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
-  .menu-btn:active { background: var(--border); }
-  .logo-small { width: 32px; height: 32px; flex: none; background: linear-gradient(135deg,#6366f1,#a855f7); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
-  .title { font-weight: 700; font-size: 17px; }
-  .model-tag { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-  .header-btns { display: flex; gap: 8px; }
-  .header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
-  .header-btn:active { background: var(--border); }
-
-  #chatArea { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-  .welcome { text-align: center; padding: 30px 20px; color: var(--text-muted); animation: popIn .3s ease-out; }
-  .welcome i.big { font-size: 40px; color: #6366f1; margin-bottom: 16px; }
-  .welcome h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
-  .suggestions { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 20px auto 0; }
-  .sugg-btn { background: var(--bubble-ai); border: 1px solid var(--border); padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); width: 100%; transition: transform .1s; }
-  .sugg-btn:active { transform: scale(.97); opacity: .8; }
-
-  .msg { display: flex; flex-direction: column; max-width: 88%; animation: popIn .2s ease-out; }
-  .msg.user { align-self: flex-end; align-items: flex-end; }
-  .msg.ai { align-self: flex-start; align-items: flex-start; }
-  .msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
-  .msg.ai .msg-row { flex-direction: row; }
-  .msg.user .msg-row { flex-direction: row-reverse; }
-  .brain-icon { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; flex-shrink: 0; margin-bottom: 4px; }
-
-  @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes blink { 50% { opacity: 0; } }
-  @keyframes pulseRing { 0% { transform: scale(.8); opacity: .5; } 80%, 100% { transform: scale(2); opacity: 0; } }
-  @keyframes pulseDot { 0%, 100% { transform: scale(.8); opacity: .5; } 50% { transform: scale(1.2); opacity: 1; } }
-
-  .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; }
-  .msg.user .bubble { background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px; }
-  .msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-  .msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
-  .bubble img.attached-thumb { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; }
-  .bubble img.generated-img { max-width: 100%; border-radius: 12px; margin: 8px 0; display: block; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
-  .bubble strong { font-weight: 700; }
-  .bubble p { margin-bottom: 8px; }
-  .bubble p:last-child { margin-bottom: 0; }
-  .bubble h1, .bubble h2, .bubble h3 { margin: 10px 0 6px; line-height: 1.3; }
-  .bubble h1 { font-size: 18px; } .bubble h2 { font-size: 16px; } .bubble h3 { font-size: 15px; }
-  .bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 8px; }
-  .bubble code { background: rgba(127,127,127,.2); padding: 2px 5px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
-
-  .code-wrap { background: #090d16; border: 1px solid #1e293b; border-radius: 10px; margin: 8px 0; overflow: hidden; }
-  .code-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #131b2e; border-bottom: 1px solid #1e293b; font-size: 11px; color: #94a3b8; font-family: monospace; }
-  .copy-code-btn { color: #cbd5e1; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,.08); }
-  .copy-code-btn:active { background: rgba(255,255,255,.2); }
-  .code-wrap pre { padding: 12px; overflow-x: auto; margin: 0; color: #e2e8f0; font-size: 13px; line-height: 1.45; }
-  .code-wrap pre code { background: none; padding: 0; color: inherit; }
-
-  .retry { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #f59e0b; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); }
-
-  .source-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .source-link:active { background: rgba(99,102,241,.25); }
-  .source-link i { font-size: 10px; flex-shrink: 0; }
-
-  .thinking-box { background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25); border-left: 3px solid #6366f1; border-radius: 10px; margin: 0 0 12px 0; overflow: hidden; }
-  .thinking-header { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #818cf8; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; background: rgba(99,102,241,.05); }
-  .thinking-header:hover { background: rgba(99,102,241,.12); }
-  .thinking-header i { font-size: 14px; transition: transform .3s; }
-  .thinking-box.open .thinking-header i { transform: rotate(90deg); }
-  .thinking-content { padding: 12px 14px 14px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.6; border-top: 1px solid rgba(99,102,241,.15); font-style: italic; display: none; }
-  .thinking-box.open .thinking-content { display: block; }
-
-  #inputArea { background: var(--header-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 50; }
-  .search-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
-  .toggle-switch { position: relative; width: 44px; height: 24px; display: inline-block; }
-  .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; inset: 0; background-color: var(--border); transition: .3s; border-radius: 24px; }
-  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #fff; transition: .3s; border-radius: 50%; }
-  input:checked + .slider { background-color: #4f46e5; }
-  input:checked + .slider:before { transform: translateX(20px); }
-
-  .preview-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .preview-row:empty { display: none; }
-  .preview-chip { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; font-size: 13px; max-width: 100%; }
-  .preview-chip img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
-  .preview-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; color: var(--text); }
-  .preview-chip .chip-x { color: var(--text-muted); padding: 4px; flex-shrink: 0; }
-  .preview-chip .chip-x:active { color: #ef4444; }
-  .rec-chip { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #fca5a5; border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
-  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulseDot 1s infinite; }
-
-  .input-row { display: flex; gap: 8px; align-items: flex-end; }
-  .attach-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-  .attach-btn:active { background: var(--border); }
-  .input-wrap { flex: 1; background: var(--input-bg); border-radius: 22px; border: 1px solid var(--border); padding: 4px 14px; display: flex; align-items: center; }
-  .input-wrap:focus-within { border-color: #4f46e5; }
-  #userInput { flex: 1; background: transparent; border: none; padding: 8px 0; resize: none; max-height: 120px; line-height: 1.4; outline: none; color: var(--text); }
-  #sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background .2s, transform .1s; }
-  #sendBtn.stop { background: #ef4444; }
-  #sendBtn:active { transform: scale(.9); }
-
-  #attachSheet { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
-  #attachSheet.open { display: flex; }
-  .sheet-content { width: 100%; max-width: 500px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
-  .sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
-  .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .sheet-option { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
-  .sheet-option:active { background: var(--border); }
-  .sheet-option i { font-size: 24px; }
-  .sheet-cancel { width: 100%; margin-top: 12px; background: var(--border); color: var(--text); padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; }
-
-  #settingsModal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
-  #settingsModal.open { display: flex; }
-  .modal-content { width: 100%; max-width: 540px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; max-height: 82vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
-  .close-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text); }
-  .setting-group { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
-  .setting-group:last-child { border-bottom: none; }
-  .setting-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: .5px; }
-  .setting-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 15px; outline: none; color: var(--text); }
-  .setting-input:focus { border-color: #4f46e5; }
-  textarea.setting-input { min-height: 80px; resize: vertical; }
-  select.setting-input { appearance: none; -webkit-appearance: none; }
-  .btn-primary { width: 100%; background: #4f46e5; color: #fff; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; margin-top: 10px; }
-  .btn-primary:active { opacity: .8; }
-  .list-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: var(--text); }
-  .delete-item { color: #ef4444; padding: 8px; }
-
-  #contextMenu { position: fixed; z-index: 200; background: var(--modal-bg); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,.5); overflow: hidden; display: none; border: 1px solid var(--border); min-width: 170px; }
-  .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); }
-  .ctx-btn:active { background: var(--border); }
-  .ctx-btn.danger { color: #ef4444; }
-  .ctx-btn.teach { color: #10b981; }
-
-  #toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: .3s; z-index: 300; }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  @media (min-width: 768px) {
-    #sidebar { position: relative; transform: translateX(0); }
-    .close-sidebar, .menu-btn { display: none; }
-    #settingsModal, #attachSheet { align-items: center; }
-    .modal-content, .sheet-content { border-radius: 20px; }
-  }
+:root {
+--bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
+--bubble-user: #4f46e5; --bubble-ai: #1e293b; --border: #334155;
+--input-bg: #1e293b; --text-muted: #94a3b8; --modal-bg: #1e293b; --sidebar-bg: #0b1120;
+}
+body.light {
+--bg: #f8fafc; --text: #0f172a; --header-bg: rgba(248,250,252,.98);
+--bubble-user: #4f46e5; --bubble-ai: #ffffff; --border: #e2e8f0;
+--input-bg: #f1f5f9; --text-muted: #64748b; --modal-bg: #ffffff; --sidebar-bg: #f1f5f9;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+transition: background .3s, color .3s;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; font-size: 16px; }
+#app { display: flex; height: 100dvh; width: 100%; position: relative; }
+#sidebar {
+width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
+display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; z-index: 60;
+transform: translateX(-100%); transition: transform .3s cubic-bezier(.16,1,.3,1);
+padding-top: env(safe-area-inset-top);
+}
+#sidebar.open { transform: translateX(0); }
+.sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.new-chat-btn { width: 100%; background: var(--bubble-user); color: #fff; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.new-chat-btn:active { opacity: .8; }
+.close-sidebar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
+.close-sidebar:active { background: var(--border); }
+.history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.history-item { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; transition: background .15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+.history-item:active, .history-item.active { background: var(--border); }
+.history-item i.msg-ico { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+.history-item .del-hist { margin-left: auto; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+.history-item .del-hist:active { color: #ef4444; }
+#main { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
+header {
+min-height: 60px; background: var(--header-bg); backdrop-filter: blur(10px);
+border-bottom: 1px solid var(--border); display: flex; align-items: center;
+justify-content: space-between; padding: env(safe-area-inset-top) 16px 0; flex-shrink: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
+.menu-btn:active { background: var(--border); }
+.logo-small { width: 32px; height: 32px; flex: none; background: linear-gradient(135deg,#6366f1,#a855f7); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+.title { font-weight: 700; font-size: 17px; }
+.model-tag { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.header-btns { display: flex; gap: 8px; }
+.header-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
+.header-btn:active { background: var(--border); }
+#chatArea { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.welcome { text-align: center; padding: 30px 20px; color: var(--text-muted); animation: popIn .3s ease-out; }
+.welcome i.big { font-size: 40px; color: #6366f1; margin-bottom: 16px; }
+.welcome h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
+.suggestions { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 20px auto 0; }
+.sugg-btn { background: var(--bubble-ai); border: 1px solid var(--border); padding: 14px; border-radius: 12px; text-align: left; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); width: 100%; transition: transform .1s; }
+.sugg-btn:active { transform: scale(.97); opacity: .8; }
+.msg { display: flex; flex-direction: column; max-width: 88%; animation: popIn .2s ease-out; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai { align-self: flex-start; align-items: flex-start; }
+.msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+.msg.ai .msg-row { flex-direction: row; }
+.msg.user .msg-row { flex-direction: row-reverse; }
+.brain-icon { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; flex-shrink: 0; margin-bottom: 4px; }
+@keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulseRing { 0% { transform: scale(.8); opacity: .5; } 80%, 100% { transform: scale(2); opacity: 0; } }
+@keyframes pulseDot { 0%, 100% { transform: scale(.8); opacity: .5; } 50% { transform: scale(1.2); opacity: 1; } }
+.bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; }
+.msg.user .bubble { background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px; }
+.msg.ai .bubble { background: var(--bubble-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg.error .bubble { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+.bubble img.attached-thumb { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; }
+.bubble img.generated-img { max-width: 100%; border-radius: 12px; margin: 8px 0; display: block; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+.bubble strong { font-weight: 700; }
+.bubble p { margin-bottom: 8px; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble h1, .bubble h2, .bubble h3 { margin: 10px 0 6px; line-height: 1.3; }
+.bubble h1 { font-size: 18px; } .bubble h2 { font-size: 16px; } .bubble h3 { font-size: 15px; }
+.bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 8px; }
+.bubble code { background: rgba(127,127,127,.2); padding: 2px 5px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.code-wrap { background: #090d16; border: 1px solid #1e293b; border-radius: 10px; margin: 8px 0; overflow: hidden; }
+.code-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #131b2e; border-bottom: 1px solid #1e293b; font-size: 11px; color: #94a3b8; font-family: monospace; }
+.copy-code-btn { color: #cbd5e1; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,.08); }
+.copy-code-btn:active { background: rgba(255,255,255,.2); }
+.code-wrap pre { padding: 12px; overflow-x: auto; margin: 0; color: #e2e8f0; font-size: 13px; line-height: 1.45; }
+.code-wrap pre code { background: none; padding: 0; color: inherit; }
+.retry { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #f59e0b; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); }
+.source-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-link:active { background: rgba(99,102,241,.25); }
+.source-link i { font-size: 10px; flex-shrink: 0; }
+.thinking-box { background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25); border-left: 3px solid #6366f1; border-radius: 10px; margin: 0 0 12px 0; overflow: hidden; }
+.thinking-header { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #818cf8; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; background: rgba(99,102,241,.05); }
+.thinking-header:hover { background: rgba(99,102,241,.12); }
+.thinking-header i { font-size: 14px; transition: transform .3s; }
+.thinking-box.open .thinking-header i { transform: rotate(90deg); }
+.thinking-content { padding: 12px 14px 14px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.6; border-top: 1px solid rgba(99,102,241,.15); font-style: italic; display: none; }
+.thinking-box.open .thinking-content { display: block; }
+#inputArea { background: var(--header-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 50; }
+.search-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; display: inline-block; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background-color: var(--border); transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #fff; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: #4f46e5; }
+input:checked + .slider:before { transform: translateX(20px); }
+.preview-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.preview-row:empty { display: none; }
+.preview-chip { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; font-size: 13px; max-width: 100%; }
+.preview-chip img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+.preview-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; color: var(--text); }
+.preview-chip .chip-x { color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+.preview-chip .chip-x:active { color: #ef4444; }
+.rec-chip { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #fca5a5; border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulseDot 1s infinite; }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.attach-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.attach-btn:active { background: var(--border); }
+.input-wrap { flex: 1; background: var(--input-bg); border-radius: 22px; border: 1px solid var(--border); padding: 4px 14px; display: flex; align-items: center; }
+.input-wrap:focus-within { border-color: #4f46e5; }
+#userInput { flex: 1; background: transparent; border: none; padding: 8px 0; resize: none; max-height: 120px; line-height: 1.4; outline: none; color: var(--text); }
+#sendBtn { width: 44px; height: 44px; border-radius: 50%; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background .2s, transform .1s; }
+#sendBtn.stop { background: #ef4444; }
+#sendBtn:active { transform: scale(.9); }
+#attachSheet { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
+#attachSheet.open { display: flex; }
+.sheet-content { width: 100%; max-width: 500px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
+.sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
+.sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sheet-option { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.sheet-option:active { background: var(--border); }
+.sheet-option i { font-size: 24px; }
+.sheet-cancel { width: 100%; margin-top: 12px; background: var(--border); color: var(--text); padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; }
+#settingsModal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; }
+#settingsModal.open { display: flex; }
+.modal-content { width: 100%; max-width: 540px; background: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 20px; max-height: 82vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(20px + env(safe-area-inset-bottom)); animation: slideUp .3s ease-out; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+.close-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text); }
+.setting-group { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.setting-group:last-child { border-bottom: none; }
+.setting-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: .5px; }
+.setting-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 15px; outline: none; color: var(--text); }
+.setting-input:focus { border-color: #4f46e5; }
+textarea.setting-input { min-height: 80px; resize: vertical; }
+select.setting-input { appearance: none; -webkit-appearance: none; }
+.btn-primary { width: 100%; background: #4f46e5; color: #fff; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; margin-top: 10px; }
+.btn-primary:active { opacity: .8; }
+.btn-secondary { width: 100%; background: var(--border); color: var(--text); padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; margin-top: 8px; }
+.list-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; color: var(--text); }
+.delete-item { color: #ef4444; padding: 8px; }
+.key-hint { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25); border-radius: 10px; font-size: 13px; color: #818cf8; text-decoration: none; }
+.key-hint:active { background: rgba(99,102,241,.15); }
+.key-hint i { flex-shrink: 0; }
+.key-status { margin-top: 8px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.key-status.active { color: #10b981; }
+#contextMenu { position: fixed; z-index: 200; background: var(--modal-bg); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,.5); overflow: hidden; display: none; border: 1px solid var(--border); min-width: 170px; }
+.ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); }
+.ctx-btn:active { background: var(--border); }
+.ctx-btn.danger { color: #ef4444; }
+.ctx-btn.teach { color: #10b981; }
+#toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: .3s; z-index: 300; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (min-width: 768px) {
+#sidebar { position: relative; transform: translateX(0); }
+.close-sidebar, .menu-btn { display: none; }
+#settingsModal, #attachSheet { align-items: center; }
+.modal-content, .sheet-content { border-radius: 20px; }
+}
 </style>
 </head>
 <body>
-
 <div id="app">
-  <aside id="sidebar">
-    <div class="sidebar-header">
-      <button id="newChatBtn" class="new-chat-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
-      <button id="closeSidebarBtn" class="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="historyList" class="history-list"></div>
-  </aside>
-
-  <div id="main">
-    <header>
-      <div class="brand">
-        <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
-        <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
-        <div style="min-width:0">
-          <div class="title">NeuralForge</div>
-          <div class="model-tag" id="modelTag">openai</div>
-        </div>
-      </div>
-      <div class="header-btns">
-        <button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
-        <button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
-      </div>
-    </header>
-
-    <div id="chatArea"></div>
-
-    <div id="inputArea">
-      <div class="search-toggle">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <span class="toggle-switch"><input type="checkbox" id="webSearchToggle" checked><span class="slider"></span></span>
-          <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
-        </label>
-      </div>
-
-      <div id="previewRow" class="preview-row"></div>
-
-      <form class="input-row" id="chatForm">
-        <button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
-        <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge or paste a URL..." rows="1"></textarea></div>
-        <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </form>
-    </div>
-  </div>
+<aside id="sidebar">
+<div class="sidebar-header">
+<button id="newChatBtn" class="new-chat-btn"><i class="fa-solid fa-plus"></i> New Chat</button>
+<button id="closeSidebarBtn" class="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
 </div>
-
+<div id="historyList" class="history-list"></div>
+</aside>
+<div id="main">
+<header>
+<div class="brand">
+<button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+<div class="logo-small"><i class="fa-solid fa-brain"></i></div>
+<div style="min-width:0">
+<div class="title">NeuralForge</div>
+<div class="model-tag" id="modelTag">openai</div>
+</div>
+</div>
+<div class="header-btns">
+<button class="header-btn" id="themeBtn"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
+<button class="header-btn" id="settingsBtn"><i class="fa-solid fa-sliders"></i></button>
+</div>
+</header>
+<div id="chatArea"></div>
+<div id="inputArea">
+<div class="search-toggle">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+<span class="toggle-switch"><input type="checkbox" id="webSearchToggle" checked><span class="slider"></span></span>
+<span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
+</label>
+</div>
+<div id="previewRow" class="preview-row"></div>
+<form class="input-row" id="chatForm">
+<button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
+<div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge or paste a URL..." rows="1"></textarea></div>
+<button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+</form>
+</div>
+</div>
+</div>
 <div id="attachSheet">
-  <div class="sheet-content">
-    <div class="sheet-title">Add to message</div>
-    <div class="sheet-grid">
-      <button class="sheet-option" id="optCamera"><i class="fa-solid fa-camera" style="color:#6366f1"></i> Take Photo</button>
-      <button class="sheet-option" id="optAlbum"><i class="fa-solid fa-images" style="color:#a855f7"></i> Photo Album</button>
-      <button class="sheet-option" id="optFile"><i class="fa-solid fa-file-arrow-up" style="color:#10b981"></i> Upload File</button>
-      <button class="sheet-option" id="optRecord"><i class="fa-solid fa-microphone" style="color:#ef4444"></i> Record Voice</button>
-      <button class="sheet-option" id="optGenerate" style="grid-column: span 2"><i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b"></i> Generate Image</button>
-    </div>
-    <button class="sheet-cancel" id="attachCancel">Cancel</button>
-  </div>
+<div class="sheet-content">
+<div class="sheet-title">Add to message</div>
+<div class="sheet-grid">
+<button class="sheet-option" id="optCamera"><i class="fa-solid fa-camera" style="color:#6366f1"></i> Take Photo</button>
+<button class="sheet-option" id="optAlbum"><i class="fa-solid fa-images" style="color:#a855f7"></i> Photo Album</button>
+<button class="sheet-option" id="optFile"><i class="fa-solid fa-file-arrow-up" style="color:#10b981"></i> Upload File</button>
+<button class="sheet-option" id="optRecord"><i class="fa-solid fa-microphone" style="color:#ef4444"></i> Record Voice</button>
+<button class="sheet-option" id="optGenerate" style="grid-column: span 2"><i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b"></i> Generate Image</button>
 </div>
-
+<button class="sheet-cancel" id="attachCancel">Cancel</button>
+</div>
+</div>
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="albumInput" accept="image/*" style="display:none">
 <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.log,.js,.py,.html,.css,.xml,.yml,.yaml,text/*" style="display:none">
-
 <div id="settingsModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Settings</h2>
-      <button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-
-    <div class="setting-group">
-      <div class="setting-label">Text Model</div>
-      <select class="setting-input" id="modelSelect">
-        <option value="openai">OpenAI (default, fast)</option>
-        <option value="openai-large">OpenAI Large (smartest)</option>
-        <option value="deepseek">DeepSeek (reasoning)</option>
-        <option value="llama">Meta Llama</option>
-        <option value="mistral">Mistral</option>
-        <option value="qwen-coder">Qwen Coder (code)</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">
-        <span class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></span>
-        Smart Mode (step-by-step reasoning)
-      </label>
-    </div>
-
-    <div class="setting-group">
-      <div class="setting-label">Welcome Questions</div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1">
-        <button id="addQuestionBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
-      </div>
-      <div id="questionList"></div>
-    </div>
-
-    <div class="setting-group">
-      <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES:
+<div class="modal-content">
+<div class="modal-header">
+<h2>Settings</h2>
+<button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="setting-group">
+<div class="setting-label">Text Model</div>
+<select class="setting-input" id="modelSelect">
+<option value="openai">OpenAI (default, fast)</option>
+<option value="openai-large">OpenAI Large (smartest)</option>
+<option value="deepseek">DeepSeek (reasoning)</option>
+<option value="llama">Meta Llama</option>
+<option value="mistral">Mistral</option>
+<option value="qwen-coder">Qwen Coder (code)</option>
+</select>
+<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">
+<span class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></span>
+Smart Mode (step-by-step reasoning)
+</label>
+</div>
+<div class="setting-group">
+<div class="setting-label">OpenRouter API Key (Optional)</div>
+<input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
+<a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
+<i class="fa-solid fa-key"></i>
+<span>Get your API key at openrouter.ai/keys</span>
+<i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
+</a>
+<div id="keyStatus" class="key-status">
+<i class="fa-solid fa-circle-info"></i>
+<span>No key saved. Using free server (rate-limited).</span>
+</div>
+<p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
+When the free server is busy, your key is used automatically. You get higher limits, faster responses, and access to premium models. Your key stays on this device only.
+</p>
+<button class="btn-primary" id="saveKeyBtn">Save API Key</button>
+</div>
+<div class="setting-group">
+<div class="setting-label">Welcome Questions</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1">
+<button id="addQuestionBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div id="questionList"></div>
+</div>
+<div class="setting-group">
+<div class="setting-label">System Behavior</div>
+<textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES:
 1) Use PERFECT English grammar, complete sentences, proper punctuation.
 2) Never write broken English.
 3) Format for mobile: short paragraphs, bullet points, bold key terms.
@@ -309,966 +300,1213 @@
 8) If the user corrects you, accept the correction immediately.
 9) When reading websites, focus on the main content and ignore navigation, ads, and footers.
 10) You MUST use the web search results and website content provided in the user message. Never say "I cannot browse" or "I don't have access" — the information is already provided to you in the message. Answer based on the provided context.</textarea>
-      <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
-    </div>
-
-    <div class="setting-group">
-      <div class="setting-label">Custom Memory</div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1">
-        <button id="addMemBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
-      </div>
-      <div id="memoryList"></div>
-    </div>
-  </div>
+<button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
 </div>
-
+<div class="setting-group">
+<div class="setting-label">Custom Memory</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1">
+<button id="addMemBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div id="memoryList"></div>
+</div>
+</div>
+</div>
 <div id="contextMenu">
-  <button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
-  <button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
-  <button class="ctx-btn teach" id="ctxTeach"><i class="fa-solid fa-graduation-cap"></i> Correct & Teach</button>
-  <button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i> Copy Text</button>
-  <button class="ctx-btn danger" id="ctxDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+<button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
+<button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+<button class="ctx-btn teach" id="ctxTeach"><i class="fa-solid fa-graduation-cap"></i> Correct & Teach</button>
+<button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i> Copy Text</button>
+<button class="ctx-btn danger" id="ctxDelete"><i class="fa-solid fa-trash"></i> Delete</button>
 </div>
-
 <div id="toast">Notification</div>
-
 <script>
 (function () {
-  'use strict';
-  function safe(fn, def) { try { return fn(); } catch (e) { return def; } }
-  function lsGet(k, def) { return safe(function () { var v = localStorage.getItem(k); return v === null ? def : v; }, def); }
-  function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); }
-  function $(id) { return document.getElementById(id); }
-  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
-
-  // Lazy-load Tesseract only when an image is actually attached
-  var tesseractPromise = null;
-  function loadTesseract() {
-    if (window.Tesseract) return Promise.resolve(window.Tesseract);
-    if (tesseractPromise) return tesseractPromise;
-    tesseractPromise = new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-      s.onload = function () { resolve(window.Tesseract); };
-      s.onerror = function () { tesseractPromise = null; reject(new Error('Failed to load OCR engine')); };
-      document.head.appendChild(s);
-    });
-    return tesseractPromise;
-  }
-
-  function detectUrls(text) {
-    var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
-    return text.match(urlRegex) || [];
-  }
-
-  var DEFAULT_SYS = $('sysPrompt') ? $('sysPrompt').value : '';
-  var DEFAULT_QS = [
-    { text: 'What are the latest news in Hong Kong?', icon: 'fa-globe', color: '#f59e0b' },
-    { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
-    { text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' },
-    { text: 'Give me 5 creative business ideas', icon: 'fa-lightbulb', color: '#f59e0b' }
-  ];
-
-  var histories = safe(function () { var a = JSON.parse(lsGet('nf_histories', '[]')); return Array.isArray(a) ? a : []; }, []);
-  var currentChatId = lsGet('nf_current_chat', '') || '';
-  var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
-  var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
-  var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
-  var currentModel = lsGet('nf_model', 'openai') || 'openai';
-  var smartMode = lsGet('nf_smart', '0') === '1';
-
-  var isGenerating = false;
-  var activeController = null;
-  var selectedMsgEl = null;
-  var longPressTimer = null;
-
-  var pendingImage = null;
-  var pendingFile = null;
-  var recognition = null;
-  var isRecording = false;
-  var recShouldKeep = false;
-
-  function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
-  function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
-
-  function saveHistoriesSafe() {
-    // Save normally first; if quota exceeded (5MB limit from base64 images), strip base64 data URLs and retry
-    try {
-      localStorage.setItem('nf_histories', JSON.stringify(histories));
-    } catch (e) {
-      var trimmed = histories.map(function (h) {
-        return {
-          id: h.id,
-          title: h.title,
-          messages: h.messages.map(function (m) {
-            var copy = Object.assign({}, m);
-            if (copy.image && copy.image.indexOf('data:') === 0) delete copy.image;
-            return copy;
-          })
-        };
-      });
-      safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
-    }
-  }
-
-  function setMessages(msgs) {
-    var c = histories.find(function (h) { return h.id === currentChatId; });
-    if (c) {
-      c.messages = msgs;
-      var fu = msgs.find(function (m) { return m.role === 'user'; });
-      c.title = fu ? (fu.content.length > 34 ? fu.content.slice(0, 34) + '…' : fu.content) : 'New Chat';
-      saveHistoriesSafe();
-      renderSidebar();
-    }
-  }
-
-  function setGeneratingState(active) {
-    isGenerating = active;
-    var btn = $('sendBtn');
-    if (active) {
-      btn.classList.add('stop');
-      btn.type = 'button';
-      btn.innerHTML = '<i class="fa-solid fa-stop"></i>';
-    } else {
-      btn.classList.remove('stop');
-      btn.type = 'submit';
-      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
-      activeController = null;
-    }
-  }
-
-  function createNewChat() {
-    if (isGenerating && activeController) activeController.abort();
-    var id = 'chat_' + Date.now();
-    histories.unshift({ id: id, title: 'New Chat', messages: [] });
-    currentChatId = id;
-    lsSet('nf_current_chat', currentChatId);
-    saveHistoriesSafe();
-    clearAttachments();
-    renderSidebar(); renderWelcomeScreen();
-    if (window.innerWidth < 768) $('sidebar').classList.remove('open');
-  }
-
-  function boot() {
-    if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
-
-    var isDark = lsGet('nf_theme', 'dark') !== 'light';
-    function applyTheme() {
-      if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
-      else { document.body.classList.add('light'); $('themeIcon').className = 'fa-solid fa-moon'; }
-    }
-    applyTheme();
-    $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
-
-    $('modelSelect').value = currentModel;
-    $('smartMode').checked = smartMode;
-    $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
-    $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Text model: ' + currentModel); };
-    $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
-
-    $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
-    $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
-    $('newChatBtn').onclick = createNewChat;
-    $('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); };
-    $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
-    $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
-
-    $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
-    $('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
-    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
-    $('optCamera').onclick = function () { $('attachSheet').classList.remove('open'); $('cameraInput').click(); };
-    $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
-    $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
-    $('optRecord').onclick = function () { $('attachSheet').classList.remove('open'); toggleRecording(); };
-    $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open'); generateImageFromPrompt(); };
-
-    $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
-    $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
-    $('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
-
-    // Auto-expanding textarea
-    var userInput = $('userInput');
-    userInput.addEventListener('input', function () {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    });
-
-    // Stop button click handler
-    $('sendBtn').addEventListener('click', function (e) {
-      if (isGenerating) {
-        e.preventDefault();
-        if (activeController) activeController.abort();
-      }
-    });
-
-    var ctxMenu = $('contextMenu');
-    document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
-
-    $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
-
-    $('chatArea').addEventListener('click', function (e) {
-      var b = e.target.closest('.sugg-btn');
-      if (b && b.dataset.q) { $('userInput').value = b.dataset.q; submitForm(); }
-      var h = e.target.closest('.thinking-header');
-      if (h) h.parentElement.classList.toggle('open');
-      var copyBtn = e.target.closest('.copy-code-btn');
-      if (copyBtn) {
-        var codeEl = copyBtn.closest('.code-wrap').querySelector('code');
-        if (codeEl) {
-          copyText(codeEl.textContent);
-          copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
-          setTimeout(function () { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy'; }, 1500);
-        }
-      }
-    });
-
-    $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
-    $('ctxDelete').onclick = function () {
-      var targetId = selectedMsgEl.dataset.id;
-      selectedMsgEl.remove();
-      var msgs = getMessages().filter(function (m) { return m.id !== targetId; });
-      setMessages(msgs);
-      if (msgs.length === 0) renderWelcomeScreen();
-      showToast('Deleted');
-      ctxMenu.style.display = 'none';
-    };
-    $('ctxEdit').onclick = function () {
-      var targetId = selectedMsgEl.dataset.id;
-      $('userInput').value = selectedMsgEl.dataset.text.replace(/^\[Image\]\s*/, '');
-      $('userInput').dispatchEvent(new Event('input'));
-      var msgs = getMessages();
-      var idx = msgs.findIndex(function (m) { return m.id === targetId; });
-      if (idx !== -1) {
-        // Remove this message and any subsequent messages in the turn
-        msgs = msgs.slice(0, idx);
-        setMessages(msgs);
-        renderChat();
-      } else {
-        selectedMsgEl.remove();
-      }
-      ctxMenu.style.display = 'none';
-      $('userInput').focus();
-    };
-    $('ctxTeach').onclick = function () {
-      var correction = prompt('What is the correct information?');
-      if (correction && correction.trim()) {
-        memory.push(correction.trim());
-        lsSet('nf_memory', JSON.stringify(memory));
-        renderMemory();
-        showToast('AI learned: ' + correction.trim().substring(0, 30) + '…');
-        ctxMenu.style.display = 'none';
-        var targetId = selectedMsgEl.dataset.id;
-        var msgs = getMessages();
-        var idx = msgs.findIndex(function (m) { return m.id === targetId; });
-        if (idx > 0) {
-          var prev = msgs[idx - 1];
-          msgs = msgs.slice(0, idx);
-          setMessages(msgs);
-          selectedMsgEl.remove();
-          setGeneratingState(true);
-          showTyping('Thinking...');
-          runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
-        }
-      }
-    };
-    $('ctxRegen').onclick = function () {
-      var targetId = selectedMsgEl.dataset.id;
-      var msgs = getMessages();
-      var idx = msgs.findIndex(function (m) { return m.id === targetId; });
-      ctxMenu.style.display = 'none';
-      if (idx > 0) {
-        var prev = msgs[idx - 1];
-        msgs = msgs.slice(0, idx);
-        setMessages(msgs);
-        selectedMsgEl.remove();
-        setGeneratingState(true);
-        showTyping('Thinking...');
-        runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
-      }
-    };
-
-    $('sysPrompt').value = sysPrompt;
-    $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; lsSet('nf_sys', sysPrompt); showToast('Settings saved!'); $('settingsModal').classList.remove('open'); };
-    $('addQuestionBtn').onclick = addQuestion;
-    $('addMemBtn').onclick = addMemory;
-    $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
-    $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
-
-    renderSidebar(); renderQuestions(); renderMemory(); renderChat();
-    window.__nfBooted = true;
-  }
-
-  function renderPreview() {
-    var row = $('previewRow');
-    row.innerHTML = '';
-    if (isRecording) {
-      var rc = document.createElement('div'); rc.className = 'rec-chip';
-      rc.innerHTML = '<span class="rec-dot"></span> Listening…';
-      row.appendChild(rc);
-    }
-    if (pendingImage) {
-      var chip = document.createElement('div'); chip.className = 'preview-chip';
-      chip.innerHTML = '<img src="' + pendingImage.dataUrl + '"><span class="chip-label">' + esc(pendingImage.name) + '</span><button type="button" class="chip-x" data-clear="image"><i class="fa-solid fa-xmark"></i></button>';
-      row.appendChild(chip);
-    }
-    if (pendingFile) {
-      var chip2 = document.createElement('div'); chip2.className = 'preview-chip';
-      chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button type="button" class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
-      row.appendChild(chip2);
-    }
-  }
-  $('previewRow').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-clear]');
-    if (!b) return;
-    if (b.dataset.clear === 'image') pendingImage = null;
-    if (b.dataset.clear === 'file') pendingFile = null;
-    renderPreview();
-  });
-  function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
-
-  function handleImageFile(file) {
-    if (!file) return;
-    if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
-    if (file.size > 8000000) { showToast('Image too large (max 8MB)'); return; }
-    loadTesseract(); // Preload OCR engine in background
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      compressImage(ev.target.result, 720, 0.7, function (dataUrl) {
-        pendingImage = { name: file.name || 'photo.jpg', dataUrl: dataUrl };
-        renderPreview();
-        showToast('Photo attached');
-      });
-    };
-    reader.onerror = function () { showToast('Could not read image'); };
-    reader.readAsDataURL(file);
-  }
-
-  function compressImage(dataUrl, maxDim, quality, cb) {
-    var img = new Image();
-    img.onload = function () {
-      var w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        var scale = Math.min(maxDim / w, maxDim / h);
-        w = Math.round(w * scale); h = Math.round(h * scale);
-      }
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      cb(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = function () { cb(dataUrl); };
-    img.src = dataUrl;
-  }
-
-  function handleTextFile(file) {
-    if (!file) return;
-    if (file.size > 100000) { showToast('File too large (max 100KB)'); return; }
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      pendingFile = { name: file.name, text: String(ev.target.result).slice(0, 8000) };
-      renderPreview();
-      showToast('File attached');
-    };
-    reader.onerror = function () { showToast('Could not read file'); };
-    reader.readAsText(file);
-  }
-
-  function toggleRecording() {
-    if (isRecording) { stopRecording(); return; }
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
-    recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = navigator.language || 'en-US';
-    var baseText = $('userInput').value;
-    if (baseText && !/\s$/.test(baseText)) baseText += ' ';
-    recognition.onresult = function (e) {
-      var interim = '';
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        var t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) baseText += t + ' ';
-        else interim += t;
-      }
-      $('userInput').value = baseText + interim;
-      $('userInput').dispatchEvent(new Event('input'));
-    };
-    recognition.onerror = function (e) {
-      if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
-    };
-    recognition.onend = function () {
-      if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
-      else { isRecording = false; renderPreview(); }
-    };
-    recShouldKeep = true;
-    isRecording = true;
-    safe(function () { recognition.start(); }, null);
-    renderPreview();
-    showToast('Recording…');
-  }
-  function stopRecording() {
-    recShouldKeep = false;
-    isRecording = false;
-    if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
-    renderPreview();
-  }
-
-  function generateImageFromPrompt() {
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML = '<div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px;"><h3 style="margin-bottom:12px;color:var(--text)">Describe the image</h3><textarea id="genPromptInput" style="width:100%;min-height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;outline:none;" placeholder="e.g. a futuristic city at sunset"></textarea><div style="display:flex;gap:8px;margin-top:12px;"><button id="genCancel" style="flex:1;padding:12px;background:var(--border);color:var(--text);border-radius:10px;font-weight:600;">Cancel</button><button id="genConfirm" style="flex:1;padding:12px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;">Generate</button></div></div>';
-    document.body.appendChild(overlay);
-    var input = overlay.querySelector('#genPromptInput');
-    input.focus();
-    overlay.querySelector('#genCancel').onclick = function () { document.body.removeChild(overlay); };
-    overlay.querySelector('#genConfirm').onclick = function () {
-      var p = input.value.trim();
-      document.body.removeChild(overlay);
-      if (p) generateImage(p);
-    };
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
-  }
-
-  function generateImage(prompt) {
-    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-    var msgId = uid();
-    var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-    aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image…</div></div>';
-    $('chatArea').appendChild(aiMsgDiv);
-    scrollToBottom();
-
-    var bubble = aiMsgDiv.querySelector('.bubble');
-    var encodedPrompt = encodeURIComponent(prompt);
-    var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
-
-    var img = new Image();
-    img.onload = function () {
-      var content = '[Generated Image] ' + prompt;
-      aiMsgDiv.dataset.text = content;
-      bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
-      attachLongPress(aiMsgDiv, content, 'ai');
-      var msgs = getMessages();
-      msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
-      setMessages(msgs);
-      scrollToBottom();
-    };
-    img.onerror = function () {
-      bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
-      aiMsgDiv.classList.add('error');
-      bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
-    };
-    img.src = imageUrl;
-  }
-
-  function renderSidebar() {
-    var list = $('historyList');
-    list.innerHTML = histories.map(function (h) {
-      var act = h.id === currentChatId ? ' active' : '';
-      return '<div class="history-item' + act + '" data-id="' + h.id + '"><i class="fa-regular fa-message msg-ico"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.title) + '</span><button class="del-hist" data-del="' + h.id + '"><i class="fa-solid fa-trash"></i></button></div>';
-    }).join('');
-    list.querySelectorAll('.history-item').forEach(function (el) {
-      el.addEventListener('click', function (e) {
-        if (e.target.closest('.del-hist')) return;
-        currentChatId = el.dataset.id; lsSet('nf_current_chat', currentChatId);
-        renderSidebar(); renderChat();
-        if (window.innerWidth < 768) $('sidebar').classList.remove('open');
-      });
-    });
-    list.querySelectorAll('.del-hist').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation(); var id = btn.dataset.del;
-        histories = histories.filter(function (h) { return h.id !== id; });
-        saveHistoriesSafe();
-        if (currentChatId === id) createNewChat(); else renderSidebar();
-      });
-    });
-  }
-
-  function renderChat() {
-    var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
-    if (msgs.length === 0) { renderWelcomeScreen(); return; }
-    msgs.forEach(function (m) {
-      if (!m.id) m.id = uid();
-      addMessageToUI(m.content, m.role, false, m.image, m.sources, m.id);
-    });
-    scrollToBottom();
-  }
-
-  function renderWelcomeScreen() {
-    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p><div class="suggestions">';
-    customQuestions.forEach(function (q) {
-      html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;') + '"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>';
-    });
-    html += '</div></div>';
-    $('chatArea').innerHTML = html;
-  }
-
-  function submitForm() {
-    if (isGenerating) return;
-    var input = $('userInput'); var text = input.value.trim();
-    if (!text && !pendingImage && !pendingFile) return;
-    if (isRecording) stopRecording();
-
-    var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-
-    var urlsInText = detectUrls(text);
-    var urlToFetch = urlsInText.length > 0 ? urlsInText[0] : null;
-
-    var displayText = text;
-    if (pendingImage && !displayText) displayText = 'Describe this image.';
-    if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n\n[FILE: ' + pendingFile.name + ']';
-    if (pendingImage) displayText = '[Image] ' + displayText;
-
-    var msgId = uid();
-    var msgs = getMessages();
-    msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
-    setMessages(msgs);
-
-    addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null, null, msgId);
-
-    var sendImage = pendingImage;
-    var sendFileText = pendingFile ? pendingFile.text : '';
-    var sendText = text || displayText;
-
-    input.value = ''; input.style.height = 'auto';
-    clearAttachments();
-
-    setGeneratingState(true);
-    showTyping('Thinking...');
-    runAI(sendText, sendImage, sendFileText, [], urlToFetch);
-  }
-
-  async function extractTextFromImage(imageDataUrl) {
-    try {
-      var T = await loadTesseract();
-      var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
-        logger: function (m) {
-          if (m.status === 'recognizing text') {
-            showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
-          }
-        }
-      });
-      return result.data.text.trim();
-    } catch (e) {
-      console.error('OCR error:', e);
-      return '';
-    }
-  }
-
-  async function fetchWebsiteContent(url) {
-    var proxies = [
-      'https://api.allorigins.win/get?url=',
-      'https://corsproxy.io/?',
-      'https://api.codetabs.com/v1/proxy?quest='
-    ];
-
-    for (var i = 0; i < proxies.length; i++) {
-      try {
-        showTyping('Fetching website… (attempt ' + (i + 1) + ')');
-        var proxyUrl = proxies[i] + encodeURIComponent(url);
-        var response = await fetch(proxyUrl);
-        var data;
-        if (proxies[i].indexOf('allorigins') !== -1) {
-          data = await response.json();
-          data = data.contents;
-        } else {
-          data = await response.text();
-        }
-
-        if (!data || data.length < 100) continue;
-
-        var parser = new DOMParser();
-        var doc = parser.parseFromString(data, 'text/html');
-
-        var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
-        elementsToRemove.forEach(function (el) { el.remove(); });
-
-        var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
-        var text = mainContent ? mainContent.textContent : '';
-
-        text = text.replace(/\s+/g, ' ').trim().substring(0, 8000);
-        var title = doc.title || url;
-
-        if (text.length > 100) {
-          return { text: text, title: title };
-        }
-      } catch (e) {
-        console.error('Proxy ' + i + ' failed:', e);
-      }
-    }
-    return { text: '', title: url };
-  }
-
-  async function runAI(text, image, fileText, sources, urlToFetch) {
-    var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
-    var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
-
-    var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
-    if (smartMode) systemMsg += '\n\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
-    if (memory.length) systemMsg += '\n\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
-
-    var msgs = getMessages();
-    var aiMsgId = uid();
-    var aiMsgDiv = null;
-    var streamBubble = null;
-
-    function ensureAiBubble() {
-      if (aiMsgDiv) return;
-      removeTyping();
-      aiMsgDiv = document.createElement('div');
-      aiMsgDiv.className = 'msg ai';
-      aiMsgDiv.dataset.id = aiMsgId;
-      aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
-      $('chatArea').appendChild(aiMsgDiv);
-      streamBubble = aiMsgDiv.querySelector('.bubble');
-    }
-
-    var aiText = '';
-    var retryCount = 0;
-    var maxRetries = 3;
-    var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
-    var currentModelIdx = modelList.indexOf(currentModel);
-    if (currentModelIdx === -1) currentModelIdx = 0;
-
-    try {
-      var ocrText = '';
-      var websiteContent = '';
-      var websiteTitle = '';
-
-      if (image) {
-        showTyping('Reading image with OCR (English + Chinese)…');
-        ocrText = await extractTextFromImage(image.dataUrl);
-        if (!ocrText) ocrText = '[No text detected in image]';
-      }
-
-      if (urlToFetch) {
-        var websiteData = await fetchWebsiteContent(urlToFetch);
-        websiteContent = websiteData.text;
-        websiteTitle = websiteData.title;
-        if (!websiteContent) websiteContent = '[Could not extract content from ' + urlToFetch + ']';
-      }
-
-      if (useWeb && !image && !urlToFetch) showTyping('Searching the web…');
-      var results = await searchPromise;
-      var webText = results.text || '';
-      var webSources = results.sources || [];
-
-      var userText = text || '';
-      if (ocrText) userText += '\n\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
-      if (websiteContent) userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
-      if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
-      if (useWeb && webText && webText.indexOf('No relevant') === -1) {
-        userText += '\n\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
-      }
-
-      var modelToUse = modelList[currentModelIdx];
-
-      while (retryCount <= maxRetries) {
-        activeController = new AbortController();
-        var to = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
-
-        var apiMessages = [{ role: 'system', content: systemMsg }];
-        var historyMsgs = msgs.slice(-8);
-
-        for (var i = 0; i < historyMsgs.length; i++) {
-          var m = historyMsgs[i];
-          apiMessages.push({ role: m.role, content: m.content });
-        }
-        apiMessages[apiMessages.length - 1].content = userText;
-
-        var res = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST', signal: activeController.signal,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: modelToUse,
-            messages: apiMessages,
-            stream: true,
-            temperature: smartMode ? 0.3 : 0.7
-          })
-        });
-        clearTimeout(to);
-        if (!res.ok) throw new Error('Server error ' + res.status);
-
-        aiText = '';
-        if (res.body && res.body.getReader) {
-          var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
-          while (true) {
-            var r = await reader.read(); if (r.done) break;
-            buffer += dec.decode(r.value, { stream: true });
-            var lines = buffer.split('\n'); buffer = lines.pop();
-            for (var j = 0; j < lines.length; j++) {
-              var line = lines[j].trim();
-              if (line.indexOf('data:') !== 0) continue;
-              var data = line.slice(5).trim();
-              if (data === '' || data === '[DONE]') continue;
-              safe(function () {
-                var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
-                if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-                if (c) {
-                  ensureAiBubble();
-                  aiText += c;
-                  streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
-                  scrollToBottom();
-                }
-              }, null);
-            }
-          }
-        } else {
-          var rawText = await res.text();
-          safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
-        }
-
-        if (aiText.trim()) break;
-
-        retryCount++;
-        if (retryCount <= maxRetries) {
-          currentModelIdx = (currentModelIdx + 1) % modelList.length;
-          modelToUse = modelList[currentModelIdx];
-          showTyping('Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')');
-          await new Promise(function (r) { setTimeout(r, 800); });
-        }
-      }
-
-      if (!aiText.trim()) throw new Error('empty response');
-
-      ensureAiBubble();
-      var allSources = webSources.concat(sources || []);
-      if (urlToFetch) {
-        allSources.push({ label: websiteTitle || urlToFetch, url: urlToFetch });
-      }
-
-      var sourceHtml = '';
-      if (allSources.length > 0) {
-        sourceHtml = '<div class="source-links">';
-        allSources.forEach(function (s, idx) {
-          sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
-        });
-        sourceHtml += '</div>';
-      }
-
-      aiMsgDiv.dataset.text = aiText;
-      streamBubble.innerHTML = formatText(aiText) + sourceHtml;
-      attachLongPress(aiMsgDiv, aiText, 'ai');
-      var saved = getMessages();
-      saved.push({ id: aiMsgId, role: 'assistant', content: aiText, sources: allSources });
-      setMessages(saved);
-      scrollToBottom();
-    } catch (err) {
-      removeTyping();
-      if (err.name === 'AbortError' && aiText.trim()) {
-        // User tapped Stop mid-stream — keep what was generated so far
-        ensureAiBubble();
-        aiMsgDiv.dataset.text = aiText;
-        streamBubble.innerHTML = formatText(aiText);
-        attachLongPress(aiMsgDiv, aiText, 'ai');
-        var savedPartial = getMessages();
-        savedPartial.push({ id: aiMsgId, role: 'assistant', content: aiText });
-        setMessages(savedPartial);
-      } else {
-        ensureAiBubble();
-        var friendly = err.name === 'AbortError' ? 'Generation stopped.' : (err.message === 'empty response' ? 'The AI returned nothing after retries.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
-        streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
-        aiMsgDiv.classList.add('error');
-        streamBubble.querySelector('.retry').addEventListener('click', function () {
-          aiMsgDiv.remove();
-          var s = getMessages();
-          var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
-          if (lastUser) {
-            setGeneratingState(true);
-            showTyping('Thinking...');
-            runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], detectUrls(lastUser.content)[0] || null);
-          }
-        });
-        attachLongPress(aiMsgDiv, '', 'ai');
-      }
-    } finally {
-      setGeneratingState(false);
-    }
-  }
-
-  function formatText(text) {
-    var codeBlocks = [];
-    // 1. Extract fenced code blocks BEFORE escaping/markdown so #, *, - inside code don't break
-    var raw = String(text).replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, function (m, lang, code) {
-      var idx = codeBlocks.length;
-      var cleanCode = esc(code.replace(/\n$/, ''));
-      var label = lang ? esc(lang) : 'code';
-      codeBlocks.push(
-        '<div class="code-wrap"><div class="code-head"><span>' + label + '</span><button type="button" class="copy-code-btn"><i class="fa-solid fa-copy"></i> Copy</button></div><pre><code>' + cleanCode + '</code></pre></div>'
-      );
-      return '@@CODEBLOCK_' + idx + '@@';
-    });
-
-    // 2. Escape HTML & format remaining prose
-    var html = esc(raw)
-      .replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function (m, p1) {
-        return '<div class="thinking-box"><div class="thinking-header"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + p1.replace(/\n/g, '<br>').trim() + '</div></div>';
-      })
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`([^`\n]+)`/g, '<code>$1</code>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
-      .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
-      .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
-
-    html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
-    html = html.split('\n\n').map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
-
-    // 3. Re-inject protected code blocks
-    html = html.replace(/@@CODEBLOCK_(\d+)@@/g, function (m, idx) {
-      return codeBlocks[+idx] || '';
-    });
-
-    return html;
-  }
-
-  function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-
-  function addMessageToUI(text, type, animate, image, sources, id) {
-    var div = document.createElement('div');
-    div.className = 'msg ' + type;
-    div.dataset.text = text;
-    if (id) div.dataset.id = id;
-    if (animate) div.style.animation = 'popIn .2s ease-out';
-
-    var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
-    var sourceHtml = '';
-    if (sources && sources.length > 0 && type === 'ai') {
-      sourceHtml = '<div class="source-links">';
-      sources.forEach(function (s, idx) {
-        sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
-      });
-      sourceHtml += '</div>';
-    }
-    if (type === 'ai') {
-      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + sourceHtml + '</div></div>';
-    } else {
-      div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
-    }
-    $('chatArea').appendChild(div);
-    scrollToBottom();
-    attachLongPress(div, text, type);
-  }
-
-  function showTyping(text) {
-    var existing = $('typingIndicator');
-    if (existing) {
-      var label = existing.querySelector('.typing-label');
-      if (label) label.textContent = text;
-      scrollToBottom();
-      return;
-    }
-    var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typingIndicator';
-    div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div><span class="typing-label">' + esc(text) + '</span></div></div>';
-    $('chatArea').appendChild(div); scrollToBottom();
-  }
-  function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
-
-  function attachLongPress(div, text, type) {
-    div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
-    div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
-    div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
-    div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
-    div.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('a, button')) return;
-      e.preventDefault();
-      showContextMenu(e, div, text, type);
-    });
-  }
-
-  function showContextMenu(e, el, text, type) {
-    selectedMsgEl = el; var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    $('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 180) + 'px';
-    $('contextMenu').style.top = Math.min(t.clientY || 20, window.innerHeight - 210) + 'px';
-    $('contextMenu').style.display = 'block';
-    $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
-    $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
-    $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
-  }
-
-  function copyText(t) {
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
-    else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
-  }
-
-  function extractRealDdgUrl(rawHref) {
-    if (!rawHref) return 'https://duckduckgo.com';
-    if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
-    var match = rawHref.match(/[?&]uddg=([^&]+)/);
-    if (match && match[1]) {
-      return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
-    }
-    return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
-  }
-
-  function searchWebFast(query) {
-    var wikiP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
-      try {
-        var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
-        clearTimeout(t); var j = await r.json();
-        if (j.query && j.query.search.length) {
-          var sources = j.query.search.map(function (s) { return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) }; });
-          return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n'), sources: sources };
-        }
-      } catch (e) {}
-      return { text: '', sources: [] };
-    }, { text: '', sources: [] });
-
-    var ddgP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 4000);
-      try {
-        var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
-        clearTimeout(t); var j = await r.json();
-        if (j.contents) {
-          var doc = new DOMParser().parseFromString(j.contents, 'text/html');
-          var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
-          var sources = results.map(function (resItem) {
-            var anchor = resItem.querySelector('.result__a');
-            var rawHref = anchor ? anchor.getAttribute('href') : '';
-            var title = anchor ? anchor.textContent.trim().substring(0, 30) : 'Web Source';
-            return { label: title, url: extractRealDdgUrl(rawHref) };
-          });
-          var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
-          if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
-        }
-      } catch (e) {}
-      return { text: '', sources: [] };
-    }, { text: '', sources: [] });
-
-    return Promise.all([wikiP, ddgP]).then(function (r) {
-      var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
-      var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
-      return { text: texts.length ? texts.join('\n\n') : 'No relevant results found.', sources: allSources };
-    });
-  }
-
-  function renderQuestions() {
-    var list = $('questionList');
-    if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom questions yet.</p>'; return; }
-    list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
-  }
-  function addQuestion() {
-    var input = $('questionInput'); var text = input.value.trim(); if (!text) return;
-    var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen'];
-    var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444'];
-    customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] });
-    lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!');
-  }
-  function renderMemory() {
-    var list = $('memoryList');
-    if (!memory.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom memory yet.</p>'; return; }
-    list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
-  }
-  function addMemory() { var input = $('memInput'); var text = input.value.trim(); if (!text) return; memory.push(text); lsSet('nf_memory', JSON.stringify(memory)); input.value = ''; renderMemory(); showToast('Memory added!'); }
-  function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+'use strict';
+function safe(fn, def) { try { return fn(); } catch (e) { return def; } }
+function lsGet(k, def) { return safe(function () { var v = localStorage.getItem(k); return v === null ? def : v; }, def); }
+function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); }
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+var tesseractPromise = null;
+function loadTesseract() {
+if (window.Tesseract) return Promise.resolve(window.Tesseract);
+if (tesseractPromise) return tesseractPromise;
+tesseractPromise = new Promise(function (resolve, reject) {
+var s = document.createElement('script');
+s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+s.onload = function () { resolve(window.Tesseract); };
+s.onerror = function () { tesseractPromise = null; reject(new Error('Failed to load OCR engine')); };
+document.head.appendChild(s);
+});
+return tesseractPromise;
+}
+
+function detectUrls(text) {
+var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+return text.match(urlRegex) || [];
+}
+
+var DEFAULT_SYS = $('sysPrompt') ? $('sysPrompt').value : '';
+var DEFAULT_QS = [
+{ text: 'What are the latest news in Hong Kong?', icon: 'fa-globe', color: '#f59e0b' },
+{ text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
+{ text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' },
+{ text: 'Give me 5 creative business ideas', icon: 'fa-lightbulb', color: '#f59e0b' }
+];
+
+var histories = safe(function () { var a = JSON.parse(lsGet('nf_histories', '[]')); return Array.isArray(a) ? a : []; }, []);
+var currentChatId = lsGet('nf_current_chat', '') || '';
+var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
+var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
+var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
+var currentModel = lsGet('nf_model', 'openai') || 'openai';
+var smartMode = lsGet('nf_smart', '0') === '1';
+var openrouterKey = lsGet('nf_openrouter_key', '') || '';
+var openrouterModel = lsGet('nf_openrouter_model', 'openai/gpt-4o-mini') || 'openai/gpt-4o-mini';
+
+var isGenerating = false;
+var activeController = null;
+var selectedMsgEl = null;
+var longPressTimer = null;
+var pendingImage = null;
+var pendingFile = null;
+var recognition = null;
+var isRecording = false;
+var recShouldKeep = false;
+
+function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
+function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
+
+function saveHistoriesSafe() {
+try {
+localStorage.setItem('nf_histories', JSON.stringify(histories));
+} catch (e) {
+var trimmed = histories.map(function (h) {
+return {
+id: h.id, title: h.title,
+messages: h.messages.map(function (m) {
+var copy = Object.assign({}, m);
+if (copy.image && copy.image.indexOf('data:') === 0) delete copy.image;
+return copy;
+})
+};
+});
+safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
+}
+}
+
+function setMessages(msgs) {
+var c = histories.find(function (h) { return h.id === currentChatId; });
+if (c) {
+c.messages = msgs;
+var fu = msgs.find(function (m) { return m.role === 'user'; });
+c.title = fu ? (fu.content.length > 34 ? fu.content.slice(0, 34) + '...' : fu.content) : 'New Chat';
+saveHistoriesSafe();
+renderSidebar();
+}
+}
+
+function setGeneratingState(active) {
+isGenerating = active;
+var btn = $('sendBtn');
+if (active) {
+btn.classList.add('stop');
+btn.type = 'button';
+btn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+} else {
+btn.classList.remove('stop');
+btn.type = 'submit';
+btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+activeController = null;
+}
+}
+
+function createNewChat() {
+if (isGenerating && activeController) activeController.abort();
+var id = 'chat_' + Date.now();
+histories.unshift({ id: id, title: 'New Chat', messages: [] });
+currentChatId = id;
+lsSet('nf_current_chat', currentChatId);
+saveHistoriesSafe();
+clearAttachments();
+renderSidebar(); renderWelcomeScreen();
+if (window.innerWidth < 768) $('sidebar').classList.remove('open');
+}
+
+function updateKeyStatus() {
+var el = $('keyStatus');
+if (!el) return;
+if (openrouterKey) {
+el.className = 'key-status active';
+var masked = openrouterKey.substring(0, 8) + '......' + openrouterKey.substring(openrouterKey.length - 4);
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + '</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (rate-limited).</span>';
+}
+}
+
+function boot() {
+if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
+var isDark = lsGet('nf_theme', 'dark') !== 'light';
+function applyTheme() {
+if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
+else { document.body.classList.add('light'); $('themeIcon').className = 'fa-solid fa-moon'; }
+}
+applyTheme();
+$('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); showToast(isDark ? 'Dark mode' : 'Light mode'); };
+$('modelSelect').value = currentModel;
+$('smartMode').checked = smartMode;
+$('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
+$('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Text model: ' + currentModel); };
+$('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
+$('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
+$('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
+$('newChatBtn').onclick = createNewChat;
+$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); };
+$('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
+$('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
+$('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
+$('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
+$('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
+$('optCamera').onclick = function () { $('attachSheet').classList.remove('open'); $('cameraInput').click(); };
+$('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
+$('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
+$('optRecord').onclick = function () { $('attachSheet').classList.remove('open'); toggleRecording(); };
+$('optGenerate').onclick = function () { $('attachSheet').classList.remove('open'); generateImageFromPrompt(); };
+$('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
+$('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
+$('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
+
+var userInput = $('userInput');
+userInput.addEventListener('input', function () {
+this.style.height = 'auto';
+this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+$('sendBtn').addEventListener('click', function (e) {
+if (isGenerating) {
+e.preventDefault();
+if (activeController) activeController.abort();
+}
+});
+
+var ctxMenu = $('contextMenu');
+document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target) && !e.target.closest('.msg')) ctxMenu.style.display = 'none'; });
+$('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
+$('chatArea').addEventListener('click', function (e) {
+var b = e.target.closest('.sugg-btn');
+if (b && b.dataset.q) { userInput.value = b.dataset.q; userInput.dispatchEvent(new Event('input')); submitForm(); }
+var h = e.target.closest('.thinking-header');
+if (h) h.parentElement.classList.toggle('open');
+var copyBtn = e.target.closest('.copy-code-btn');
+if (copyBtn) {
+var codeEl = copyBtn.closest('.code-wrap').querySelector('code');
+if (codeEl) {
+copyText(codeEl.textContent);
+copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+setTimeout(function () { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy'; }, 1500);
+}
+}
+});
+
+$('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
+$('ctxDelete').onclick = function () {
+var targetId = selectedMsgEl.dataset.id;
+selectedMsgEl.remove();
+var msgs = getMessages().filter(function (m) { return m.id !== targetId; });
+setMessages(msgs);
+if (msgs.length === 0) renderWelcomeScreen();
+showToast('Deleted');
+ctxMenu.style.display = 'none';
+};
+$('ctxEdit').onclick = function () {
+var targetId = selectedMsgEl.dataset.id;
+userInput.value = selectedMsgEl.dataset.text.replace(/^\[Image\]\s*/, '');
+userInput.dispatchEvent(new Event('input'));
+var msgs = getMessages();
+var idx = msgs.findIndex(function (m) { return m.id === targetId; });
+if (idx !== -1) {
+msgs = msgs.slice(0, idx);
+setMessages(msgs);
+renderChat();
+} else {
+selectedMsgEl.remove();
+}
+ctxMenu.style.display = 'none';
+userInput.focus();
+};
+$('ctxTeach').onclick = function () {
+var correction = prompt('What is the correct information?');
+if (correction && correction.trim()) {
+memory.push(correction.trim());
+lsSet('nf_memory', JSON.stringify(memory));
+renderMemory();
+showToast('AI learned: ' + correction.trim().substring(0, 30) + '...');
+ctxMenu.style.display = 'none';
+var targetId = selectedMsgEl.dataset.id;
+var msgs = getMessages();
+var idx = msgs.findIndex(function (m) { return m.id === targetId; });
+if (idx > 0) {
+var prev = msgs[idx - 1];
+msgs = msgs.slice(0, idx);
+setMessages(msgs);
+selectedMsgEl.remove();
+setGeneratingState(true);
+showTyping('Thinking...');
+runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
+}
+}
+};
+$('ctxRegen').onclick = function () {
+var targetId = selectedMsgEl.dataset.id;
+var msgs = getMessages();
+var idx = msgs.findIndex(function (m) { return m.id === targetId; });
+ctxMenu.style.display = 'none';
+if (idx > 0) {
+var prev = msgs[idx - 1];
+msgs = msgs.slice(0, idx);
+setMessages(msgs);
+selectedMsgEl.remove();
+setGeneratingState(true);
+showTyping('Thinking...');
+runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
+}
+};
+
+$('sysPrompt').value = sysPrompt;
+$('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; lsSet('nf_sys', sysPrompt); showToast('Settings saved!'); $('settingsModal').classList.remove('open'); };
+$('addQuestionBtn').onclick = addQuestion;
+$('addMemBtn').onclick = addMemory;
+
+$('saveKeyBtn').onclick = function () {
+var val = $('openrouterKeyInput').value.trim();
+openrouterKey = val;
+lsSet('nf_openrouter_key', val);
+updateKeyStatus();
+showToast(val ? 'OpenRouter key saved!' : 'Key removed');
+};
+$('openrouterKeyInput').value = openrouterKey;
+
+$('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
+$('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
+
+renderSidebar(); renderQuestions(); renderMemory(); renderChat();
+updateKeyStatus();
+window.__nfBooted = true;
+}
+
+function renderPreview() {
+var row = $('previewRow');
+row.innerHTML = '';
+if (isRecording) {
+var rc = document.createElement('div'); rc.className = 'rec-chip';
+rc.innerHTML = '<span class="rec-dot"></span> Listening...';
+row.appendChild(rc);
+}
+if (pendingImage) {
+var chip = document.createElement('div'); chip.className = 'preview-chip';
+chip.innerHTML = '<img src="' + pendingImage.dataUrl + '"><span class="chip-label">' + esc(pendingImage.name) + '</span><button type="button" class="chip-x" data-clear="image"><i class="fa-solid fa-xmark"></i></button>';
+row.appendChild(chip);
+}
+if (pendingFile) {
+var chip2 = document.createElement('div'); chip2.className = 'preview-chip';
+chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button type="button" class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
+row.appendChild(chip2);
+}
+}
+$('previewRow').addEventListener('click', function (e) {
+var b = e.target.closest('[data-clear]');
+if (!b) return;
+if (b.dataset.clear === 'image') pendingImage = null;
+if (b.dataset.clear === 'file') pendingFile = null;
+renderPreview();
+});
+
+function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
+
+function handleImageFile(file) {
+if (!file) return;
+if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
+if (file.size > 8000000) { showToast('Image too large (max 8MB)'); return; }
+loadTesseract();
+var reader = new FileReader();
+reader.onload = function (ev) {
+compressImage(ev.target.result, 720, 0.7, function (dataUrl) {
+pendingImage = { name: file.name || 'photo.jpg', dataUrl: dataUrl };
+renderPreview();
+showToast('Photo attached');
+});
+};
+reader.onerror = function () { showToast('Could not read image'); };
+reader.readAsDataURL(file);
+}
+
+function compressImage(dataUrl, maxDim, quality, cb) {
+var img = new Image();
+img.onload = function () {
+var w = img.width, h = img.height;
+if (w > maxDim || h > maxDim) {
+var scale = Math.min(maxDim / w, maxDim / h);
+w = Math.round(w * scale); h = Math.round(h * scale);
+}
+var canvas = document.createElement('canvas');
+canvas.width = w; canvas.height = h;
+var ctx = canvas.getContext('2d');
+ctx.drawImage(img, 0, 0, w, h);
+cb(canvas.toDataURL('image/jpeg', quality));
+};
+img.onerror = function () { cb(dataUrl); };
+img.src = dataUrl;
+}
+
+function handleTextFile(file) {
+if (!file) return;
+if (file.size > 100000) { showToast('File too large (max 100KB)'); return; }
+var reader = new FileReader();
+reader.onload = function (ev) {
+pendingFile = { name: file.name, text: String(ev.target.result).slice(0, 8000) };
+renderPreview();
+showToast('File attached');
+};
+reader.onerror = function () { showToast('Could not read file'); };
+reader.readAsText(file);
+}
+
+function toggleRecording() {
+if (isRecording) { stopRecording(); return; }
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
+recognition = new SR();
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.lang = navigator.language || 'en-US';
+var baseText = $('userInput').value;
+if (baseText && !/\s$/.test(baseText)) baseText += ' ';
+recognition.onresult = function (e) {
+var interim = '';
+for (var i = e.resultIndex; i < e.results.length; i++) {
+var t = e.results[i][0].transcript;
+if (e.results[i].isFinal) baseText += t + ' ';
+else interim += t;
+}
+$('userInput').value = baseText + interim;
+$('userInput').dispatchEvent(new Event('input'));
+};
+recognition.onerror = function (e) {
+if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
+};
+recognition.onend = function () {
+if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
+else { isRecording = false; renderPreview(); }
+};
+recShouldKeep = true;
+isRecording = true;
+safe(function () { recognition.start(); }, null);
+renderPreview();
+showToast('Recording...');
+}
+
+function stopRecording() {
+recShouldKeep = false;
+isRecording = false;
+if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
+renderPreview();
+}
+
+function generateImageFromPrompt() {
+var overlay = document.createElement('div');
+overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
+overlay.innerHTML = '<div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px;"><h3 style="margin-bottom:12px;color:var(--text)">Describe the image</h3><textarea id="genPromptInput" style="width:100%;min-height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;outline:none;" placeholder="e.g. a futuristic city at sunset"></textarea><div style="display:flex;gap:8px;margin-top:12px;"><button id="genCancel" style="flex:1;padding:12px;background:var(--border);color:var(--text);border-radius:10px;font-weight:600;">Cancel</button><button id="genConfirm" style="flex:1;padding:12px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;">Generate</button></div></div>';
+document.body.appendChild(overlay);
+var input = overlay.querySelector('#genPromptInput');
+input.focus();
+overlay.querySelector('#genCancel').onclick = function () { document.body.removeChild(overlay); };
+overlay.querySelector('#genConfirm').onclick = function () {
+var p = input.value.trim();
+document.body.removeChild(overlay);
+if (p) generateImage(p);
+};
+overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
+}
+
+function generateImage(prompt) {
+var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
+var msgId = uid();
+var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image...</div></div>';
+$('chatArea').appendChild(aiMsgDiv);
+scrollToBottom();
+var bubble = aiMsgDiv.querySelector('.bubble');
+var encodedPrompt = encodeURIComponent(prompt);
+var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
+var img = new Image();
+img.onload = function () {
+var content = '[Generated Image] ' + prompt;
+aiMsgDiv.dataset.text = content;
+bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
+attachLongPress(aiMsgDiv, content, 'ai');
+var msgs = getMessages();
+msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
+setMessages(msgs);
+scrollToBottom();
+};
+img.onerror = function () {
+bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
+aiMsgDiv.classList.add('error');
+bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
+};
+img.src = imageUrl;
+}
+
+function renderSidebar() {
+var list = $('historyList');
+list.innerHTML = histories.map(function (h) {
+var act = h.id === currentChatId ? ' active' : '';
+return '<div class="history-item' + act + '" data-id="' + h.id + '"><i class="fa-regular fa-message msg-ico"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.title) + '</span><button class="del-hist" data-del="' + h.id + '"><i class="fa-solid fa-trash"></i></button></div>';
+}).join('');
+list.querySelectorAll('.history-item').forEach(function (el) {
+el.addEventListener('click', function (e) {
+if (e.target.closest('.del-hist')) return;
+currentChatId = el.dataset.id; lsSet('nf_current_chat', currentChatId);
+renderSidebar(); renderChat();
+if (window.innerWidth < 768) $('sidebar').classList.remove('open');
+});
+});
+list.querySelectorAll('.del-hist').forEach(function (btn) {
+btn.addEventListener('click', function (e) {
+e.stopPropagation(); var id = btn.dataset.del;
+histories = histories.filter(function (h) { return h.id !== id; });
+saveHistoriesSafe();
+if (currentChatId === id) createNewChat(); else renderSidebar();
+});
+});
+}
+
+function renderChat() {
+var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
+if (msgs.length === 0) { renderWelcomeScreen(); return; }
+msgs.forEach(function (m) {
+if (!m.id) m.id = uid();
+addMessageToUI(m.content, m.role, false, m.image, m.sources, m.id);
+});
+scrollToBottom();
+}
+
+function renderWelcomeScreen() {
+var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p><div class="suggestions">';
+customQuestions.forEach(function (q) {
+html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;') + '"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>';
+});
+html += '</div></div>';
+$('chatArea').innerHTML = html;
+}
+
+function submitForm() {
+if (isGenerating) return;
+var input = $('userInput'); var text = input.value.trim();
+if (!text && !pendingImage && !pendingFile) return;
+if (isRecording) stopRecording();
+var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
+var urlsInText = detectUrls(text);
+var urlToFetch = urlsInText.length > 0 ? urlsInText[0] : null;
+var displayText = text;
+if (pendingImage && !displayText) displayText = 'Describe this image.';
+if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n[FILE: ' + pendingFile.name + ']';
+if (pendingImage) displayText = '[Image] ' + displayText;
+var msgId = uid();
+var msgs = getMessages();
+msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
+setMessages(msgs);
+addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null, null, msgId);
+var sendImage = pendingImage;
+var sendFileText = pendingFile ? pendingFile.text : '';
+var sendText = text || displayText;
+input.value = ''; input.style.height = 'auto';
+clearAttachments();
+setGeneratingState(true);
+showTyping('Thinking...');
+runAI(sendText, sendImage, sendFileText, [], urlToFetch);
+}
+
+async function extractTextFromImage(imageDataUrl) {
+try {
+var T = await loadTesseract();
+var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
+logger: function (m) {
+if (m.status === 'recognizing text') {
+showTyping('Reading image (EN+中文)... ' + Math.round(m.progress * 100) + '%');
+}
+}
+});
+return result.data.text.trim();
+} catch (e) {
+console.error('OCR error:', e);
+return '';
+}
+}
+
+async function fetchWebsiteContent(url) {
+var proxies = [
+'https://api.allorigins.win/get?url=',
+'https://corsproxy.io/?',
+'https://api.codetabs.com/v1/proxy?quest='
+];
+for (var i = 0; i < proxies.length; i++) {
+try {
+showTyping('Fetching website... (attempt ' + (i + 1) + ')');
+var proxyUrl = proxies[i] + encodeURIComponent(url);
+var response = await fetch(proxyUrl);
+var data;
+if (proxies[i].indexOf('allorigins') !== -1) {
+data = await response.json();
+data = data.contents;
+} else {
+data = await response.text();
+}
+if (!data || data.length < 100) continue;
+var parser = new DOMParser();
+var doc = parser.parseFromString(data, 'text/html');
+var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
+elementsToRemove.forEach(function (el) { el.remove(); });
+var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
+var text = mainContent ? mainContent.textContent : '';
+text = text.replace(/\s+/g, ' ').trim().substring(0, 8000);
+var title = doc.title || url;
+if (text.length > 100) {
+return { text: text, title: title };
+}
+} catch (e) {
+console.error('Proxy ' + i + ' failed:', e);
+}
+}
+return { text: '', title: url };
+}
+
+function extractRealDdgUrl(rawHref) {
+if (!rawHref) return 'https://duckduckgo.com';
+if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
+var match = rawHref.match(/[?&]uddg=([^&]+)/);
+if (match && match[1]) {
+return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
+}
+return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
+}
+
+async function searchWikipedia(query) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 4000);
+try {
+var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=4&format=json&origin=*', { signal: c.signal });
+clearTimeout(t);
+var j = await r.json();
+if (j.query && j.query.search && j.query.search.length) {
+var sources = j.query.search.map(function (s) {
+return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) };
+});
+var text = j.query.search.map(function (s) {
+return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, '');
+}).join('\n');
+return { text: text, sources: sources, engine: 'Wikipedia' };
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Wikipedia' };
+}
+
+async function searchDdgInstant(query) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 3500);
+try {
+var r = await fetch('https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1', { signal: c.signal });
+clearTimeout(t);
+var j = await r.json();
+var parts = [];
+var sources = [];
+if (j.AbstractText) {
+parts.push('[Quick Answer] ' + j.AbstractText);
+if (j.AbstractURL) sources.push({ label: j.AbstractSource || 'Source', url: j.AbstractURL });
+}
+if (j.Answer) {
+parts.push('[Answer] ' + j.Answer);
+}
+if (j.RelatedTopics && j.RelatedTopics.length) {
+var related = j.RelatedTopics.filter(function (t) { return t.Text; }).slice(0, 4);
+related.forEach(function (t) {
+parts.push('• ' + t.Text);
+if (t.FirstURL) sources.push({ label: (t.Text || '').substring(0, 30), url: t.FirstURL });
+});
+}
+if (j.Definition) {
+parts.push('[Definition] ' + j.Definition);
+if (j.DefinitionURL) sources.push({ label: 'Definition', url: j.DefinitionURL });
+}
+return { text: parts.join('\n'), sources: sources.slice(0, 5), engine: 'DuckDuckGo Instant' };
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'DuckDuckGo Instant' };
+}
+
+async function searchDdgHtml(query) {
+var proxies = [
+{ name: 'allorigins', url: function (q) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (j) { return j.contents; } },
+{ name: 'corsproxy', url: function (q) { return 'https://corsproxy.io/?' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (t) { return t; } },
+{ name: 'codetabs', url: function (q) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (t) { return t; } }
+];
+for (var i = 0; i < proxies.length; i++) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 5000);
+try {
+var r = await fetch(proxies[i].url(query), { signal: c.signal });
+clearTimeout(t);
+var raw;
+if (proxies[i].name === 'allorigins') {
+var j = await r.json();
+raw = proxies[i].parse(j);
+} else {
+raw = proxies[i].parse(await r.text());
+}
+if (!raw || raw.length < 100) continue;
+var doc = new DOMParser().parseFromString(raw, 'text/html');
+var results = Array.from(doc.querySelectorAll('.result')).slice(0, 6);
+if (!results.length) continue;
+var sources = results.map(function (resItem) {
+var anchor = resItem.querySelector('.result__a');
+var rawHref = anchor ? anchor.getAttribute('href') : '';
+var title = anchor ? anchor.textContent.trim().substring(0, 40) : 'Web Source';
+return { label: title, url: extractRealDdgUrl(rawHref) };
+});
+var snippets = Array.from(doc.querySelectorAll('.result__snippet'))
+.map(function (el) { return el.textContent.trim(); })
+.filter(function (s) { return s && s.length > 15; })
+.slice(0, 6);
+if (snippets.length) {
+var text = snippets.map(function (s, idx) { return (idx + 1) + '. ' + s; }).join('\n');
+return { text: text, sources: sources, engine: 'DuckDuckGo Web' };
+}
+} catch (e) { clearTimeout(t); }
+}
+return { text: '', sources: [], engine: 'DuckDuckGo Web' };
+}
+
+async function searchWikipediaFull(query) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 4000);
+try {
+var r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(query), { signal: c.signal });
+clearTimeout(t);
+if (r.ok) {
+var j = await r.json();
+if (j.extract && j.extract.length > 50) {
+return {
+text: '[' + (j.title || query) + ' — Wikipedia Summary]\n' + j.extract,
+sources: [{ label: j.title || query, url: j.content_urls ? j.content_urls.desktop.page : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(query) }],
+engine: 'Wikipedia Summary'
+};
+}
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Wikipedia Summary' };
+}
+
+async function searchBraveAlternative(query) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 3500);
+try {
+var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&titles=' + encodeURIComponent(query) + '&prop=extracts&exintro=1&explaintext=1&format=json&origin=*', { signal: c.signal });
+clearTimeout(t);
+var j = await r.json();
+if (j.query && j.query.pages) {
+var pages = Object.values(j.query.pages);
+var page = pages.find(function (p) { return p.extract && p.pageid; });
+if (page && page.extract) {
+return {
+text: '[Detailed: ' + page.title + ']\n' + page.extract.substring(0, 800),
+sources: [{ label: page.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(page.title.replace(/ /g, '_')) }],
+engine: 'Wikipedia Detail'
+};
+}
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Wikipedia Detail' };
+}
+
+async function searchWebFast(query) {
+var results = await Promise.allSettled([
+searchWikipedia(query),
+searchDdgInstant(query),
+searchDdgHtml(query),
+searchWikipediaFull(query),
+searchBraveAlternative(query)
+]);
+
+var allTexts = [];
+var allSources = [];
+var seenUrls = {};
+var enginesUsed = [];
+
+results.forEach(function (r) {
+if (r.status === 'fulfilled' && r.value) {
+var v = r.value;
+if (v.text && v.text.length > 10) {
+allTexts.push(v.text);
+enginesUsed.push(v.engine);
+}
+if (v.sources && v.sources.length) {
+v.sources.forEach(function (s) {
+if (s.url && !seenUrls[s.url]) {
+seenUrls[s.url] = true;
+allSources.push(s);
+}
+});
+}
+}
+});
+
+var combinedText = allTexts.length ? allTexts.join('\n\n') : 'No relevant results found.';
+return {
+text: combinedText,
+sources: allSources.slice(0, 8),
+engines: enginesUsed
+};
+}
+
+async function callOpenRouter(apiMessages, model) {
+if (!openrouterKey) throw new Error('No OpenRouter key');
+var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+method: 'POST',
+headers: {
+'Authorization': 'Bearer ' + openrouterKey,
+'Content-Type': 'application/json',
+'HTTP-Referer': window.location.href || 'https://neuralforge.app',
+'X-Title': 'NeuralForge'
+},
+body: JSON.stringify({
+model: model || openrouterModel || 'openai/gpt-4o-mini',
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+if (!res.ok) {
+var errText = '';
+try { errText = await res.text(); } catch (e) {}
+throw new Error('OpenRouter ' + res.status + ': ' + (errText.substring(0, 100) || 'Request failed'));
+}
+return res;
+}
+
+async function streamOpenRouter(res, onChunk) {
+if (!res.body || !res.body.getReader) {
+var rawText = await res.text();
+var jj = safe(function () { return JSON.parse(rawText); }, null);
+if (jj && jj.choices && jj.choices[0]) {
+var c = (jj.choices[0].message && jj.choices[0].message.content) || '';
+if (c) onChunk(c);
+}
+return;
+}
+var reader = res.body.getReader();
+var dec = new TextDecoder();
+var buffer = '';
+while (true) {
+var r = await reader.read();
+if (r.done) break;
+buffer += dec.decode(r.value, { stream: true });
+var lines = buffer.split('\n');
+buffer = lines.pop();
+for (var j = 0; j < lines.length; j++) {
+var line = lines[j].trim();
+if (line.indexOf('data:') !== 0) continue;
+var data = line.slice(5).trim();
+if (data === '' || data === '[DONE]') continue;
+safe(function () {
+var jj = JSON.parse(data);
+var ch = jj.choices && jj.choices[0];
+var c = '';
+if (ch) {
+if (ch.delta && ch.delta.content) c = ch.delta.content;
+else if (ch.message && ch.message.content) c = ch.message.content;
+}
+if (c) onChunk(c);
+}, null);
+}
+}
+}
+
+async function runAI(text, image, fileText, sources, urlToFetch) {
+var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
+var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [], engines: [] });
+var systemMsg = sysPrompt + '\nCurrent date: ' + today() + '.';
+if (smartMode) systemMsg += '\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
+if (memory.length) systemMsg += '\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
+
+var msgs = getMessages();
+var aiMsgId = uid();
+var aiMsgDiv = null;
+var streamBubble = null;
+
+function ensureAiBubble() {
+if (aiMsgDiv) return;
+removeTyping();
+aiMsgDiv = document.createElement('div');
+aiMsgDiv.className = 'msg ai';
+aiMsgDiv.dataset.id = aiMsgId;
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
+$('chatArea').appendChild(aiMsgDiv);
+streamBubble = aiMsgDiv.querySelector('.bubble');
+}
+
+var aiText = '';
+var usedOpenRouter = false;
+
+var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
+var currentModelIdx = modelList.indexOf(currentModel);
+if (currentModelIdx === -1) currentModelIdx = 0;
+
+try {
+var ocrText = '';
+var websiteContent = '';
+var websiteTitle = '';
+if (image) {
+showTyping('Reading image with OCR (English + Chinese)...');
+ocrText = await extractTextFromImage(image.dataUrl);
+if (!ocrText) ocrText = '[No text detected in image]';
+}
+if (urlToFetch) {
+var websiteData = await fetchWebsiteContent(urlToFetch);
+websiteContent = websiteData.text;
+websiteTitle = websiteData.title;
+if (!websiteContent) websiteContent = '[Could not extract content from ' + urlToFetch + ']';
+}
+if (useWeb && !image && !urlToFetch) showTyping('Searching the web...');
+var results = await searchPromise;
+var webText = results.text || '';
+var webSources = results.sources || [];
+var enginesUsed = results.engines || [];
+
+if (useWeb && enginesUsed.length) {
+showTyping('Searched ' + enginesUsed.length + ' sources...');
+}
+
+var userText = text || '';
+if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
+if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
+if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
+if (useWeb && webText && webText.indexOf('No relevant') === -1) {
+userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
+}
+
+var modelToUse = modelList[currentModelIdx];
+var freeServerWorked = false;
+var retryCount = 0;
+var maxRetries = 2;
+
+while (retryCount <= maxRetries && !freeServerWorked) {
+try {
+activeController = new AbortController();
+var to = setTimeout(function () { if (activeController) activeController.abort(); }, 45000);
+var apiMessages = [{ role: 'system', content: systemMsg }];
+var historyMsgs = msgs.slice(-8);
+for (var i = 0; i < historyMsgs.length; i++) {
+var m = historyMsgs[i];
+apiMessages.push({ role: m.role, content: m.content });
+}
+apiMessages[apiMessages.length - 1].content = userText;
+
+var res = await fetch('https://text.pollinations.ai/openai', {
+method: 'POST', signal: activeController.signal,
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: modelToUse,
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+clearTimeout(to);
+
+if (!res.ok) throw new Error('Server error ' + res.status);
+
+aiText = '';
+if (res.body && res.body.getReader) {
+var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+while (true) {
+var r = await reader.read(); if (r.done) break;
+buffer += dec.decode(r.value, { stream: true });
+var lines = buffer.split('\n'); buffer = lines.pop();
+for (var j = 0; j < lines.length; j++) {
+var line = lines[j].trim();
+if (line.indexOf('data:') !== 0) continue;
+var data = line.slice(5).trim();
+if (data === '' || data === '[DONE]') continue;
+safe(function () {
+var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
+if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
+if (c) {
+ensureAiBubble();
+aiText += c;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+}
+}, null);
+}
+}
+} else {
+var rawText = await res.text();
+safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
+}
+
+if (aiText.trim()) {
+freeServerWorked = true;
+} else {
+throw new Error('empty response');
+}
+} catch (err) {
+retryCount++;
+if (retryCount <= maxRetries) {
+currentModelIdx = (currentModelIdx + 1) % modelList.length;
+modelToUse = modelList[currentModelIdx];
+showTyping('Retrying free server (' + modelToUse + ')... ' + retryCount + '/' + maxRetries);
+await new Promise(function (r) { setTimeout(r, 600); });
+}
+}
+}
+
+if (!freeServerWorked) {
+if (openrouterKey) {
+showTyping('Free server busy. Using your OpenRouter key...');
+try {
+activeController = new AbortController();
+var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+var apiMessages2 = [{ role: 'system', content: systemMsg }];
+var historyMsgs2 = msgs.slice(-8);
+for (var k = 0; k < historyMsgs2.length; k++) {
+var mm = historyMsgs2[k];
+apiMessages2.push({ role: mm.role, content: mm.content });
+}
+apiMessages2[apiMessages2.length - 1].content = userText;
+
+var orRes = await callOpenRouter(apiMessages2);
+clearTimeout(to2);
+aiText = '';
+usedOpenRouter = true;
+
+await streamOpenRouter(orRes, function (chunk) {
+ensureAiBubble();
+aiText += chunk;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+});
+
+if (!aiText.trim()) throw new Error('OpenRouter returned empty response');
+} catch (orErr) {
+throw new Error('OpenRouter failed: ' + orErr.message + '. Please check your API key in Settings.');
+}
+} else {
+throw { code: 'FREE_SERVER_BUSY', message: 'The free server is currently busy or rate-limited. For higher limits, faster responses, and more reliable access, add your OpenRouter API key in Settings (tap the ⚙️ icon above). It only takes a minute to set up.' };
+}
+}
+
+if (!aiText.trim()) throw new Error('empty response');
+
+ensureAiBubble();
+var allSources = webSources.concat(sources || []);
+if (urlToFetch) {
+allSources.push({ label: websiteTitle || urlToFetch, url: urlToFetch });
+}
+var sourceHtml = '';
+if (allSources.length > 0) {
+sourceHtml = '<div class="source-links">';
+allSources.forEach(function (s, idx) {
+sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
+});
+sourceHtml += '</div>';
+}
+
+var providerTag = usedOpenRouter ? '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-style:italic"><i class="fa-solid fa-key" style="color:#10b981"></i> via OpenRouter</div>' : '';
+
+aiMsgDiv.dataset.text = aiText;
+streamBubble.innerHTML = formatText(aiText) + sourceHtml + providerTag;
+attachLongPress(aiMsgDiv, aiText, 'ai');
+var saved = getMessages();
+saved.push({ id: aiMsgId, role: 'assistant', content: aiText, sources: allSources });
+setMessages(saved);
+scrollToBottom();
+} catch (err) {
+removeTyping();
+if (err && err.name === 'AbortError' && aiText.trim()) {
+ensureAiBubble();
+aiMsgDiv.dataset.text = aiText;
+streamBubble.innerHTML = formatText(aiText);
+attachLongPress(aiMsgDiv, aiText, 'ai');
+var savedPartial = getMessages();
+savedPartial.push({ id: aiMsgId, role: 'assistant', content: aiText });
+setMessages(savedPartial);
+} else {
+ensureAiBubble();
+var friendly;
+if (err && err.code === 'FREE_SERVER_BUSY') {
+friendly = err.message;
+} else if (err && err.name === 'AbortError') {
+friendly = 'Generation stopped.';
+} else if (err && err.message === 'empty response') {
+friendly = 'The AI returned nothing after retries.';
+} else if (err && /Failed to fetch|NetworkError|Load failed/i.test(err.message || '')) {
+friendly = 'Network blocked. Open on github.io.';
+} else {
+friendly = (err && err.message) || 'Unknown error';
+}
+var hasKey = !!openrouterKey;
+var hintHtml = '';
+if (!hasKey && (!err || err.code !== 'FREE_SERVER_BUSY')) {
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Tip:</strong> Add an OpenRouter API key in Settings for higher limits and more reliable responses.</div>';
+}
+streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+aiMsgDiv.classList.add('error');
+streamBubble.querySelector('.retry').addEventListener('click', function () {
+aiMsgDiv.remove();
+var s = getMessages();
+var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
+if (lastUser) {
+setGeneratingState(true);
+showTyping('Thinking...');
+runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], detectUrls(lastUser.content)[0] || null);
+}
+});
+attachLongPress(aiMsgDiv, '', 'ai');
+}
+} finally {
+setGeneratingState(false);
+}
+}
+
+function formatText(text) {
+var codeBlocks = [];
+var raw = String(text).replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, function (m, lang, code) {
+var idx = codeBlocks.length;
+var cleanCode = esc(code.replace(/\n$/, ''));
+var label = lang ? esc(lang) : 'code';
+codeBlocks.push(
+'<div class="code-wrap"><div class="code-head"><span>' + label + '</span><button type="button" class="copy-code-btn"><i class="fa-solid fa-copy"></i> Copy</button></div><pre><code>' + cleanCode + '</code></pre></div>'
+);
+return '@@CODEBLOCK_' + idx + '@@';
+});
+var html = esc(raw)
+.replace(/\[\[THINK\]\]([\s\S]*?)\[\[\/THINK\]\]/gi, function (m, p1) {
+return '<div class="thinking-box"><div class="thinking-header"><i class="fa-solid fa-chevron-right"></i> Show thinking process</div><div class="thinking-content">' + p1.replace(/\n/g, '<br>').trim() + '</div></div>';
+})
+.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+.replace(/`([^`\n]+)`/g, '<code>$1</code>')
+.replace(/^### (.*$)/gim, '<h3>$1</h3>')
+.replace(/^## (.*$)/gim, '<h2>$1</h2>')
+.replace(/^# (.*$)/gim, '<h1>$1</h1>')
+.replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
+.replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
+.replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+html = html.replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');
+html = html.split('\n').map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+html = html.replace(/@@CODEBLOCK_(\d+)@@/g, function (m, idx) {
+return codeBlocks[+idx] || '';
+});
+return html;
+}
+
+function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
+
+function addMessageToUI(text, type, animate, image, sources, id) {
+var div = document.createElement('div');
+div.className = 'msg ' + type;
+div.dataset.text = text;
+if (id) div.dataset.id = id;
+if (animate) div.style.animation = 'popIn .2s ease-out';
+var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
+var sourceHtml = '';
+if (sources && sources.length > 0 && type === 'ai') {
+sourceHtml = '<div class="source-links">';
+sources.forEach(function (s, idx) {
+sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
+});
+sourceHtml += '</div>';
+}
+if (type === 'ai') {
+div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + sourceHtml + '</div></div>';
+} else {
+div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
+}
+$('chatArea').appendChild(div);
+scrollToBottom();
+attachLongPress(div, text, type);
+}
+
+function showTyping(text) {
+var existing = $('typingIndicator');
+if (existing) {
+var label = existing.querySelector('.typing-label');
+if (label) label.textContent = text;
+scrollToBottom();
+return;
+}
+var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typingIndicator';
+div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div><span class="typing-label">' + esc(text) + '</span></div></div>';
+$('chatArea').appendChild(div); scrollToBottom();
+}
+
+function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
+
+function attachLongPress(div, text, type) {
+div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
+div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
+div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
+div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
+div.addEventListener('contextmenu', function (e) {
+if (e.target.closest('a, button')) return;
+e.preventDefault();
+showContextMenu(e, div, text, type);
+});
+}
+
+function showContextMenu(e, el, text, type) {
+selectedMsgEl = el; var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+$('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 180) + 'px';
+$('contextMenu').style.top = Math.min(t.clientY || 20, window.innerHeight - 210) + 'px';
+$('contextMenu').style.display = 'block';
+$('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
+$('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
+$('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
+}
+
+function copyText(t) {
+if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
+else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
+}
+
+function renderQuestions() {
+var list = $('questionList');
+if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom questions yet.</p>'; return; }
+list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
+}
+
+function addQuestion() {
+var input = $('questionInput'); var text = input.value.trim(); if (!text) return;
+var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen'];
+var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444'];
+customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] });
+lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!');
+}
+
+function renderMemory() {
+var list = $('memoryList');
+if (!memory.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom memory yet.</p>'; return; }
+list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
+}
+
+function addMemory() { var input = $('memInput'); var text = input.value.trim(); if (!text) return; memory.push(text); lsSet('nf_memory', JSON.stringify(memory)); input.value = ''; renderMemory(); showToast('Memory added!'); }
+
+function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
 </body>
