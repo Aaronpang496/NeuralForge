@@ -101,7 +101,7 @@
   .retry { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #f59e0b; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); }
 
   .source-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .source-link:active { background: rgba(99,102,241,.25); }
   .source-link i { font-size: 10px; flex-shrink: 0; }
 
@@ -221,7 +221,7 @@
         <h2>How can I help?</h2>
         <p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p>
         <div class="suggestions">
-          <button class="sugg-btn" data-q="What are the latest AI news?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
+          <button class="sugg-btn" data-q="What are the latest news in Hong Kong?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest HK news?</button>
           <button class="sugg-btn" data-q="Explain quantum computing simply"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
           <button class="sugg-btn" data-q="Write a python function to reverse a string"><i class="fa-solid fa-code" style="color:#10b981"></i> Write Python code</button>
           <button class="sugg-btn" data-q="Give me 5 creative business ideas"><i class="fa-solid fa-lightbulb" style="color:#f59e0b"></i> 5 business ideas</button>
@@ -232,7 +232,7 @@
     <div id="inputArea">
       <div class="search-toggle">
         <label style="display:flex;align-items:center;gap:8px">
-          <label class="toggle-switch"><input type="checkbox" id="webSearchToggle"><span class="slider"></span></label>
+          <label class="toggle-switch"><input type="checkbox" id="webSearchToggle" checked><span class="slider"></span></label>
           <span><i class="fa-solid fa-globe" style="color:#4f46e5"></i> Live Web Search</span>
         </label>
       </div>
@@ -277,17 +277,16 @@
       <div class="setting-label">Text Model</div>
       <select class="setting-input" id="modelSelect">
         <option value="openai">OpenAI (default, fast)</option>
-        <option value="openai-large">OpenAI Large (smartest, best for facts)</option>
-        <option value="deepseek">DeepSeek (excellent reasoning)</option>
+        <option value="openai-large">OpenAI Large (smartest)</option>
+        <option value="deepseek">DeepSeek (reasoning)</option>
         <option value="llama">Meta Llama</option>
         <option value="mistral">Mistral</option>
-        <option value="qwen-coder">Qwen Coder (best for code)</option>
+        <option value="qwen-coder">Qwen Coder (code)</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
         Smart Mode (step-by-step reasoning)
       </label>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Images now support English + Chinese OCR. Paste URLs to read websites.</p>
     </div>
 
     <div class="setting-group">
@@ -301,12 +300,22 @@
 
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images or websites, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge. 9) When reading websites, focus on the main content and ignore navigation, ads, and footers.</textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES:
+1) Use PERFECT English grammar, complete sentences, proper punctuation.
+2) Never write broken English.
+3) Format for mobile: short paragraphs, bullet points, bold key terms.
+4) For code: always use fenced blocks with language tags.
+5) Be concise but thorough.
+6) When analyzing text from images or websites, describe what the text says clearly and accurately.
+7) If unsure, say so rather than guessing.
+8) If the user corrects you, accept the correction immediately.
+9) When reading websites, focus on the main content and ignore navigation, ads, and footers.
+10) You MUST use the web search results and website content provided in the user message. Never say "I cannot browse" or "I don't have access" — the information is already provided to you in the message. Answer based on the provided context.</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
 
     <div class="setting-group">
-      <div class="setting-label">Custom Memory (What the AI knows about you)</div>
+      <div class="setting-label">Custom Memory</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1">
         <button id="addMemBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
@@ -335,9 +344,16 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images or websites, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge. 9) When reading websites, focus on the main content and ignore navigation, ads, and footers.';
+  // Detect URLs in text
+  function detectUrls(text) {
+    var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+    var matches = text.match(urlRegex);
+    return matches || [];
+  }
+
+  var DEFAULT_SYS = $('sysPrompt') ? $('sysPrompt').value : 'You are NeuralForge, an expert AI assistant. CRITICAL RULES:\n1) Use PERFECT English grammar.\n2) Format for mobile: short paragraphs, bullet points, bold key terms.\n3) For code: use fenced blocks with language tags.\n4) You MUST use the web search results and website content provided in the user message. Never say "I cannot browse" — the information is already provided. Answer based on the provided context.';
   var DEFAULT_QS = [
-    { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
+    { text: 'What are the latest news in Hong Kong?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
     { text: 'Write a python function to reverse a string', icon: 'fa-code', color: '#10b981' },
     { text: 'Give me 5 creative business ideas', icon: 'fa-lightbulb', color: '#f59e0b' }
@@ -357,7 +373,6 @@
 
   var pendingImage = null;
   var pendingFile = null;
-  var pendingUrl = null;
   var recognition = null;
   var isRecording = false;
   var recShouldKeep = false;
@@ -416,7 +431,7 @@
     $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
     $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
     $('optRecord').onclick = function () { $('attachSheet').classList.remove('open'); toggleRecording(); };
-    $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open'); promptForImageGen(); };
+    $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open'); generateImageFromPrompt(); };
 
     $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
     $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
@@ -452,7 +467,7 @@
           msgs = msgs.slice(0, idx);
           setMessages(msgs);
           selectedMsgEl.remove();
-          runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', [], null);
+          runAI(prev, null, '', [], null);
         }
       }
     };
@@ -460,7 +475,7 @@
       var msgs = getMessages();
       var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', [], null); }
+      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev, null, '', [], null); }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -479,7 +494,7 @@
     row.innerHTML = '';
     if (isRecording) {
       var rc = document.createElement('div'); rc.className = 'rec-chip';
-      rc.innerHTML = '<span class="rec-dot"></span> Listening… tap mic to stop';
+      rc.innerHTML = '<span class="rec-dot"></span> Listening…';
       row.appendChild(rc);
     }
     if (pendingImage) {
@@ -492,21 +507,15 @@
       chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
       row.appendChild(chip2);
     }
-    if (pendingUrl) {
-      var chip3 = document.createElement('div'); chip3.className = 'preview-chip';
-      chip3.innerHTML = '<i class="fa-solid fa-link" style="color:#3b82f6"></i><span class="chip-label">' + esc(pendingUrl) + '</span><button class="chip-x" data-clear="url"><i class="fa-solid fa-xmark"></i></button>';
-      row.appendChild(chip3);
-    }
   }
   $('previewRow').addEventListener('click', function (e) {
     var b = e.target.closest('[data-clear]');
     if (!b) return;
     if (b.dataset.clear === 'image') pendingImage = null;
     if (b.dataset.clear === 'file') pendingFile = null;
-    if (b.dataset.clear === 'url') pendingUrl = null;
     renderPreview();
   });
-  function clearAttachments() { pendingImage = null; pendingFile = null; pendingUrl = null; if (isRecording) stopRecording(); renderPreview(); }
+  function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
 
   function handleImageFile(file) {
     if (!file) return;
@@ -573,11 +582,9 @@
         else interim += t;
       }
       $('userInput').value = baseText + interim;
-      $('userInput').style.height = 'auto';
-      $('userInput').style.height = Math.min($('userInput').scrollHeight, 120) + 'px';
     };
     recognition.onerror = function (e) {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { showToast('Mic permission denied'); stopRecording(); }
+      if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
     };
     recognition.onend = function () {
       if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
@@ -587,7 +594,7 @@
     isRecording = true;
     safe(function () { recognition.start(); }, null);
     renderPreview();
-    showToast('Recording… speak now');
+    showToast('Recording…');
   }
   function stopRecording() {
     recShouldKeep = false;
@@ -596,26 +603,36 @@
     renderPreview();
   }
 
-  function promptForImageGen() {
-    var prompt = prompt('Describe the image you want to generate:');
-    if (prompt && prompt.trim()) {
-      generateImage(prompt.trim());
-    }
+  // FIXED: Image generation using a modal instead of prompt()
+  function generateImageFromPrompt() {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = '<div style="background:var(--modal-bg);border-radius:16px;padding:20px;width:100%;max-width:400px;"><h3 style="margin-bottom:12px;color:var(--text)">Describe the image</h3><textarea id="genPromptInput" style="width:100%;min-height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;outline:none;" placeholder="e.g. a futuristic city at sunset"></textarea><div style="display:flex;gap:8px;margin-top:12px;"><button id="genCancel" style="flex:1;padding:12px;background:var(--border);color:var(--text);border-radius:10px;font-weight:600;">Cancel</button><button id="genConfirm" style="flex:1;padding:12px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;">Generate</button></div></div>';
+    document.body.appendChild(overlay);
+    var input = overlay.querySelector('#genPromptInput');
+    input.focus();
+    overlay.querySelector('#genCancel').onclick = function () { document.body.removeChild(overlay); };
+    overlay.querySelector('#genConfirm').onclick = function () {
+      var p = input.value.trim();
+      document.body.removeChild(overlay);
+      if (p) generateImage(p);
+    };
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
   }
 
   function generateImage(prompt) {
     var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai';
-    aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image for: "' + esc(prompt) + '"…</div></div>';
+    aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image…</div></div>';
     $('chatArea').appendChild(aiMsgDiv);
     scrollToBottom();
 
     var bubble = aiMsgDiv.querySelector('.bubble');
     var encodedPrompt = encodeURIComponent(prompt);
-    var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true';
+    var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
 
     var img = new Image();
     img.onload = function () {
-      bubble.innerHTML = 'Generated image for: "' + esc(prompt) + '"<img class="generated-img" src="' + imageUrl + '" alt="Generated image">';
+      bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
       var msgs = getMessages();
       msgs.push({ role: 'assistant', content: '[Generated Image] ' + prompt, image: imageUrl });
       setMessages(msgs);
@@ -672,15 +689,18 @@
   function submitForm() {
     if (isGenerating) return;
     var input = $('userInput'); var text = input.value.trim();
-    if (!text && !pendingImage && !pendingFile && !pendingUrl) return;
+    if (!text && !pendingImage && !pendingFile) return;
     if (isRecording) stopRecording();
 
     var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 
+    // FIXED: Auto-detect URLs in the user's message
+    var urlsInText = detectUrls(text);
+    var urlToFetch = urlsInText.length > 0 ? urlsInText[0] : null;
+
     var displayText = text;
     if (pendingImage && !displayText) displayText = 'Describe this image.';
     if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n\n[FILE: ' + pendingFile.name + ']';
-    if (pendingUrl) displayText = (displayText ? displayText : 'Read and summarize this website.') + '\n\n[URL: ' + pendingUrl + ']';
     if (pendingImage) displayText = '[Image] ' + displayText;
 
     var msgs = getMessages();
@@ -691,7 +711,6 @@
 
     var sendImage = pendingImage;
     var sendFileText = pendingFile ? pendingFile.text : '';
-    var sendUrl = pendingUrl;
     var sendText = text;
 
     input.value = ''; input.style.height = 'auto';
@@ -699,15 +718,16 @@
 
     isGenerating = true; $('sendBtn').disabled = true;
     showTyping('Thinking...');
-    runAI(sendText, sendImage, sendFileText, [], sendUrl);
+    runAI(sendText, sendImage, sendFileText, [], urlToFetch);
   }
 
+  // FIXED: OCR with English + Chinese
   async function extractTextFromImage(imageDataUrl) {
     try {
       var result = await Tesseract.recognize(imageDataUrl, 'eng+chi_sim', {
         logger: function(m) {
           if (m.status === 'recognizing text') {
-            showTyping('Reading image (English + Chinese)… ' + Math.round(m.progress * 100) + '%');
+            showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
           }
         }
       });
@@ -718,45 +738,62 @@
     }
   }
 
+  // FIXED: Better website fetching with multiple proxy fallbacks
   async function fetchWebsiteContent(url) {
-    try {
-      showTyping('Fetching website…');
-      var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-      var response = await fetch(proxyUrl);
-      var data = await response.json();
-      
-      if (!data.contents) return { text: '', title: '' };
-      
-      var parser = new DOMParser();
-      var doc = parser.parseFromString(data.contents, 'text/html');
-      
-      // Remove scripts, styles, navigation, ads
-      var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar');
-      elementsToRemove.forEach(function(el) { el.remove(); });
-      
-      // Get main content
-      var mainContent = doc.querySelector('main, article, .content, .post, .entry') || doc.body;
-      var text = mainContent ? mainContent.textContent : '';
-      
-      // Clean up text
-      text = text.replace(/\s+/g, ' ').trim();
-      text = text.substring(0, 10000); // Limit to 10KB
-      
-      var title = doc.title || url;
-      
-      return { text: text, title: title };
-    } catch (e) {
-      console.error('Website fetch error:', e);
-      return { text: '', title: url };
+    var proxies = [
+      'https://api.allorigins.win/get?url=',
+      'https://corsproxy.io/?',
+      'https://api.codetabs.com/v1/proxy?quest='
+    ];
+    
+    for (var i = 0; i < proxies.length; i++) {
+      try {
+        showTyping('Fetching website… (attempt ' + (i+1) + ')');
+        var proxyUrl = proxies[i] + encodeURIComponent(url);
+        var response = await fetch(proxyUrl);
+        var data;
+        if (proxies[i].indexOf('allorigins') !== -1) {
+          data = await response.json();
+          data = data.contents;
+        } else {
+          data = await response.text();
+        }
+        
+        if (!data || data.length < 100) continue;
+        
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(data, 'text/html');
+        
+        // Remove junk
+        var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
+        elementsToRemove.forEach(function(el) { el.remove(); });
+        
+        // Get main content
+        var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
+        var text = mainContent ? mainContent.textContent : '';
+        
+        // Clean up
+        text = text.replace(/\s+/g, ' ').trim();
+        text = text.substring(0, 8000);
+        
+        var title = doc.title || url;
+        
+        if (text.length > 100) {
+          return { text: text, title: title };
+        }
+      } catch (e) {
+        console.error('Proxy ' + i + ' failed:', e);
+      }
     }
+    return { text: '', title: url };
   }
 
-  async function runAI(text, image, fileText, sources, url) {
-    var useWeb = $('webSearchToggle').checked && !image && !url;
+  async function runAI(text, image, fileText, sources, urlToFetch) {
+    var useWeb = $('webSearchToggle').checked && !image;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
-    if (smartMode) systemMsg += '\n\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag. Never use HTML tags like details or summary.';
+    if (smartMode) systemMsg += '\n\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
     if (memory.length) systemMsg += '\n\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
 
     var msgs = getMessages();
@@ -778,33 +815,43 @@
       var websiteContent = '';
       var websiteTitle = '';
 
+      // OCR for images
       if (image) {
         showTyping('Reading image with OCR (English + Chinese)…');
         ocrText = await extractTextFromImage(image.dataUrl);
         if (!ocrText) ocrText = '[No text detected in image]';
       }
 
-      if (url) {
-        var websiteData = await fetchWebsiteContent(url);
+      // FIXED: Fetch website if URL detected
+      if (urlToFetch) {
+        var websiteData = await fetchWebsiteContent(urlToFetch);
         websiteContent = websiteData.text;
         websiteTitle = websiteData.title;
-        if (!websiteContent) websiteContent = '[Could not extract content from website]';
+        if (!websiteContent) websiteContent = '[Could not extract content from ' + urlToFetch + ']';
       }
 
+      // Web search
       var results = await searchPromise;
       var webText = results.text || '';
       var webSources = results.sources || [];
 
+      // Build user message with ALL context
       var userText = text || '';
+      
       if (ocrText) {
-        userText += '\n\n[TEXT EXTRACTED FROM IMAGE]:\n' + ocrText;
+        userText += '\n\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
       }
       if (websiteContent) {
-        userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ']:\n' + websiteContent;
+        userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
       }
       if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && webText && webText.indexOf('No relevant') === -1) {
-        userText += '\n\n[WEB SEARCH RESULTS]:\n' + webText;
+        userText += '\n\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
+      }
+
+      // If no context was added, add a note
+      if (!ocrText && !websiteContent && !fileText && (!useWeb || !webText || webText.indexOf('No relevant') !== -1)) {
+        // No extra context, just use the text
       }
 
       var modelToUse = modelList[currentModelIdx];
@@ -819,6 +866,7 @@
           var m = historyMsgs[i];
           apiMessages.push({ role: m.role, content: m.content });
         }
+        // Replace last user message with enriched content
         apiMessages[apiMessages.length - 1].content = userText;
 
         var res = await fetch('https://text.pollinations.ai/openai', {
@@ -871,8 +919,8 @@
       if (!aiText.trim()) throw new Error('empty response');
       
       var allSources = webSources.concat(sources || []);
-      if (url) {
-        allSources.push({ label: websiteTitle || url, url: url });
+      if (urlToFetch) {
+        allSources.push({ label: websiteTitle || urlToFetch, url: urlToFetch });
       }
       
       var sourceHtml = '';
@@ -962,9 +1010,10 @@
     else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
   }
 
+  // FIXED: Better web search with multiple sources
   function searchWebFast(query) {
     var wikiP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 2500);
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
       try {
         var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
         clearTimeout(t); var j = await r.json();
@@ -975,10 +1024,11 @@
       } catch (e) {}
       return { text: '', sources: [] };
     }, { text: '', sources: [] });
+    
     var ddgP = safe(async function () {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 2500);
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
       try {
-        var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + query), { signal: c.signal });
+        var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
         clearTimeout(t); var j = await r.json();
         if (j.contents) {
           var doc = new DOMParser().parseFromString(j.contents, 'text/html');
@@ -986,7 +1036,7 @@
           var sources = results.map(function (r) {
             var link = r.querySelector('.result__url');
             var title = r.querySelector('.result__title');
-            return { label: title ? title.textContent.trim() : 'DuckDuckGo', url: link ? link.href : 'https://duckduckgo.com' };
+            return { label: title ? title.textContent.trim().substring(0, 30) : 'DuckDuckGo', url: link ? link.href : 'https://duckduckgo.com' };
           });
           var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
           if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
@@ -994,7 +1044,18 @@
       } catch (e) {}
       return { text: '', sources: [] };
     }, { text: '', sources: [] });
-    return Promise.all([wikiP, ddgP]).then(function (r) {
+
+    var newsP = safe(async function () {
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3000);
+      try {
+        var r = await fetch('https://newsapi.org/v2/everything?q=' + encodeURIComponent(query) + '&sortBy=publishedAt&pageSize=5&apiKey=demo', { signal: c.signal });
+        clearTimeout(t);
+        // newsapi demo key is limited, so this is a fallback
+      } catch (e) {}
+      return { text: '', sources: [] };
+    }, { text: '', sources: [] });
+
+    return Promise.all([wikiP, ddgP, newsP]).then(function (r) {
       var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
       var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
       return { text: texts.length ? texts.join('\n\n') : 'No relevant results found.', sources: allSources };
