@@ -219,7 +219,7 @@
       <div class="welcome" id="welcomeScreen">
         <i class="fa-solid fa-sparkles big"></i>
         <h2>How can I help?</h2>
-        <p>Tap + to attach a photo, file, voice, or generate an image.</p>
+        <p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p>
         <div class="suggestions">
           <button class="sugg-btn" data-q="What are the latest AI news?"><i class="fa-solid fa-globe" style="color:#f59e0b"></i> Latest AI news?</button>
           <button class="sugg-btn" data-q="Explain quantum computing simply"><i class="fa-solid fa-atom" style="color:#8b5cf6"></i> Explain quantum computing</button>
@@ -241,7 +241,7 @@
 
       <form class="input-row" id="chatForm">
         <button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
-        <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea></div>
+        <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge or paste a URL..." rows="1"></textarea></div>
         <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
       </form>
     </div>
@@ -287,7 +287,7 @@
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
         Smart Mode (step-by-step reasoning)
       </label>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Images are now read using OCR (text detection), no vision model needed!</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Images now support English + Chinese OCR. Paste URLs to read websites.</p>
     </div>
 
     <div class="setting-group">
@@ -301,7 +301,7 @@
 
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge.</textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images or websites, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge. 9) When reading websites, focus on the main content and ignore navigation, ads, and footers.</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
 
@@ -335,7 +335,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images or websites, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge. 9) When reading websites, focus on the main content and ignore navigation, ads, and footers.';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -357,6 +357,7 @@
 
   var pendingImage = null;
   var pendingFile = null;
+  var pendingUrl = null;
   var recognition = null;
   var isRecording = false;
   var recShouldKeep = false;
@@ -451,7 +452,7 @@
           msgs = msgs.slice(0, idx);
           setMessages(msgs);
           selectedMsgEl.remove();
-          runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', []);
+          runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', [], null);
         }
       }
     };
@@ -459,7 +460,7 @@
       var msgs = getMessages();
       var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', []); }
+      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', [], null); }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -491,15 +492,21 @@
       chip2.innerHTML = '<i class="fa-solid fa-file-lines" style="color:#10b981"></i><span class="chip-label">' + esc(pendingFile.name) + '</span><button class="chip-x" data-clear="file"><i class="fa-solid fa-xmark"></i></button>';
       row.appendChild(chip2);
     }
+    if (pendingUrl) {
+      var chip3 = document.createElement('div'); chip3.className = 'preview-chip';
+      chip3.innerHTML = '<i class="fa-solid fa-link" style="color:#3b82f6"></i><span class="chip-label">' + esc(pendingUrl) + '</span><button class="chip-x" data-clear="url"><i class="fa-solid fa-xmark"></i></button>';
+      row.appendChild(chip3);
+    }
   }
   $('previewRow').addEventListener('click', function (e) {
     var b = e.target.closest('[data-clear]');
     if (!b) return;
     if (b.dataset.clear === 'image') pendingImage = null;
     if (b.dataset.clear === 'file') pendingFile = null;
+    if (b.dataset.clear === 'url') pendingUrl = null;
     renderPreview();
   });
-  function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
+  function clearAttachments() { pendingImage = null; pendingFile = null; pendingUrl = null; if (isRecording) stopRecording(); renderPreview(); }
 
   function handleImageFile(file) {
     if (!file) return;
@@ -654,7 +661,7 @@
   }
 
   function renderWelcomeScreen() {
-    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image.</p><div class="suggestions">';
+    var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p><div class="suggestions">';
     customQuestions.forEach(function (q) {
       html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;') + '"><i class="fa-solid ' + esc(q.icon) + '" style="color:' + esc(q.color) + '"></i> ' + esc(q.text) + '</button>';
     });
@@ -665,7 +672,7 @@
   function submitForm() {
     if (isGenerating) return;
     var input = $('userInput'); var text = input.value.trim();
-    if (!text && !pendingImage && !pendingFile) return;
+    if (!text && !pendingImage && !pendingFile && !pendingUrl) return;
     if (isRecording) stopRecording();
 
     var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
@@ -673,6 +680,7 @@
     var displayText = text;
     if (pendingImage && !displayText) displayText = 'Describe this image.';
     if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file.') + '\n\n[FILE: ' + pendingFile.name + ']';
+    if (pendingUrl) displayText = (displayText ? displayText : 'Read and summarize this website.') + '\n\n[URL: ' + pendingUrl + ']';
     if (pendingImage) displayText = '[Image] ' + displayText;
 
     var msgs = getMessages();
@@ -683,6 +691,7 @@
 
     var sendImage = pendingImage;
     var sendFileText = pendingFile ? pendingFile.text : '';
+    var sendUrl = pendingUrl;
     var sendText = text;
 
     input.value = ''; input.style.height = 'auto';
@@ -690,16 +699,15 @@
 
     isGenerating = true; $('sendBtn').disabled = true;
     showTyping('Thinking...');
-    runAI(sendText, sendImage, sendFileText, []);
+    runAI(sendText, sendImage, sendFileText, [], sendUrl);
   }
 
-  // OCR function using Tesseract.js
   async function extractTextFromImage(imageDataUrl) {
     try {
-      var result = await Tesseract.recognize(imageDataUrl, 'eng', {
+      var result = await Tesseract.recognize(imageDataUrl, 'eng+chi_sim', {
         logger: function(m) {
           if (m.status === 'recognizing text') {
-            showTyping('Reading image… ' + Math.round(m.progress * 100) + '%');
+            showTyping('Reading image (English + Chinese)… ' + Math.round(m.progress * 100) + '%');
           }
         }
       });
@@ -710,8 +718,41 @@
     }
   }
 
-  async function runAI(text, image, fileText, sources) {
-    var useWeb = $('webSearchToggle').checked && !image;
+  async function fetchWebsiteContent(url) {
+    try {
+      showTyping('Fetching website…');
+      var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      var response = await fetch(proxyUrl);
+      var data = await response.json();
+      
+      if (!data.contents) return { text: '', title: '' };
+      
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(data.contents, 'text/html');
+      
+      // Remove scripts, styles, navigation, ads
+      var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar');
+      elementsToRemove.forEach(function(el) { el.remove(); });
+      
+      // Get main content
+      var mainContent = doc.querySelector('main, article, .content, .post, .entry') || doc.body;
+      var text = mainContent ? mainContent.textContent : '';
+      
+      // Clean up text
+      text = text.replace(/\s+/g, ' ').trim();
+      text = text.substring(0, 10000); // Limit to 10KB
+      
+      var title = doc.title || url;
+      
+      return { text: text, title: title };
+    } catch (e) {
+      console.error('Website fetch error:', e);
+      return { text: '', title: url };
+    }
+  }
+
+  async function runAI(text, image, fileText, sources, url) {
+    var useWeb = $('webSearchToggle').checked && !image && !url;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
@@ -733,27 +774,37 @@
     if (currentModelIdx === -1) currentModelIdx = 0;
 
     try {
-      // If image, run OCR first
       var ocrText = '';
+      var websiteContent = '';
+      var websiteTitle = '';
+
       if (image) {
-        showTyping('Reading image with OCR…');
+        showTyping('Reading image with OCR (English + Chinese)…');
         ocrText = await extractTextFromImage(image.dataUrl);
-        if (!ocrText) {
-          ocrText = '[No text detected in image]';
-        }
+        if (!ocrText) ocrText = '[No text detected in image]';
+      }
+
+      if (url) {
+        var websiteData = await fetchWebsiteContent(url);
+        websiteContent = websiteData.text;
+        websiteTitle = websiteData.title;
+        if (!websiteContent) websiteContent = '[Could not extract content from website]';
       }
 
       var results = await searchPromise;
       var webText = results.text || '';
       var webSources = results.sources || [];
 
-      var userText = text || (image ? 'Analyze the text extracted from this image.' : (fileText ? 'Summarize this file concisely.' : ''));
+      var userText = text || '';
       if (ocrText) {
         userText += '\n\n[TEXT EXTRACTED FROM IMAGE]:\n' + ocrText;
       }
+      if (websiteContent) {
+        userText += '\n\n[WEBSITE CONTENT - ' + websiteTitle + ']:\n' + websiteContent;
+      }
       if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && webText && webText.indexOf('No relevant') === -1) {
-        userText += '\n\n[WEB CONTEXT — cite sources]:\n' + webText;
+        userText += '\n\n[WEB SEARCH RESULTS]:\n' + webText;
       }
 
       var modelToUse = modelList[currentModelIdx];
@@ -762,13 +813,12 @@
         var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
 
         var apiMessages = [{ role: 'system', content: systemMsg }];
-        var historyMsgs = msgs.slice(-10);
+        var historyMsgs = msgs.slice(-8);
 
         for (var i = 0; i < historyMsgs.length; i++) {
           var m = historyMsgs[i];
           apiMessages.push({ role: m.role, content: m.content });
         }
-        // Replace last user message with enriched content
         apiMessages[apiMessages.length - 1].content = userText;
 
         var res = await fetch('https://text.pollinations.ai/openai', {
@@ -820,8 +870,11 @@
 
       if (!aiText.trim()) throw new Error('empty response');
       
-      // Add source links if web search was used
       var allSources = webSources.concat(sources || []);
+      if (url) {
+        allSources.push({ label: websiteTitle || url, url: url });
+      }
+      
       var sourceHtml = '';
       if (allSources.length > 0) {
         sourceHtml = '<div class="source-links">';
@@ -841,7 +894,7 @@
       streamBubble.querySelector('.retry').addEventListener('click', function () {
         var s = getMessages(); while (s.length && s[s.length - 1].role === 'assistant') s.pop(); setMessages(s); aiMsgDiv.remove();
         var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
-        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', []);
+        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], null);
       });
       attachLongPress(aiMsgDiv, '', 'ai');
     } finally { isGenerating = false; $('sendBtn').disabled = false; }
@@ -929,14 +982,14 @@
         clearTimeout(t); var j = await r.json();
         if (j.contents) {
           var doc = new DOMParser().parseFromString(j.contents, 'text/html');
-          var results = Array.from(doc.querySelectorAll('.result')).slice(0, 3);
+          var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
           var sources = results.map(function (r) {
             var link = r.querySelector('.result__url');
             var title = r.querySelector('.result__title');
             return { label: title ? title.textContent.trim() : 'DuckDuckGo', url: link ? link.href : 'https://duckduckgo.com' };
           });
           var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
-          if (sn.length) return { text: sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
+          if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
         }
       } catch (e) {}
       return { text: '', sources: [] };
