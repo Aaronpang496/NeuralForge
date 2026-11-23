@@ -197,7 +197,7 @@
         <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
         <div style="min-width:0">
           <div class="title">NeuralForge</div>
-          <div class="model-tag" id="modelTag">openai</div>
+          <div class="model-tag" id="modelTag">deepseek</div>
         </div>
       </div>
       <div class="header-btns">
@@ -269,18 +269,18 @@
     <div class="setting-group">
       <div class="setting-label">Text Model</div>
       <select class="setting-input" id="modelSelect">
-        <option value="openai">Fast & balanced (openai)</option>
-        <option value="openai-large">Smartest, slower (openai-large)</option>
-        <option value="deepseek">DeepSeek (reasoning)</option>
+        <option value="deepseek">DeepSeek (recommended, reliable)</option>
+        <option value="openai-large">OpenAI Large (smartest)</option>
+        <option value="openai">OpenAI (fast)</option>
         <option value="llama">Meta Llama</option>
         <option value="mistral">Mistral</option>
         <option value="qwen-coder">Qwen Coder (best for code)</option>
       </select>
       <div class="setting-label" style="margin-top:16px">Vision Model (for photos)</div>
       <select class="setting-input" id="visionModelSelect">
-        <option value="openai">openai (gpt-4o-mini vision)</option>
-        <option value="openai-large">openai-large (gpt-4o vision)</option>
-        <option value="gemini-flash">gemini-flash (vision)</option>
+        <option value="gemini-flash">Gemini Flash (best for vision)</option>
+        <option value="openai-large">OpenAI Large (gpt-4o vision)</option>
+        <option value="openai">OpenAI (gpt-4o-mini)</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
@@ -345,8 +345,9 @@
   var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
   var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
   var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
-  var currentModel = lsGet('nf_model', 'openai') || 'openai';
-  var visionModel = lsGet('nf_vision_model', 'openai') || 'openai';
+  // FIXED: Better default models
+  var currentModel = lsGet('nf_model', 'deepseek') || 'deepseek';
+  var visionModel = lsGet('nf_vision_model', 'gemini-flash') || 'gemini-flash';
   var smartMode = lsGet('nf_smart', '0') === '1';
 
   var isGenerating = false;
@@ -410,7 +411,7 @@
 
     $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
     $('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
-    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
+    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); };
     $('optCamera').onclick = function () { $('attachSheet').classList.remove('open'); $('cameraInput').click(); };
     $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
     $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
@@ -424,7 +425,6 @@
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
-    // FIXED: Only ONE handler for send — the button click. No form submit conflict.
     $('sendBtn').onclick = function (e) { e.preventDefault(); submitForm(); };
 
     $('chatArea').addEventListener('click', function (e) {
@@ -675,6 +675,7 @@
     runAI(sendText, sendImage, sendFileText);
   }
 
+  // FIXED: Actually send the image in the API request, and auto-fallback on empty response
   async function runAI(text, image, fileText) {
     var useWeb = $('webSearchToggle').checked && !image;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve('');
@@ -692,39 +693,53 @@
 
     var aiText = '';
     var retryCount = 0;
-    var maxRetries = image ? 2 : 1;
+    var maxRetries = image ? 3 : 2;
+    // Fallback models to try if the primary returns empty
+    var textFallbacks = ['deepseek', 'openai-large', 'openai', 'llama'];
+    var visionFallbacks = ['gemini-flash', 'openai-large', 'openai'];
 
     try {
       var results = await searchPromise;
-      var userText = text || (image ? 'Describe and analyze this image in detail. What do you see? Be specific.' : (fileText ? 'Summarize this file concisely.' : ''));
+      var userText = text || (image ? 'Describe and analyze this image in detail. What do you see? Be specific and thorough.' : (fileText ? 'Summarize this file concisely.' : ''));
       if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
       if (useWeb && results && results.indexOf('No relevant') === -1) {
         userText += '\n\n[WEB CONTEXT — cite titles like [Title]]:\n' + results;
       }
 
-      var userContent;
-      var modelToUse;
-      if (image) {
-        modelToUse = visionModel;
-        userContent = [
-          { type: 'text', text: userText },
-          { type: 'image_url', image_url: { url: image.dataUrl } }
-        ];
-      } else {
-        modelToUse = currentModel;
-        userContent = userText;
-      }
+      var modelToUse = image ? visionModel : currentModel;
+      var fallbackList = image ? visionFallbacks : textFallbacks;
+      // Remove current model from fallback list to avoid duplicate
+      fallbackList = fallbackList.filter(function (m) { return m !== modelToUse; });
 
       while (retryCount <= maxRetries) {
         var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
+
+        // FIXED: Build messages array properly, replacing the last user message with vision content if needed
+        var apiMessages = [{ role: 'system', content: systemMsg }];
+        var historyMsgs = msgs.slice(-10);
+
+        for (var i = 0; i < historyMsgs.length; i++) {
+          var m = historyMsgs[i];
+          // If this is the LAST message AND it has an image, use vision format
+          if (i === historyMsgs.length - 1 && image) {
+            apiMessages.push({
+              role: 'user',
+              content: [
+                { type: 'text', text: userText },
+                { type: 'image_url', image_url: { url: image.dataUrl } }
+              ]
+            });
+          } else {
+            apiMessages.push({ role: m.role, content: m.content });
+          }
+        }
+
         var res = await fetch('https://text.pollinations.ai/openai', {
           method: 'POST', signal: controller.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: modelToUse,
-            messages: [{ role: 'system', content: systemMsg }].concat(msgs.slice(-10).map(function (m) {
-              return { role: m.role, content: m.content };
-            })),
+            messages: apiMessages,
             stream: true,
             temperature: smartMode ? 0.3 : 0.7
           })
@@ -738,13 +753,13 @@
             var r = await reader.read(); if (r.done) break;
             buffer += dec.decode(r.value, { stream: true });
             var lines = buffer.split('\n'); buffer = lines.pop();
-            for (var i = 0; i < lines.length; i++) {
-              var line = lines[i].trim();
+            for (var j = 0; j < lines.length; j++) {
+              var line = lines[j].trim();
               if (line.indexOf('data:') !== 0) continue;
               var data = line.slice(5).trim();
               if (data === '' || data === '[DONE]') continue;
               safe(function () {
-                var j = JSON.parse(data); var ch = j.choices && j.choices[0]; var c = '';
+                var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
                 if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
                 if (c) { aiText += c; streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>'; scrollToBottom(); }
               }, null);
@@ -752,14 +767,20 @@
           }
         } else {
           var rawText = await res.text();
-          safe(function () { var j = JSON.parse(rawText); var ch = j.choices && j.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
+          safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
         }
 
         if (aiText.trim()) break;
+
+        // Empty response — try fallback model
         retryCount++;
-        if (retryCount <= maxRetries) {
+        if (retryCount <= maxRetries && fallbackList.length > 0) {
+          modelToUse = fallbackList.shift();
+          streamBubble.innerHTML = 'Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')';
+          await new Promise(function (r) { setTimeout(r, 800); });
+        } else if (retryCount <= maxRetries) {
           streamBubble.innerHTML = 'Retrying… (' + retryCount + '/' + maxRetries + ')';
-          await new Promise(function (r) { setTimeout(r, 1000); });
+          await new Promise(function (r) { setTimeout(r, 800); });
         }
       }
 
