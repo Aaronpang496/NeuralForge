@@ -197,7 +197,7 @@
         <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
         <div style="min-width:0">
           <div class="title">NeuralForge</div>
-          <div class="model-tag" id="modelTag">deepseek</div>
+          <div class="model-tag" id="modelTag">openai</div>
         </div>
       </div>
       <div class="header-btns">
@@ -232,11 +232,11 @@
 
       <div id="previewRow" class="preview-row"></div>
 
-      <div class="input-row">
+      <form class="input-row" id="chatForm">
         <button type="button" class="attach-btn" id="attachBtn"><i class="fa-solid fa-plus"></i></button>
         <div class="input-wrap"><textarea id="userInput" placeholder="Message NeuralForge..." rows="1"></textarea></div>
-        <button type="button" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </div>
+        <button type="submit" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
     </div>
   </div>
 </div>
@@ -269,18 +269,18 @@
     <div class="setting-group">
       <div class="setting-label">Text Model</div>
       <select class="setting-input" id="modelSelect">
-        <option value="deepseek">DeepSeek (recommended, reliable)</option>
+        <option value="openai">OpenAI (default)</option>
         <option value="openai-large">OpenAI Large (smartest)</option>
-        <option value="openai">OpenAI (fast)</option>
+        <option value="deepseek">DeepSeek (reasoning)</option>
         <option value="llama">Meta Llama</option>
         <option value="mistral">Mistral</option>
         <option value="qwen-coder">Qwen Coder (best for code)</option>
       </select>
       <div class="setting-label" style="margin-top:16px">Vision Model (for photos)</div>
       <select class="setting-input" id="visionModelSelect">
-        <option value="gemini-flash">Gemini Flash (best for vision)</option>
+        <option value="openai">OpenAI (default)</option>
         <option value="openai-large">OpenAI Large (gpt-4o vision)</option>
-        <option value="openai">OpenAI (gpt-4o-mini)</option>
+        <option value="gemini-flash">Gemini Flash (vision)</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
@@ -345,9 +345,8 @@
   var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
   var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
   var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
-  // FIXED: Better default models
-  var currentModel = lsGet('nf_model', 'deepseek') || 'deepseek';
-  var visionModel = lsGet('nf_vision_model', 'gemini-flash') || 'gemini-flash';
+  var currentModel = lsGet('nf_model', 'openai') || 'openai';
+  var visionModel = lsGet('nf_vision_model', 'openai') || 'openai';
   var smartMode = lsGet('nf_smart', '0') === '1';
 
   var isGenerating = false;
@@ -411,7 +410,7 @@
 
     $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
     $('attachCancel').onclick = function () { $('attachSheet').classList.remove('open'); };
-    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); };
+    $('attachSheet').addEventListener('click', function (e) { if (e.target === $('attachSheet')) $('attachSheet').classList.remove('open'); });
     $('optCamera').onclick = function () { $('attachSheet').classList.remove('open'); $('cameraInput').click(); };
     $('optAlbum').onclick = function () { $('attachSheet').classList.remove('open'); $('albumInput').click(); };
     $('optFile').onclick = function () { $('attachSheet').classList.remove('open'); $('fileInput').click(); };
@@ -425,7 +424,7 @@
     var ctxMenu = $('contextMenu');
     document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 
-    $('sendBtn').onclick = function (e) { e.preventDefault(); submitForm(); };
+    $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
 
     $('chatArea').addEventListener('click', function (e) {
       var b = e.target.closest('.sugg-btn');
@@ -675,7 +674,6 @@
     runAI(sendText, sendImage, sendFileText);
   }
 
-  // FIXED: Actually send the image in the API request, and auto-fallback on empty response
   async function runAI(text, image, fileText) {
     var useWeb = $('webSearchToggle').checked && !image;
     var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve('');
@@ -694,9 +692,8 @@
     var aiText = '';
     var retryCount = 0;
     var maxRetries = image ? 3 : 2;
-    // Fallback models to try if the primary returns empty
-    var textFallbacks = ['deepseek', 'openai-large', 'openai', 'llama'];
-    var visionFallbacks = ['gemini-flash', 'openai-large', 'openai'];
+    var textFallbacks = ['openai', 'deepseek', 'openai-large', 'llama'];
+    var visionFallbacks = ['openai', 'gemini-flash', 'openai-large'];
 
     try {
       var results = await searchPromise;
@@ -708,19 +705,16 @@
 
       var modelToUse = image ? visionModel : currentModel;
       var fallbackList = image ? visionFallbacks : textFallbacks;
-      // Remove current model from fallback list to avoid duplicate
       fallbackList = fallbackList.filter(function (m) { return m !== modelToUse; });
 
       while (retryCount <= maxRetries) {
         var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
 
-        // FIXED: Build messages array properly, replacing the last user message with vision content if needed
         var apiMessages = [{ role: 'system', content: systemMsg }];
         var historyMsgs = msgs.slice(-10);
 
         for (var i = 0; i < historyMsgs.length; i++) {
           var m = historyMsgs[i];
-          // If this is the LAST message AND it has an image, use vision format
           if (i === historyMsgs.length - 1 && image) {
             apiMessages.push({
               role: 'user',
@@ -772,7 +766,6 @@
 
         if (aiText.trim()) break;
 
-        // Empty response — try fallback model
         retryCount++;
         if (retryCount <= maxRetries && fallbackList.length > 0) {
           modelToUse = fallbackList.shift();
