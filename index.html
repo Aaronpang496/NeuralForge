@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>NeuralForge AI</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
     --bg: #0f172a; --text: #f8fafc; --header-bg: rgba(15,23,42,.98);
@@ -99,6 +100,11 @@
   .bubble code { background: rgba(0,0,0,.3); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
   .retry { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #f59e0b; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); }
 
+  .source-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; font-size: 11px; color: #818cf8; text-decoration: none; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .source-link:active { background: rgba(99,102,241,.25); }
+  .source-link i { font-size: 10px; flex-shrink: 0; }
+
   .thinking-box { background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25); border-left: 3px solid #6366f1; border-radius: 10px; margin: 0 0 12px 0; overflow: hidden; }
   .thinking-header { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #818cf8; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; background: rgba(99,102,241,.05); }
   .thinking-header:hover { background: rgba(99,102,241,.12); }
@@ -169,6 +175,7 @@
   .ctx-btn { width: 100%; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text); }
   .ctx-btn:active { background: var(--border); }
   .ctx-btn.danger { color: #ef4444; }
+  .ctx-btn.teach { color: #10b981; }
 
   #toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: .3s; z-index: 300; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -269,23 +276,18 @@
     <div class="setting-group">
       <div class="setting-label">Text Model</div>
       <select class="setting-input" id="modelSelect">
-        <option value="openai">OpenAI (default)</option>
-        <option value="openai-large">OpenAI Large (smartest)</option>
-        <option value="deepseek">DeepSeek (reasoning)</option>
+        <option value="openai">OpenAI (default, fast)</option>
+        <option value="openai-large">OpenAI Large (smartest, best for facts)</option>
+        <option value="deepseek">DeepSeek (excellent reasoning)</option>
         <option value="llama">Meta Llama</option>
         <option value="mistral">Mistral</option>
         <option value="qwen-coder">Qwen Coder (best for code)</option>
-      </select>
-      <div class="setting-label" style="margin-top:16px">Vision Model (for photos)</div>
-      <select class="setting-input" id="visionModelSelect">
-        <option value="openai">OpenAI (default)</option>
-        <option value="openai-large">OpenAI Large (gpt-4o vision)</option>
-        <option value="gemini-flash">Gemini Flash (vision)</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text)">
         <label class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></label>
         Smart Mode (step-by-step reasoning)
       </label>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Images are now read using OCR (text detection), no vision model needed!</p>
     </div>
 
     <div class="setting-group">
@@ -299,12 +301,12 @@
 
     <div class="setting-group">
       <div class="setting-label">System Behavior</div>
-      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing images, describe what you see clearly and accurately. 7) If unsure, say so rather than guessing.</textarea>
+      <textarea class="setting-input" id="sysPrompt">You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge.</textarea>
       <button class="btn-primary" id="saveBehaviorBtn">Save Behavior</button>
     </div>
 
     <div class="setting-group">
-      <div class="setting-label">Custom Memory</div>
+      <div class="setting-label">Custom Memory (What the AI knows about you)</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <input type="text" class="setting-input" id="memInput" placeholder="e.g. My name is Alex" style="flex:1">
         <button id="addMemBtn" style="background:#4f46e5;color:#fff;padding:0 16px;border-radius:10px"><i class="fa-solid fa-plus"></i></button>
@@ -317,6 +319,7 @@
 <div id="contextMenu">
   <button class="ctx-btn" id="ctxEdit"><i class="fa-solid fa-pen"></i> Edit & Resend</button>
   <button class="ctx-btn" id="ctxRegen"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+  <button class="ctx-btn teach" id="ctxTeach"><i class="fa-solid fa-graduation-cap"></i> Correct & Teach</button>
   <button class="ctx-btn" id="ctxCopy"><i class="fa-solid fa-copy"></i> Copy Text</button>
   <button class="ctx-btn danger" id="ctxDelete"><i class="fa-solid fa-trash"></i> Delete</button>
 </div>
@@ -332,7 +335,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing images, describe what you see clearly and accurately. 7) If unsure, say so rather than guessing.';
+  var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES: 1) Use PERFECT English grammar, complete sentences, proper punctuation. 2) Never write broken English. 3) Format for mobile: short paragraphs, bullet points, bold key terms. 4) For code: always use fenced blocks with language tags. 5) Be concise but thorough. 6) When analyzing text from images, describe what the text says clearly and accurately. 7) If unsure, say so rather than guessing. 8) If the user corrects you, accept the correction immediately and update your knowledge.';
   var DEFAULT_QS = [
     { text: 'What are the latest AI news?', icon: 'fa-globe', color: '#f59e0b' },
     { text: 'Explain quantum computing simply', icon: 'fa-atom', color: '#8b5cf6' },
@@ -346,7 +349,6 @@
   var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
   var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
   var currentModel = lsGet('nf_model', 'openai') || 'openai';
-  var visionModel = lsGet('nf_vision_model', 'openai') || 'openai';
   var smartMode = lsGet('nf_smart', '0') === '1';
 
   var isGenerating = false;
@@ -394,11 +396,9 @@
     $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
 
     $('modelSelect').value = currentModel;
-    $('visionModelSelect').value = visionModel;
     $('smartMode').checked = smartMode;
     $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
     $('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Text model: ' + currentModel); };
-    $('visionModelSelect').onchange = function () { visionModel = $('visionModelSelect').value; lsSet('nf_vision_model', visionModel); showToast('Vision model: ' + visionModel); };
     $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
 
     $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
@@ -436,11 +436,30 @@
     $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
     $('ctxDelete').onclick = function () { selectedMsgEl.remove(); var msgs = getMessages().filter(function (m) { return m.content !== selectedMsgEl.dataset.text; }); setMessages(msgs); showToast('Deleted'); ctxMenu.style.display = 'none'; };
     $('ctxEdit').onclick = function () { $('userInput').value = selectedMsgEl.dataset.text; selectedMsgEl.remove(); ctxMenu.style.display = 'none'; $('userInput').focus(); };
+    $('ctxTeach').onclick = function () {
+      var correction = prompt('What is the correct information?');
+      if (correction && correction.trim()) {
+        memory.push(correction.trim());
+        lsSet('nf_memory', JSON.stringify(memory));
+        renderMemory();
+        showToast('AI learned: ' + correction.trim().substring(0, 30) + '…');
+        ctxMenu.style.display = 'none';
+        var msgs = getMessages();
+        var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
+        if (idx > 0) {
+          var prev = msgs[idx - 1].content;
+          msgs = msgs.slice(0, idx);
+          setMessages(msgs);
+          selectedMsgEl.remove();
+          runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', []);
+        }
+      }
+    };
     $('ctxRegen').onclick = function () {
       var msgs = getMessages();
       var idx = msgs.findIndex(function (m) { return m.role === 'assistant' && m.content === selectedMsgEl.dataset.text; });
       ctxMenu.style.display = 'none';
-      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, ''); }
+      if (idx > 0) { var prev = msgs[idx - 1].content; msgs = msgs.slice(0, idx); setMessages(msgs); selectedMsgEl.remove(); runAI(prev.split('\n\n[WEB CONTEXT')[0], null, '', []); }
     };
 
     $('sysPrompt').value = sysPrompt;
@@ -630,7 +649,7 @@
   function renderChat() {
     var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
     if (msgs.length === 0) { renderWelcomeScreen(); return; }
-    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false, m.image); });
+    msgs.forEach(function (m) { addMessageToUI(m.content, m.role, false, m.image, m.sources); });
     scrollToBottom();
   }
 
@@ -671,12 +690,29 @@
 
     isGenerating = true; $('sendBtn').disabled = true;
     showTyping('Thinking...');
-    runAI(sendText, sendImage, sendFileText);
+    runAI(sendText, sendImage, sendFileText, []);
   }
 
-  async function runAI(text, image, fileText) {
+  // OCR function using Tesseract.js
+  async function extractTextFromImage(imageDataUrl) {
+    try {
+      var result = await Tesseract.recognize(imageDataUrl, 'eng', {
+        logger: function(m) {
+          if (m.status === 'recognizing text') {
+            showTyping('Reading image… ' + Math.round(m.progress * 100) + '%');
+          }
+        }
+      });
+      return result.data.text.trim();
+    } catch (e) {
+      console.error('OCR error:', e);
+      return '';
+    }
+  }
+
+  async function runAI(text, image, fileText, sources) {
     var useWeb = $('webSearchToggle').checked && !image;
-    var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve('');
+    var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
 
     var systemMsg = sysPrompt + '\n\nCurrent date: ' + today() + '.';
     if (smartMode) systemMsg += '\n\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag. Never use HTML tags like details or summary.';
@@ -691,21 +727,36 @@
 
     var aiText = '';
     var retryCount = 0;
-    var maxRetries = image ? 3 : 2;
-    var textFallbacks = ['openai', 'deepseek', 'openai-large', 'llama'];
-    var visionFallbacks = ['openai', 'gemini-flash', 'openai-large'];
+    var maxRetries = 3;
+    var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
+    var currentModelIdx = modelList.indexOf(currentModel);
+    if (currentModelIdx === -1) currentModelIdx = 0;
 
     try {
-      var results = await searchPromise;
-      var userText = text || (image ? 'Describe and analyze this image in detail. What do you see? Be specific and thorough.' : (fileText ? 'Summarize this file concisely.' : ''));
-      if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
-      if (useWeb && results && results.indexOf('No relevant') === -1) {
-        userText += '\n\n[WEB CONTEXT — cite titles like [Title]]:\n' + results;
+      // If image, run OCR first
+      var ocrText = '';
+      if (image) {
+        showTyping('Reading image with OCR…');
+        ocrText = await extractTextFromImage(image.dataUrl);
+        if (!ocrText) {
+          ocrText = '[No text detected in image]';
+        }
       }
 
-      var modelToUse = image ? visionModel : currentModel;
-      var fallbackList = image ? visionFallbacks : textFallbacks;
-      fallbackList = fallbackList.filter(function (m) { return m !== modelToUse; });
+      var results = await searchPromise;
+      var webText = results.text || '';
+      var webSources = results.sources || [];
+
+      var userText = text || (image ? 'Analyze the text extracted from this image.' : (fileText ? 'Summarize this file concisely.' : ''));
+      if (ocrText) {
+        userText += '\n\n[TEXT EXTRACTED FROM IMAGE]:\n' + ocrText;
+      }
+      if (fileText) userText += '\n\n[FILE CONTENT]:\n' + fileText;
+      if (useWeb && webText && webText.indexOf('No relevant') === -1) {
+        userText += '\n\n[WEB CONTEXT — cite sources]:\n' + webText;
+      }
+
+      var modelToUse = modelList[currentModelIdx];
 
       while (retryCount <= maxRetries) {
         var controller = new AbortController(); var to = setTimeout(function () { controller.abort(); }, 60000);
@@ -715,18 +766,10 @@
 
         for (var i = 0; i < historyMsgs.length; i++) {
           var m = historyMsgs[i];
-          if (i === historyMsgs.length - 1 && image) {
-            apiMessages.push({
-              role: 'user',
-              content: [
-                { type: 'text', text: userText },
-                { type: 'image_url', image_url: { url: image.dataUrl } }
-              ]
-            });
-          } else {
-            apiMessages.push({ role: m.role, content: m.content });
-          }
+          apiMessages.push({ role: m.role, content: m.content });
         }
+        // Replace last user message with enriched content
+        apiMessages[apiMessages.length - 1].content = userText;
 
         var res = await fetch('https://text.pollinations.ai/openai', {
           method: 'POST', signal: controller.signal,
@@ -767,29 +810,38 @@
         if (aiText.trim()) break;
 
         retryCount++;
-        if (retryCount <= maxRetries && fallbackList.length > 0) {
-          modelToUse = fallbackList.shift();
+        if (retryCount <= maxRetries) {
+          currentModelIdx = (currentModelIdx + 1) % modelList.length;
+          modelToUse = modelList[currentModelIdx];
           streamBubble.innerHTML = 'Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')';
-          await new Promise(function (r) { setTimeout(r, 800); });
-        } else if (retryCount <= maxRetries) {
-          streamBubble.innerHTML = 'Retrying… (' + retryCount + '/' + maxRetries + ')';
           await new Promise(function (r) { setTimeout(r, 800); });
         }
       }
 
       if (!aiText.trim()) throw new Error('empty response');
-      streamBubble.innerHTML = formatText(aiText);
+      
+      // Add source links if web search was used
+      var allSources = webSources.concat(sources || []);
+      var sourceHtml = '';
+      if (allSources.length > 0) {
+        sourceHtml = '<div class="source-links">';
+        allSources.forEach(function (s, idx) {
+          sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
+        });
+        sourceHtml += '</div>';
+      }
+      
+      streamBubble.innerHTML = formatText(aiText) + sourceHtml;
       attachLongPress(aiMsgDiv, aiText, 'ai');
-      var saved = getMessages(); saved.push({ role: 'assistant', content: aiText }); setMessages(saved); scrollToBottom();
+      var saved = getMessages(); saved.push({ role: 'assistant', content: aiText, sources: allSources }); setMessages(saved); scrollToBottom();
     } catch (err) {
-      var hint = image ? ' Try a different Vision model in Settings.' : '';
-      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' + hint : (err.message === 'empty response' ? 'The AI returned nothing after retries.' + hint : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
+      var friendly = err.name === 'AbortError' ? 'Timed out. Tap Retry.' : (err.message === 'empty response' ? 'The AI returned nothing after retries.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
       streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
       aiMsgDiv.classList.add('error');
       streamBubble.querySelector('.retry').addEventListener('click', function () {
         var s = getMessages(); while (s.length && s[s.length - 1].role === 'assistant') s.pop(); setMessages(s); aiMsgDiv.remove();
         var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user'; });
-        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '');
+        if (lastUser) runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', []);
       });
       attachLongPress(aiMsgDiv, '', 'ai');
     } finally { isGenerating = false; $('sendBtn').disabled = false; }
@@ -811,12 +863,20 @@
   }
 
   function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-  function addMessageToUI(text, type, animate, image) {
+  function addMessageToUI(text, type, animate, image, sources) {
     var div = document.createElement('div'); div.className = 'msg ' + type; div.dataset.text = text;
     if (animate) div.style.animation = 'popIn .2s ease-out';
     var imgHtml = image ? '<img class="attached-thumb" src="' + image + '" alt="attachment">' : '';
+    var sourceHtml = '';
+    if (sources && sources.length > 0 && type === 'ai') {
+      sourceHtml = '<div class="source-links">';
+      sources.forEach(function (s, idx) {
+        sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> ' + esc(s.label || 'Source ' + (idx + 1)) + '</a>';
+      });
+      sourceHtml += '</div>';
+    }
     if (type === 'ai') {
-      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + '</div></div>';
+      div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + sourceHtml + '</div></div>';
     } else {
       div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
     }
@@ -842,6 +902,7 @@
     $('contextMenu').style.display = 'block';
     $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
     $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
+    $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
   }
   function copyText(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
@@ -854,10 +915,13 @@
       try {
         var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
         clearTimeout(t); var j = await r.json();
-        if (j.query && j.query.search.length) return j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n');
+        if (j.query && j.query.search.length) {
+          var sources = j.query.search.map(function (s) { return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) }; });
+          return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n\n'), sources: sources };
+        }
       } catch (e) {}
-      return '';
-    }, '');
+      return { text: '', sources: [] };
+    }, { text: '', sources: [] });
     var ddgP = safe(async function () {
       var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 2500);
       try {
@@ -865,15 +929,22 @@
         clearTimeout(t); var j = await r.json();
         if (j.contents) {
           var doc = new DOMParser().parseFromString(j.contents, 'text/html');
+          var results = Array.from(doc.querySelectorAll('.result')).slice(0, 3);
+          var sources = results.map(function (r) {
+            var link = r.querySelector('.result__url');
+            var title = r.querySelector('.result__title');
+            return { label: title ? title.textContent.trim() : 'DuckDuckGo', url: link ? link.href : 'https://duckduckgo.com' };
+          });
           var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
-          if (sn.length) return sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n');
+          if (sn.length) return { text: sn.slice(0, 3).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
         }
       } catch (e) {}
-      return '';
-    }, '');
+      return { text: '', sources: [] };
+    }, { text: '', sources: [] });
     return Promise.all([wikiP, ddgP]).then(function (r) {
-      var parts = r.filter(function (s) { return s && s.length > 0; });
-      return parts.length ? parts.join('\n\n') : 'No relevant results found.';
+      var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
+      var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
+      return { text: texts.length ? texts.join('\n\n') : 'No relevant results found.', sources: allSources };
     });
   }
 
