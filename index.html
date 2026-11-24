@@ -271,7 +271,7 @@ Smart Mode (step-by-step reasoning)
 </a>
 <div id="serperStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key. Using Wikipedia + Google News RSS + DDG Lite.</span>
+<span>No key. Using Wikipedia + DDG Lite fallback.</span>
 </div>
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
@@ -288,7 +288,7 @@ Smart Mode (step-by-step reasoning)
 <span>No key saved. Using free server (rate-limited).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-HK geo-block fix: OpenRouter now auto-routes to DeepSeek / Qwen / Llama (region-free models) and skips blocked ones on 403.
+HK geo-block fix: OpenRouter now auto-routes to DeepSeek / Qwen / Llama (region-free models) and skips blocked ones.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -347,8 +347,7 @@ function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
 
-// ===== FIX #5: prompt version stamp so stale cached prompts get overwritten =====
-var PROMPT_VERSION = 'v3-hk-search';
+var PROMPT_VERSION = 'v4-balanced-search';
 var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES:\n' +
 '1) Use PERFECT English grammar, complete sentences, proper punctuation.\n' +
 '2) Never write broken English.\n' +
@@ -360,7 +359,7 @@ var DEFAULT_SYS = 'You are NeuralForge, an expert AI assistant. CRITICAL RULES:\
 '8) If the user corrects you, accept the correction immediately.\n' +
 '9) When reading websites, focus on the main content and ignore navigation, ads, and footers.\n' +
 '10) You MUST use the web search results and website content provided in the user message. Never say "I cannot browse".\n' +
-'11) ANTI-HALLUCINATION: If the provided [LIVE WEB SEARCH RESULTS] are empty, missing, or say "No relevant results found" / "SEARCH FAILED", you MUST reply that the live search returned no results and you cannot verify the fact. DO NOT guess, DO NOT use your internal training data for current/factual queries, and DO NOT invent addresses, dates, or names.';
+'11) BALANCED ANTI-HALLUCINATION: If the provided [LIVE WEB SEARCH RESULTS] are empty or failed, you MUST first explicitly state: "My live web search returned no current results for this specific query." However, you MAY then provide general, foundational knowledge about the topic, clearly prefixed with a disclaimer like "Based on my general training data (not live search): ...".';
 
 var tesseractPromise = null;
 function loadTesseract() {
@@ -399,12 +398,11 @@ var openrouterModel = lsGet('nf_openrouter_model', '') || '';
 var corsproxyKey = lsGet('nf_corsproxy_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
-// ===== FIX #4: HK region-friendly OpenRouter model chain (no hardcoded gpt-4o-mini) =====
 var OR_MODEL_CHAIN = [
 'deepseek/deepseek-chat',
 'qwen/qwen-2.5-72b-instruct',
 'meta-llama/llama-3.3-70b-instruct:free',
-'openai/gpt-4o-mini'
+'mistralai/mistral-large'
 ];
 
 var isGenerating = false;
@@ -475,11 +473,10 @@ else { el.className = 'key-status'; el.innerHTML = '<i class="fa-solid fa-circle
 function updateSerperStatus() {
 var el = $('serperStatus'); if (!el) return;
 if (serperKey) { el.className = 'key-status active'; el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>'; }
-else { el.className = 'key-status'; el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + Google News RSS + DDG Lite.</span>'; }
+else { el.className = 'key-status'; el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG Lite fallback.</span>'; }
 }
 
 function boot() {
-// FIX #5: force-overwrite stale cached prompt if version changed
 if (lsGet('nf_sys_ver', '') !== PROMPT_VERSION) {
 sysPrompt = DEFAULT_SYS;
 lsSet('nf_sys', DEFAULT_SYS);
@@ -751,7 +748,6 @@ if (text.length > 150) return { text: text, title: title, success: true };
 return { text: '', title: url, success: false };
 }
 
-// ===== FIX #3: context-aware query generation =====
 function generateSearchQueries(userMessage, chatHistory) {
 var queries = [];
 var users = chatHistory.filter(function (m) { return m.role === 'user'; });
@@ -759,14 +755,10 @@ var words = userMessage.toLowerCase().replace(/[^\w\s\u4e00-\u9fff]/g, '').split
 var stopWords = ['what', 'how', 'why', 'when', 'where', 'who', 'which', 'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'did', 'she', 'too', 'use', 'about', 'would', 'there', 'their', 'does', 'tell', 'me', 'please', 'give', 'find', 'search', 'look', 'know', 'think', 'say', 'going', 'just', 'like', 'make', 'made', 'also', 'into', 'over', 'such', 'take', 'than', 'them', 'then', 'this', 'very', 'well', 'were', 'will', 'with', 'have', 'from', 'they', 'been', 'more', 'some', 'time', 'other', 'could', 'should', 'after', 'before', 'between', 'under', 'without', 'within', 'along', 'following', 'across', 'behind', 'beyond', 'plus', 'except', 'upon', 'against', 'among', 'throughout', 'towards', 'until', 'during', 'around', 'above', 'below', 'up', 'down', 'in', 'on', 'at', 'to', 'of', 'by', 'an', 'a', 'is', 'am', 'it', 'as', 'if', 'or', 'so', 'no', 'yes', 'do', 'doing', 'done', 'being', 'be', 'that', 'these', 'those', 'here', 'first', 'last', 'next', 'previous', 'current', 'present', 'past', 'future', 'recent', 'latest', 'modern', 'traditional', 'classic', 'popular', 'famous', 'important', 'significant', 'major', 'minor', 'big', 'small', 'large', 'huge', 'tiny', 'great', 'good', 'bad', 'better', 'best', 'worse', 'worst', 'high', 'low', 'long', 'short', 'wide', 'narrow', 'deep', 'shallow', 'thick', 'thin', 'heavy', 'light', 'dark', 'bright', 'hot', 'cold', 'warm', 'cool', 'fast', 'slow', 'quick', 'rapid', 'swift', 'sudden', 'gradual', 'steady', 'stable', 'constant', 'variable', 'wrong', 'right', 'correct', 'really', 'sure', 'again', 'continue', 'elaborate', 'detail', 'details', 'expand', 'explain', 'sorry', 'thanks', 'thank', 'hello', 'hi', 'hey', 'ok', 'okay', 'sure', 'well', 'still', 'even', 'much', 'many', 'most', 'less', 'least', 'enough', 'quite', 'rather', 'almost', 'already', 'always', 'never', 'often', 'sometimes', 'usually', 'probably', 'maybe', 'perhaps', 'possibly', 'definitely', 'exactly', 'actually', 'literally', 'basically', 'simply', 'clearly', 'obviously', 'apparently', 'supposedly', 'reportedly', 'allegedly'];
 var keyWords = words.filter(function (w) { return stopWords.indexOf(w) === -1; });
 
-// Detect a follow-up turn: very short OR pure reaction/meta words
-var isFollowUp = keyWords.length === 0 ||
-words.length <= 4 ||
-/\b(wrong|correct|really|sure|again|continue|elaborate|detail|expand|tell me more|more info|explain|why|how come|no,|yes,|but|however)\b/i.test(userMessage);
+var isFollowUp = keyWords.length === 0 || words.length <= 4 || /\b(wrong|correct|really|sure|again|continue|elaborate|detail|expand|tell me more|more info|explain|why|how come|no,|yes,|but|however)\b/i.test(userMessage);
 
 var effectiveText = userMessage;
 if (isFollowUp && users.length >= 2) {
-// carry the topic from the PREVIOUS user message
 var prev = users[users.length - 2].content || '';
 var prevWords = prev.toLowerCase().replace(/[^\w\s\u4e00-\u9fff]/g, '').split(/\s+/).filter(function (w) { return w.length > 2 && stopWords.indexOf(w) === -1; });
 if (prevWords.length) {
@@ -789,7 +781,6 @@ if (!serperKey) queries.push({ query: baseQuery, source: 'duckduckgo', label: 'D
 return queries.slice(0, 4);
 }
 
-// ===== FIX #1: clean JSON/RSS sources first =====
 async function searchSerper(query) {
 if (!serperKey) return { text: '', sources: [], engine: 'Serper' };
 var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
@@ -868,7 +859,6 @@ return { text: items.map(function (it) { return '[News] ' + it.title + (it.desc 
 }
 return { text: '', sources: [], engine: 'GoogleNews' };
 }
-// ===== FIX #2: DuckDuckGo LITE scraper =====
 async function searchDuckDuckGoLite(query) {
 var lite = 'https://lite.duckduckgo.com/lite/?q=' + encodeURIComponent(query);
 var proxies = [
@@ -906,7 +896,6 @@ var queries = generateSearchQueries(userMessage, chatHistory);
 showTyping('Planning ' + queries.length + ' targeted searches…');
 var promises = [];
 var seen = {};
-// Serper FIRST (clean JSON) when available
 if (serperKey) {
 var mainQ = queries[0] ? queries[0].query : userMessage;
 promises.push(searchSerper(mainQ));
@@ -932,7 +921,6 @@ if (v.sources) v.sources.forEach(function (s) { if (s.url && !seenUrls[s.url]) {
 return { text: allTexts.length ? allTexts.join('\n\n---\n\n') : '', sources: allSources.slice(0, 10), engines: engines };
 }
 
-// ===== FIX #4: OpenRouter region-aware model chain with 403 fallback =====
 async function callOpenRouter(apiMessages) {
 if (!openrouterKey) throw new Error('No OpenRouter key');
 var order = [];
@@ -949,13 +937,12 @@ body: JSON.stringify({ model: model, messages: apiMessages, stream: true, temper
 });
 if (res.status === 401 || res.status === 402) throw new Error('OpenRouter auth/credit error (' + res.status + '). Check your key/balance.');
 if (res.status === 403 || res.status === 404) {
-var txt = ''; try { txt = await res.text(); } catch (e) {}
 lastErr = 'Model "' + model + '" unavailable in your region (' + res.status + ').';
 showTyping('Region-blocked on ' + model + ', trying next…');
 continue;
 }
 if (!res.ok) throw new Error('OpenRouter ' + res.status);
-openrouterModel = model; lsSet('nf_openrouter_model', model); // remember the working one
+openrouterModel = model; lsSet('nf_openrouter_model', model);
 return res;
 } catch (e) {
 if (/auth|credit|Check your key/i.test(e.message)) throw e;
@@ -1023,12 +1010,11 @@ var userText = text || '';
 if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
 if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
 if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
-// FIX #2: explicit failure marker so the model cannot silently guess
 if (useWeb && webText && webText.length > 20) {
 userText += '\n[LIVE WEB SEARCH RESULTS from ' + enginesUsed.join(', ') + ' — you MUST base your answer on this]:\n' + webText;
 } else if (useWeb) {
 console.warn('SEARCH FAILED. webText length:', (webText || '').length);
-userText += '\n[LIVE WEB SEARCH FAILED — NO RESULTS RETRIEVED. Per rule 11, tell the user the search returned no results and do NOT guess or use internal knowledge.]';
+userText += '\n[LIVE WEB SEARCH FAILED — NO RESULTS RETRIEVED. Per rule 11, tell the user the search returned no results, but you may provide general knowledge with a clear disclaimer.]';
 }
 
 var modelToUse = modelList[currentModelIdx]; var freeServerWorked = false; var retryCount = 0; var maxRetries = 2;
