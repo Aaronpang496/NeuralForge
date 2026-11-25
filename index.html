@@ -341,7 +341,6 @@ function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
-
 function detectUrls(text) {
 var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
 return text.match(urlRegex) || [];
@@ -363,14 +362,52 @@ var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
-// 1. Updated Model Slugs with :free models and openrouter/free as guaranteed backup
-var OR_MODEL_CHAINS = {
-  'gemma': ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
-  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'openrouter/free'],
-  'deepseek': ['deepseek/deepseek-chat:free', 'deepseek/deepseek-r1:free', 'particle-ai/particle-1:free', 'openrouter/free'],
-  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
-  'qwen-coder': ['qwen/qwen3.8-27b:free', 'qwen/qwen3-235b-a22b:free', 'openrouter/free']
-};
+var liveVisionModel = 'openrouter/free';
+
+async function syncOpenRouterModels() {
+  try {
+    var res = await fetch('https://openrouter.ai/api/v1/models');
+    if (!res.ok) return;
+    var json = await res.json();
+    if (!json || !Array.isArray(json.data)) return;
+
+    var freeModels = json.data.filter(function (m) {
+      var isFree = (m.pricing && parseFloat(m.pricing.prompt) === 0 && parseFloat(m.pricing.completion) === 0) || (m.id && m.id.endsWith(':free'));
+      var isText = !m.architecture || !m.architecture.output_modalities || m.architecture.output_modalities.indexOf('text') !== -1;
+      return isFree && isText && m.id !== 'openrouter/free';
+    });
+
+    if (!freeModels.length) return;
+
+    var visionModel = freeModels.find(function (m) {
+      return m.architecture && Array.isArray(m.architecture.input_modalities) && m.architecture.input_modalities.indexOf('image') !== -1;
+    });
+    if (visionModel) {
+      liveVisionModel = visionModel.id;
+    }
+
+    var select = $('modelSelect');
+    var savedChoice = lsGet('nf_model', 'openrouter/free');
+    var html = '<option value="openrouter/free">Auto-Router (Best Available Free)</option>';
+
+    freeModels.forEach(function (m) {
+      var cleanName = m.name.replace(/\s*\(free\)/i, '').trim();
+      html += '<option value="' + esc(m.id) + '">' + esc(cleanName) + '</option>';
+    });
+
+    select.innerHTML = html;
+
+    if (Array.from(select.options).some(function (o) { return o.value === savedChoice; })) {
+      select.value = savedChoice;
+    } else {
+      select.value = 'openrouter/free';
+    }
+    currentModel = select.value;
+    $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : '');
+  } catch (e) {
+    console.warn('Could not sync live models, using fallback.', e);
+  }
+}
 
 var isGenerating = false;
 var activeController = null;
@@ -383,12 +420,10 @@ var isRecording = false;
 
 function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
 function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
-
 function saveHistoriesSafe() {
 try {
 localStorage.setItem('nf_histories', JSON.stringify(histories));
 } catch (e) {
-// Prevent silent image loss on storage full: strip base64 data URLs and retry
 var trimmed = histories.map(function (h) {
 return {
 id: h.id, title: h.title,
@@ -402,7 +437,6 @@ return copy;
 safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
 }
 }
-
 function setMessages(msgs) {
 var c = histories.find(function (h) { return h.id === currentChatId; });
 if (c) {
@@ -413,7 +447,6 @@ saveHistoriesSafe();
 renderSidebar();
 }
 }
-
 function setGeneratingState(active) {
 isGenerating = active;
 var btn = $('sendBtn');
@@ -428,7 +461,6 @@ btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
 activeController = null;
 }
 }
-
 function createNewChat() {
 if (isGenerating && activeController) activeController.abort();
 var id = 'chat_' + Date.now();
@@ -440,7 +472,6 @@ clearAttachments();
 renderSidebar(); renderWelcomeScreen();
 if (window.innerWidth < 768) $('sidebar').classList.remove('open');
 }
-
 function updateKeyStatus() {
 var el = $('keyStatus');
 if (!el) return;
@@ -453,7 +484,6 @@ el.className = 'key-status';
 el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Please add a key to use these models.</span>';
 }
 }
-
 function updateSerperStatus() {
 var el = $('serperStatus');
 if (!el) return;
@@ -465,9 +495,11 @@ el.className = 'key-status';
 el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + Jina Reader fallback.</span>';
 }
 }
-
-function boot() {
+async function boot() {
 if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
+
+await syncOpenRouterModels();
+
 var isDark = lsGet('nf_theme', 'dark') !== 'light';
 function applyTheme() {
 if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
@@ -475,11 +507,31 @@ else { document.body.classList.add('light'); $('themeIcon').className = 'fa-soli
 }
 applyTheme();
 $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
-$('modelSelect').value = currentModel;
+
+if ($('modelSelect').querySelector('option[value="' + currentModel + '"]')) {
+  $('modelSelect').value = currentModel;
+} else {
+  $('modelSelect').value = 'openrouter/free';
+  currentModel = 'openrouter/free';
+}
+
 $('smartMode').checked = smartMode;
-$('modelTag').textContent = currentModel + (smartMode ? ' +smart' : '');
-$('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast('Text model: ' + currentModel); };
-$('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); $('modelTag').textContent = currentModel + (smartMode ? ' +smart' : ''); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
+$('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : '');
+
+$('modelSelect').onchange = function () { 
+  currentModel = $('modelSelect').value; 
+  lsSet('nf_model', currentModel); 
+  $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : ''); 
+  showToast('Text model: ' + currentModel); 
+};
+
+$('smartMode').onchange = function () { 
+  smartMode = $('smartMode').checked; 
+  lsSet('nf_smart', smartMode ? '1' : '0'); 
+  $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : ''); 
+  showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); 
+};
+
 $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
 $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
 $('newChatBtn').onclick = createNewChat;
@@ -497,20 +549,17 @@ $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open
 $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
 $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
 $('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
-
 var userInput = $('userInput');
 userInput.addEventListener('input', function () {
 this.style.height = 'auto';
 this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
-
 $('sendBtn').addEventListener('click', function (e) {
 if (isGenerating) {
 e.preventDefault();
 if (activeController) activeController.abort();
 }
 });
-
 var ctxMenu = $('contextMenu');
 document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
@@ -529,7 +578,6 @@ setTimeout(function () { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> C
 }
 }
 });
-
 $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
 $('ctxDelete').onclick = function () {
 var targetId = selectedMsgEl.dataset.id;
@@ -593,12 +641,10 @@ showTyping('Thinking...');
 runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, prev.fileText || '', [], detectUrls(prev.content)[0] || null);
 }
 };
-
 $('sysPrompt').value = sysPrompt;
 $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; lsSet('nf_sys', sysPrompt); showToast('Settings saved!'); $('settingsModal').classList.remove('open'); };
 $('addQuestionBtn').onclick = addQuestion;
 $('addMemBtn').onclick = addMemory;
-
 $('saveSerperKeyBtn').onclick = function () {
 var val = $('serperKeyInput').value.trim();
 serperKey = val;
@@ -607,7 +653,6 @@ updateSerperStatus();
 showToast(val ? 'Serper key saved!' : 'Serper key removed');
 };
 $('serperKeyInput').value = serperKey;
-
 $('saveKeyBtn').onclick = function () {
 var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
@@ -616,16 +661,13 @@ updateKeyStatus();
 showToast(val ? 'OpenRouter key saved! All :free models unlocked.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
-
 $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
 $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
-
 renderSidebar(); renderQuestions(); renderMemory(); renderChat();
 updateKeyStatus();
 updateSerperStatus();
 window.__nfBooted = true;
 }
-
 function renderPreview() {
 var row = $('previewRow');
 row.innerHTML = '';
@@ -652,9 +694,7 @@ if (b.dataset.clear === 'image') pendingImage = null;
 if (b.dataset.clear === 'file') pendingFile = null;
 renderPreview();
 });
-
 function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
-
 function handleImageFile(file) {
 if (!file) return;
 if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
@@ -670,7 +710,6 @@ showToast('Photo attached');
 reader.onerror = function () { showToast('Could not read image'); };
 reader.readAsDataURL(file);
 }
-
 function compressImage(dataUrl, maxDim, quality, cb) {
 var img = new Image();
 img.onload = function () {
@@ -688,7 +727,6 @@ cb(canvas.toDataURL('image/jpeg', quality));
 img.onerror = function () { cb(dataUrl); };
 img.src = dataUrl;
 }
-
 function handleTextFile(file) {
 if (!file) return;
 if (file.size > 100000) { showToast('File too large (max 100KB)'); return; }
@@ -701,13 +739,11 @@ showToast('File attached');
 reader.onerror = function () { showToast('Could not read file'); };
 reader.readAsText(file);
 }
-
 function toggleRecording() {
 if (isRecording) { stopRecording(); return; }
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
 recognition = new SR();
-// 7. Fix iOS Safari voice recording loop
 recognition.continuous = false;
 recognition.interimResults = true;
 recognition.lang = navigator.language || 'en-US';
@@ -734,13 +770,11 @@ safe(function () { recognition.start(); }, null);
 renderPreview();
 showToast('Recording…');
 }
-
 function stopRecording() {
 isRecording = false;
 if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
 renderPreview();
 }
-
 function generateImageFromPrompt() {
 var overlay = document.createElement('div');
 overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -756,8 +790,6 @@ if (p) generateImage(p);
 };
 overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
 }
-
-// 3. Free, No-API-Key Image Generation Endpoints
 function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
@@ -767,19 +799,15 @@ $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
 var progressSpan = bubble.querySelector('#imgProgress');
-
 var encodedPrompt = encodeURIComponent(prompt);
-// Primary: Pollinations Flux (free, no key, direct <img> src)
 var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&model=flux&seed=' + Math.floor(Math.random() * 10000);
 var img = new Image();
-
 var progress = 0;
 var progressInterval = setInterval(function () {
 progress += Math.random() * 10;
 if (progress > 90) progress = 90;
 if (progressSpan) progressSpan.textContent = Math.round(progress) + '%';
 }, 500);
-
 img.onload = function () {
 clearInterval(progressInterval);
 if (progressSpan) progressSpan.textContent = '100%';
@@ -792,10 +820,8 @@ msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
 setMessages(msgs);
 scrollToBottom();
 };
-
 img.onerror = function () {
 clearInterval(progressInterval);
-// Fallback: AI Horde with extended 4-minute timeout (120 attempts)
 bubble.innerHTML = 'Pollinations failed. Trying AI Horde fallback…';
 fetch('https://stablehorde.net/api/v2/generate/async', {
 method: 'POST',
@@ -812,7 +838,7 @@ return res.json();
 }).then(function(data) {
 var taskId = data.id;
 var attempts = 0;
-var maxAttempts = 120; // 4 minutes
+var maxAttempts = 120;
 var poll = setInterval(function() {
 attempts++;
 if (progressSpan) progressSpan.textContent = 'Horde: ' + Math.round((attempts / maxAttempts) * 100) + '%';
@@ -859,7 +885,6 @@ bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
 };
 img.src = imageUrl;
 }
-
 function renderSidebar() {
 var list = $('historyList');
 list.innerHTML = histories.map(function (h) {
@@ -883,7 +908,6 @@ if (currentChatId === id) createNewChat(); else renderSidebar();
 });
 });
 }
-
 function renderChat() {
 var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
 if (msgs.length === 0) { renderWelcomeScreen(); return; }
@@ -893,7 +917,6 @@ addMessageToUI(m.content, m.role, false, m.image, m.sources, m.id);
 });
 scrollToBottom();
 }
-
 function renderWelcomeScreen() {
 var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p><div class="suggestions">';
 customQuestions.forEach(function (q) {
@@ -902,7 +925,6 @@ html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;'
 html += '</div></div>';
 $('chatArea').innerHTML = html;
 }
-
 function submitForm() {
 if (isGenerating) return;
 var input = $('userInput'); var text = input.value.trim();
@@ -917,7 +939,6 @@ if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file
 if (pendingImage) displayText = '[Image] ' + displayText;
 var msgId = uid();
 var msgs = getMessages();
-// 6. Save attached file text in chat history
 msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null, fileText: pendingFile ? pendingFile.text : '' });
 setMessages(msgs);
 addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null, null, msgId);
@@ -931,43 +952,44 @@ showTyping('Thinking...');
 runAI(sendText, sendImage, sendFileText, [], urlToFetch);
 }
 
-// 1. AI Vision updated to active :free models
 async function extractTextFromImage(imageDataUrl) {
-if (!openrouterKey) return '[Please add a free OpenRouter API key in Settings to enable AI Vision for reading images.]';
-const visionModels = ['qwen/qwen3.8-27b:free', 'google/gemma-4-31b-it:free', 'openrouter/free'];
-for (const model of visionModels) {
-try {
-const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-method: 'POST',
-signal: activeController ? activeController.signal : undefined,
-headers: {
-'Authorization': 'Bearer ' + openrouterKey,
-'Content-Type': 'application/json',
-'HTTP-Referer': window.location.href,
-'X-Title': 'NeuralForge'
-},
-body: JSON.stringify({
-model: model,
-messages: [{
-role: 'user',
-content: [
-{ type: 'text', text: 'Extract all text from this image accurately.' },
-{ type: 'image_url', image_url: { url: imageDataUrl } }
-]
-}],
-temperature: 0.2
-})
-});
-if (!res.ok) continue;
-const json = await res.json();
-const text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
-if (text) return text.trim();
-} catch (e) { continue; }
-}
-return '[AI Vision failed to read image.]';
+  if (!openrouterKey) {
+    return '[Please add an OpenRouter API key in Settings to enable AI Vision for reading images.]';
+  }
+  try {
+    showTyping('Reading image with AI Vision…');
+    var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + openrouterKey,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.href,
+        'X-Title': 'NeuralForge'
+      },
+      body: JSON.stringify({
+        model: liveVisionModel,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Please extract all text from this image accurately. If there is no text, describe the image briefly.' },
+              { type: 'image_url', image_url: { url: imageDataUrl } }
+            ]
+          }
+        ],
+        temperature: 0.2
+      })
+    });
+    if (!res.ok) throw new Error('Vision API error ' + res.status);
+    var json = await res.json();
+    var text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+    return text ? text.trim() : '[No text detected in image]';
+  } catch (e) {
+    console.error('Vision OCR error:', e);
+    return '[AI Vision failed to read image: ' + e.message + ']';
+  }
 }
 
-// 4. Web Search & Website Reader: Replaced fragile proxies with Jina.ai
 async function fetchWebsiteContent(url) {
 try {
 showTyping('Fetching website via Jina Reader…');
@@ -982,7 +1004,6 @@ console.error('Jina reader failed:', e);
 }
 return { text: '', title: url };
 }
-
 async function searchSerper(query) {
 if (!serperKey) return { text: '', sources: [], engine: 'Serper' };
 var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
@@ -1002,7 +1023,6 @@ return { text: text, sources: sources, engine: 'Serper' };
 } catch (e) { clearTimeout(t); }
 return { text: '', sources: [], engine: 'Serper' };
 }
-
 async function searchWebFast(query) {
 var serperP = safe(async function () {
 if (!serperKey) return { text: '', sources: [] };
@@ -1023,7 +1043,6 @@ return { text: text, sources: sources, engine: 'Serper' };
 } catch (e) { clearTimeout(t); }
 return { text: '', sources: [] };
 }, { text: '', sources: [] });
-
 var wikiP = safe(async function () {
 var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
 try {
@@ -1036,19 +1055,16 @@ return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s
 } catch (e) {}
 return { text: '', sources: [] };
 }, { text: '', sources: [] });
-
 return Promise.all([serperP, wikiP]).then(function (r) {
 var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
 var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
-return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results found.', sources: allSources };
+return { text: texts.length ? texts.join('\n---\n') : 'No relevant results found.', sources: allSources };
 });
 }
-
-// 5. Logic & Streaming Bugs Fixed
 async function tryOpenRouterModel(modelId, apiMessages, useStream, signal) {
 var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
-signal: signal, // Connected Stop button to OpenRouter
+signal: signal,
 headers: {
 'Authorization': 'Bearer ' + openrouterKey,
 'Content-Type': 'application/json',
@@ -1067,7 +1083,6 @@ if (res.status === 403) throw { code: 'FORBIDDEN_403', model: modelId };
 if (res.status === 404) throw { code: 'NOT_FOUND_404', model: modelId };
 if (res.status === 429) throw { code: 'RATE_429', model: modelId };
 if (!res.ok) throw { code: 'OTHER', status: res.status, model: modelId };
-
 if (!useStream) {
 var rawText = await res.text();
 var jj = safe(function () { return JSON.parse(rawText); }, null);
@@ -1077,7 +1092,6 @@ if (c) return { text: c, model: modelId };
 }
 throw { code: 'EMPTY', model: modelId };
 }
-
 if (!res.body || !res.body.getReader) {
 var rawText2 = await res.text();
 var jj2 = safe(function () { return JSON.parse(rawText2); }, null);
@@ -1117,19 +1131,16 @@ if (c) accumulated += c;
 if (!accumulated.trim()) throw { code: 'EMPTY', model: modelId };
 return { text: accumulated, model: modelId };
 }
-
 async function tryOpenRouterChain(chain, apiMessages, onChunk) {
 var lastErr = null;
 for (var i = 0; i < chain.length; i++) {
 var modelId = chain[i];
 try {
-// 5. Clear partial text on fallback (handled by resetting aiText in runAI before calling this)
 var result = await tryOpenRouterModel(modelId, apiMessages, true, activeController ? activeController.signal : undefined);
 onChunk(result.text);
 return { text: result.text, model: result.model };
 } catch (err) {
 lastErr = err;
-// 5. Stop hiding primary model errors: show brief notice
 if (err.code === 'FORBIDDEN_403' || err.code === 'NOT_FOUND_404') {
 showTyping('Model ' + modelId + ' unavailable (' + err.code + '), trying fallback…');
 }
@@ -1138,19 +1149,16 @@ if (err.code === 'RATE_429') throw err;
 }
 throw lastErr || { code: 'ALL_FAILED' };
 }
-
 async function runAI(text, image, fileText, sources, urlToFetch) {
 var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
 var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
 var systemMsg = sysPrompt + '\nCurrent date: ' + today() + '.';
 if (smartMode) systemMsg += '\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
 if (memory.length) systemMsg += '\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
-
 var msgs = getMessages();
 var aiMsgId = uid();
 var aiMsgDiv = null;
 var streamBubble = null;
-
 function ensureAiBubble() {
 if (aiMsgDiv) return;
 removeTyping();
@@ -1161,12 +1169,10 @@ aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-
 $('chatArea').appendChild(aiMsgDiv);
 streamBubble = aiMsgDiv.querySelector('.bubble');
 }
-
 var aiText = '';
 var useOpenRouter = !!openrouterKey;
 var providerUsed = '';
 var finalModel = '';
-
 try {
 var ocrText = '';
 var websiteContent = '';
@@ -1184,7 +1190,6 @@ if (useWeb && !image && !urlToFetch) showTyping('Searching the web…');
 var results = await searchPromise;
 var webText = results.text || '';
 var webSources = results.sources || [];
-
 var userText = text || '';
 if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (AI VISION)]:\n' + ocrText;
 if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
@@ -1192,7 +1197,6 @@ if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
 if (useWeb && webText && webText.indexOf('No relevant') === -1) {
 userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
 }
-
 var apiMessages = [{ role: 'system', content: systemMsg }];
 var historyMsgs = msgs.slice(-8);
 for (var i = 0; i < historyMsgs.length; i++) {
@@ -1200,14 +1204,12 @@ var m = historyMsgs[i];
 apiMessages.push({ role: m.role, content: m.content });
 }
 apiMessages[apiMessages.length - 1].content = userText;
-
 if (useOpenRouter) {
-var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['gemma'];
+var chain = [currentModel, 'openrouter/free'];
 showTyping('Using OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
 var to = setTimeout(function () { if (activeController) activeController.abort(); }, 120000);
 try {
-// 5. Clear partial text on fallback
 aiText = '';
 var orResult = await tryOpenRouterChain(chain, apiMessages, function (chunk) {
 ensureAiBubble();
@@ -1242,12 +1244,9 @@ throw orErr;
 }
 }
 } else {
-// 4. No-Key Text Fallback: Prompt for OpenRouter key instead of relying on broken Pollinations
 throw { code: 'NO_KEY', message: 'Please add a free OpenRouter API key in Settings to use these models. Get one at <a href="https://openrouter.ai" target="_blank" style="color:#818cf8">openrouter.ai</a> (no credit card required for :free models).' };
 }
-
 if (!aiText.trim()) throw new Error('empty response');
-
 ensureAiBubble();
 var allSources = webSources.concat(sources || []);
 if (urlToFetch) {
@@ -1308,7 +1307,6 @@ var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user';
 if (lastUser) {
 setGeneratingState(true);
 showTyping('Thinking...');
-// 6. Pass fileText back into runAI during Retry
 runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, lastUser.fileText || '', [], detectUrls(lastUser.content)[0] || null);
 }
 });
@@ -1318,7 +1316,6 @@ attachLongPress(aiMsgDiv, '', 'ai');
 setGeneratingState(false);
 }
 }
-
 function formatText(text) {
 var codeBlocks = [];
 var raw = String(text).replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, function (m, lang, code) {
@@ -1349,9 +1346,7 @@ return codeBlocks[+idx] || '';
 });
 return html;
 }
-
 function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
-
 function addMessageToUI(text, type, animate, image, sources, id) {
 var div = document.createElement('div');
 div.className = 'msg ' + type;
@@ -1376,7 +1371,6 @@ $('chatArea').appendChild(div);
 scrollToBottom();
 attachLongPress(div, text, type);
 }
-
 function showTyping(text) {
 var existing = $('typingIndicator');
 if (existing) {
@@ -1389,22 +1383,18 @@ var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typ
 div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div><span class="typing-label">' + esc(text) + '</span></div></div>';
 $('chatArea').appendChild(div); scrollToBottom();
 }
-
 function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
-
 function attachLongPress(div, text, type) {
 div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
 div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
 div.addEventListener('contextmenu', function (e) {
-// 8. Ignore buttons in long-press menus
 if (e.target.closest('a, button, .copy-code-btn, .source-link, .thinking-header')) return;
 e.preventDefault();
 showContextMenu(e, div, text, type);
 });
 }
-
 function showContextMenu(e, el, text, type) {
 selectedMsgEl = el; var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
 $('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 180) + 'px';
@@ -1414,18 +1404,15 @@ $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
 $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
 $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
 }
-
 function copyText(t) {
 if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
 else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
 }
-
 function renderQuestions() {
 var list = $('questionList');
 if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom questions yet.</p>'; return; }
 list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
 }
-
 function addQuestion() {
 var input = $('questionInput'); var text = input.value.trim(); if (!text) return;
 var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen'];
@@ -1433,17 +1420,13 @@ var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444'];
 customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] });
 lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!');
 }
-
 function renderMemory() {
 var list = $('memoryList');
 if (!memory.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom memory yet.</p>'; return; }
 list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
 }
-
 function addMemory() { var input = $('memInput'); var text = input.value.trim(); if (!text) return; memory.push(text); lsSet('nf_memory', JSON.stringify(memory)); input.value = ''; renderMemory(); showToast('Memory added!'); }
-
 function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
-
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
