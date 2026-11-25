@@ -249,7 +249,7 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <div class="setting-group">
 <div class="setting-label">Text Model</div>
 <select class="setting-input" id="modelSelect">
-<option value="gemma">Gemma 4 (Fast & Multimodal)</option>
+<option value="gemma">Gemma (Fast & Multimodal)</option>
 <option value="nemotron">Nemotron 3.5 Lightning (Heavy Reasoning)</option>
 <option value="deepseek">DeepSeek Chat (Reasoning)</option>
 <option value="llama">Llama 3.3 70B (Meta)</option>
@@ -275,7 +275,7 @@ Smart Mode (step-by-step reasoning)
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
-<div class="setting-label">OpenRouter API Key (Unlocks all models)</div>
+<div class="setting-label">OpenRouter API Key (Unlocks all models & AI Vision)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-key"></i>
@@ -287,7 +287,7 @@ Smart Mode (step-by-step reasoning)
 <span>No key saved. Using free server (only openai works).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-With a key: every model uses its exact counterpart with family-specific fallbacks. Without: Pollinations falls back to openai on 401.
+With a key: every model uses its exact counterpart with family-specific fallbacks, plus AI Vision for reading images. Without: Pollinations falls back to openai on 401.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -342,19 +342,6 @@ function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
 
-var tesseractPromise = null;
-function loadTesseract() {
-if (window.Tesseract) return Promise.resolve(window.Tesseract);
-if (tesseractPromise) return tesseractPromise;
-tesseractPromise = new Promise(function (resolve, reject) {
-var s = document.createElement('script');
-s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-s.onload = function () { resolve(window.Tesseract); };
-s.onerror = function () { tesseractPromise = null; reject(new Error('Failed to load OCR engine')); };
-document.head.appendChild(s);
-});
-return tesseractPromise;
-}
 function detectUrls(text) {
 var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
 return text.match(urlRegex) || [];
@@ -376,13 +363,13 @@ var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
-// Model-specific chains: each model prioritizes its exact counterpart, then falls back within its family
+// Model-specific chains: active, valid free slugs with openrouter/free as ultimate fallback
 var OR_MODEL_CHAINS = {
-  'gemma': ['google/gemma-4-31b-it:free', 'google/gemma-3-27b-it:free', 'deepseek/deepseek-chat'],
-  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'qwen/qwen-2.5-72b-instruct'],
-  'deepseek': ['deepseek/deepseek-chat', 'deepseek/deepseek-r1:free'],
-  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-70b-instruct'],
-  'qwen-coder': ['qwen/qwen-2.5-coder-32b-instruct', 'qwen/qwen-2.5-72b-instruct']
+  'gemma': ['google/gemma-2-9b-it:free', 'openrouter/free'],
+  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free'],
+  'deepseek': ['deepseek/deepseek-chat:free', 'openrouter/free'],
+  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'openrouter/free'],
+  'qwen-coder': ['qwen/qwen-2.5-coder-32b-instruct:free', 'openrouter/free']
 };
 
 // Pollinations model mapping
@@ -464,7 +451,7 @@ if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models unlocked with family-specific fallbacks</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models & AI Vision unlocked</span>';
 } else {
 el.className = 'key-status';
 el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (only openai works).</span>';
@@ -628,7 +615,7 @@ var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
 lsSet('nf_openrouter_key', val);
 updateKeyStatus();
-showToast(val ? 'OpenRouter key saved! All models unlocked.' : 'Key removed');
+showToast(val ? 'OpenRouter key saved! All models & AI Vision unlocked.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
 
@@ -674,7 +661,6 @@ function handleImageFile(file) {
 if (!file) return;
 if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
 if (file.size > 8000000) { showToast('Image too large (max 8MB)'); return; }
-loadTesseract();
 var reader = new FileReader();
 reader.onload = function (ev) {
 compressImage(ev.target.result, 720, 0.7, function (dataUrl) {
@@ -779,25 +765,99 @@ function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
 var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image… <span id="imgProgress">0%</span></div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Submitting to AI Horde… <span id="imgProgress">0%</span></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
 var progressSpan = bubble.querySelector('#imgProgress');
 
-var progress = 0;
-var progressInterval = setInterval(function () {
-progress += Math.random() * 15;
-if (progress > 95) progress = 95;
-if (progressSpan) progressSpan.textContent = Math.round(progress) + '%';
-}, 400);
+fetch('https://stablehorde.net/api/v2/generate/async', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json', 'apikey': '0000000000' },
+body: JSON.stringify({
+prompt: prompt,
+params: {
+sampler_name: 'k_euler',
+cfg_scale: 7.5,
+width: 512,
+height: 512,
+steps: 30,
+n: 1
+},
+models: ['stable_diffusion'],
+nsfw: false,
+censor_nsfw: true,
+shared: false,
+replacement_filter: true
+})
+}).then(function(res) {
+if (!res.ok) throw new Error('Horde submit error ' + res.status);
+return res.json();
+}).then(function(data) {
+var taskId = data.id;
+var attempts = 0;
+var maxAttempts = 60;
 
+var poll = setInterval(function() {
+attempts++;
+if (progressSpan) progressSpan.textContent = Math.round((attempts / maxAttempts) * 100) + '%';
+
+fetch('https://stablehorde.net/api/v2/generate/check/' + taskId)
+.then(function(r) { return r.json(); })
+.then(function(checkData) {
+if (checkData.done) {
+clearInterval(poll);
+return fetch('https://stablehorde.net/api/v2/generate/status/' + taskId);
+} else if (attempts >= maxAttempts) {
+clearInterval(poll);
+throw new Error('Generation timed out');
+}
+})
+.then(function(res) {
+if (!res) return;
+return res.json();
+})
+.then(function(resultData) {
+if (!resultData) return;
+if (resultData.generations && resultData.generations.length > 0) {
+var imageUrl = resultData.generations[0].img;
+var content = '[Generated Image] ' + prompt;
+aiMsgDiv.dataset.text = content;
+bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
+attachLongPress(aiMsgDiv, content, 'ai');
+var msgs = getMessages();
+msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
+setMessages(msgs);
+scrollToBottom();
+} else {
+throw new Error('No generations returned');
+}
+})
+.catch(function(err) {
+clearInterval(poll);
+bubble.innerHTML = '⚠️ AI Horde generation failed: ' + esc(err.message) + '. Tap to retry with fallback.';
+aiMsgDiv.classList.add('error');
+bubble.onclick = function () { aiMsgDiv.remove(); generateImageFallback(prompt, msgId); };
+});
+}, 2000);
+}).catch(function(err) {
+bubble.innerHTML = '⚠️ AI Horde submission failed: ' + esc(err.message) + '. Tap to retry with fallback.';
+aiMsgDiv.classList.add('error');
+bubble.onclick = function () { aiMsgDiv.remove(); generateImageFallback(prompt, msgId); };
+});
+}
+
+function generateImageFallback(prompt, msgId) {
+var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
+var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating via fallback…</div></div>';
+$('chatArea').appendChild(aiMsgDiv);
+scrollToBottom();
+var bubble = aiMsgDiv.querySelector('.bubble');
 var encodedPrompt = encodeURIComponent(prompt);
 var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
 var img = new Image();
 img.onload = function () {
-clearInterval(progressInterval);
-if (progressSpan) progressSpan.textContent = '100%';
 var content = '[Generated Image] ' + prompt;
 aiMsgDiv.dataset.text = content;
 bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
@@ -808,10 +868,8 @@ setMessages(msgs);
 scrollToBottom();
 };
 img.onerror = function () {
-clearInterval(progressInterval);
-bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
+bubble.innerHTML = '⚠️ Image generation failed completely.';
 aiMsgDiv.classList.add('error');
-bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
 };
 img.src = imageUrl;
 }
@@ -887,19 +945,40 @@ runAI(sendText, sendImage, sendFileText, [], urlToFetch);
 }
 
 async function extractTextFromImage(imageDataUrl) {
+if (!openrouterKey) {
+return '[Please add an OpenRouter API key in Settings to enable AI Vision for reading images.]';
+}
 try {
-var T = await loadTesseract();
-var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
-logger: function (m) {
-if (m.status === 'recognizing text') {
-showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
+showTyping('Reading image with AI Vision…');
+var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+method: 'POST',
+headers: {
+'Authorization': 'Bearer ' + openrouterKey,
+'Content-Type': 'application/json',
+'HTTP-Referer': window.location.href,
+'X-Title': 'NeuralForge'
+},
+body: JSON.stringify({
+model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
+messages: [
+{
+role: 'user',
+content: [
+{ type: 'text', text: 'Please extract all text from this image accurately. If there is no text, describe the image briefly.' },
+{ type: 'image_url', image_url: { url: imageDataUrl } }
+]
 }
-}
+],
+temperature: 0.2
+})
 });
-return result.data.text.trim();
+if (!res.ok) throw new Error('Vision API error ' + res.status);
+var json = await res.json();
+var text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+return text ? text.trim() : '[No text detected in image]';
 } catch (e) {
-console.error('OCR error:', e);
-return '';
+console.error('Vision OCR error:', e);
+return '[AI Vision failed to read image: ' + e.message + ']';
 }
 }
 
@@ -1022,7 +1101,6 @@ return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results f
 });
 }
 
-// Try a single OpenRouter model. Returns { text, model } or throws with code.
 async function tryOpenRouterModel(modelId, apiMessages, useStream) {
 var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
@@ -1055,7 +1133,6 @@ if (c) return { text: c, model: modelId };
 throw { code: 'EMPTY', model: modelId };
 }
 
-// Streaming
 if (!res.body || !res.body.getReader) {
 var rawText2 = await res.text();
 var jj2 = safe(function () { return JSON.parse(rawText2); }, null);
@@ -1096,7 +1173,6 @@ if (!accumulated.trim()) throw { code: 'EMPTY', model: modelId };
 return { text: accumulated, model: modelId };
 }
 
-// Try models in chain. Returns { text, model } or throws final error.
 async function tryOpenRouterChain(chain, apiMessages, onChunk) {
 var lastErr = null;
 for (var i = 0; i < chain.length; i++) {
@@ -1113,7 +1189,6 @@ return { text: result2.text, model: result2.model };
 } catch (err) {
 lastErr = err;
 if (err.code === 'RATE_429') throw err;
-// Continue to next model in chain
 }
 }
 throw lastErr || { code: 'ALL_FAILED' };
@@ -1152,9 +1227,7 @@ var ocrText = '';
 var websiteContent = '';
 var websiteTitle = '';
 if (image) {
-showTyping('Reading image with OCR (English + Chinese)…');
 ocrText = await extractTextFromImage(image.dataUrl);
-if (!ocrText) ocrText = '[No text detected in image]';
 }
 if (urlToFetch) {
 var websiteData = await fetchWebsiteContent(urlToFetch);
@@ -1168,7 +1241,7 @@ var webText = results.text || '';
 var webSources = results.sources || [];
 
 var userText = text || '';
-if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
+if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (AI VISION)]:\n' + ocrText;
 if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
 if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
 if (useWeb && webText && webText.indexOf('No relevant') === -1) {
@@ -1184,7 +1257,6 @@ apiMessages.push({ role: m.role, content: m.content });
 apiMessages[apiMessages.length - 1].content = userText;
 
 if (useOpenRouter) {
-// PRIMARY: OpenRouter with model-specific chain fallback
 var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['gemma'];
 showTyping('Using OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
@@ -1208,7 +1280,6 @@ if (orErr && orErr.code === 'RATE_429') {
 throw { code: 'OR_RATE', message: 'OpenRouter rate limit (429). Wait a minute or check your plan.' };
 }
 if (orErr && orErr.code === 'ALL_FAILED' || (orErr && orErr.code === 'EMPTY')) {
-// Last resort: try non-streaming with first model
 showTyping('Streaming failed, trying non-streaming fallback…');
 try {
 var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false);
@@ -1223,7 +1294,6 @@ throw orErr;
 }
 }
 } else {
-// FALLBACK: Pollinations with model-specific mapping and auto-fallback to 'openai' on 401
 var pollModel = POLL_MODEL_MAP[currentModel] || 'openai';
 showTyping('Using Pollinations: ' + pollModel + '…');
 activeController = new AbortController();
@@ -1241,7 +1311,6 @@ temperature: smartMode ? 0.3 : 0.7
 });
 clearTimeout(to2);
 if (res.status === 401 && pollModel !== 'openai') {
-// Auto-fallback to openai
 showTyping('Model ' + pollModel + ' not available — falling back to openai…');
 activeController = new AbortController();
 var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
@@ -1348,7 +1417,7 @@ friendly = (err && err.message) || 'Unknown error';
 }
 var hintHtml = '';
 if (!openrouterKey) {
-hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock Gemma, Nemotron, DeepSeek, Llama, Qwen individually. Without it, only openai works on Pollinations.</div>';
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock Gemma, Nemotron, DeepSeek, Llama, Qwen individually, plus AI Vision for reading images. Without it, only openai works on Pollinations.</div>';
 }
 streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
