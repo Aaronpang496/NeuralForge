@@ -262,6 +262,20 @@ Smart Mode (step-by-step reasoning)
 </label>
 </div>
 <div class="setting-group">
+<div class="setting-label">Serper.dev Search API Key (Optional)</div>
+<input type="password" class="setting-input" id="serperKeyInput" placeholder="Paste Serper key — clean Google results" autocomplete="off">
+<a href="https://serper.dev/" target="_blank" rel="noopener" class="key-hint">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span>2,500 free searches at serper.dev</span>
+<i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
+</a>
+<div id="serperStatus" class="key-status">
+<i class="fa-solid fa-circle-info"></i>
+<span>No key. Using Wikipedia + DDG fallback.</span>
+</div>
+<button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
+</div>
+<div class="setting-group">
 <div class="setting-label">OpenRouter API Key (Unlocks all models)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
@@ -361,11 +375,12 @@ var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
 var currentModel = lsGet('nf_model', 'openai') || 'openai';
 var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
+var serperKey = lsGet('nf_serper_key', '') || '';
 
 // Model-specific chains: each model prioritizes its exact counterpart, then falls back within its family
 var OR_MODEL_CHAINS = {
-  'openai': ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
-  'openai-large': ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini'],
+  'openai': ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'deepseek/deepseek-chat'],
+  'openai-large': ['nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3.5-lightning:free', 'qwen/qwen-2.5-72b-instruct'],
   'deepseek': ['deepseek/deepseek-chat', 'deepseek/deepseek-r1'],
   'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-70b-instruct'],
   'mistral': ['mistralai/mistral-large', 'mistralai/mistral-medium'],
@@ -458,6 +473,17 @@ el.className = 'key-status';
 el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (only openai works).</span>';
 }
 }
+function updateSerperStatus() {
+var el = $('serperStatus');
+if (!el) return;
+if (serperKey) {
+el.className = 'key-status active';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG fallback.</span>';
+}
+}
 function boot() {
 if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
 var isDark = lsGet('nf_theme', 'dark') !== 'light';
@@ -475,7 +501,7 @@ $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSe
 $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
 $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
 $('newChatBtn').onclick = createNewChat;
-$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); };
+$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); updateSerperStatus(); };
 $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
 $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
@@ -591,6 +617,15 @@ $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; l
 $('addQuestionBtn').onclick = addQuestion;
 $('addMemBtn').onclick = addMemory;
 
+$('saveSerperKeyBtn').onclick = function () {
+var val = $('serperKeyInput').value.trim();
+serperKey = val;
+lsSet('nf_serper_key', val);
+updateSerperStatus();
+showToast(val ? 'Serper key saved!' : 'Serper key removed');
+};
+$('serperKeyInput').value = serperKey;
+
 $('saveKeyBtn').onclick = function () {
 var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
@@ -605,6 +640,7 @@ $('memoryList').addEventListener('click', function (e) { var b = e.target.closes
 
 renderSidebar(); renderQuestions(); renderMemory(); renderChat();
 updateKeyStatus();
+updateSerperStatus();
 window.__nfBooted = true;
 }
 
@@ -742,67 +778,30 @@ if (p) generateImage(p);
 overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
 }
 
-// AI Horde (Stable Horde) image generation with anonymous API key
-async function generateImageWithHorde(prompt) {
+function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
 var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image via AI Horde…</div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating image… <span id="imgProgress">0%</span></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
+var progressSpan = bubble.querySelector('#imgProgress');
 
-try {
-// Submit generation request
-var submitRes = await fetch('https://stablehorde.net/api/v2/generate/async', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json', 'apikey': '0000000000' },
-body: JSON.stringify({
-prompt: prompt,
-params: {
-sampler_name: 'k_euler',
-cfg_scale: 7.5,
-width: 512,
-height: 512,
-steps: 30,
-n: 1
-},
-models: ['stable_diffusion'],
-nsfw: false,
-censor_nsfw: true,
-shared: false,
-replacement_filter: true
-})
-});
+// Simulate percentage progress while image loads
+var progress = 0;
+var progressInterval = setInterval(function () {
+progress += Math.random() * 15;
+if (progress > 95) progress = 95;
+if (progressSpan) progressSpan.textContent = Math.round(progress) + '%';
+}, 400);
 
-if (!submitRes.ok) throw new Error('Horde submit error ' + submitRes.status);
-var submitData = await submitRes.json();
-var taskId = submitData.id;
-
-// Poll for completion
-var attempts = 0;
-var maxAttempts = 60;
-var imageUrl = null;
-
-while (attempts < maxAttempts) {
-await new Promise(function (r) { setTimeout(r, 2000); });
-var checkRes = await fetch('https://stablehorde.net/api/v2/generate/check/' + taskId);
-var checkData = await checkRes.json();
-
-if (checkData.done) {
-// Get the result
-var resultRes = await fetch('https://stablehorde.net/api/v2/generate/status/' + taskId);
-var resultData = await resultRes.json();
-if (resultData.generations && resultData.generations.length > 0) {
-imageUrl = resultData.generations[0].img;
-break;
-}
-}
-attempts++;
-showTyping('Generating image… (' + Math.round((attempts / maxAttempts) * 100) + '%)');
-}
-
-if (imageUrl) {
+var encodedPrompt = encodeURIComponent(prompt);
+var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
+var img = new Image();
+img.onload = function () {
+clearInterval(progressInterval);
+if (progressSpan) progressSpan.textContent = '100%';
 var content = '[Generated Image] ' + prompt;
 aiMsgDiv.dataset.text = content;
 bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
@@ -811,19 +810,14 @@ var msgs = getMessages();
 msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
 setMessages(msgs);
 scrollToBottom();
-} else {
-throw new Error('Generation timed out');
-}
-} catch (err) {
-bubble.innerHTML = '⚠️ AI Horde generation failed: ' + esc(err.message) + '. Tap to retry with Pollinations.';
+};
+img.onerror = function () {
+clearInterval(progressInterval);
+bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
 aiMsgDiv.classList.add('error');
 bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
-}
-}
-
-function generateImage(prompt) {
-// Try AI Horde first, fallback to Pollinations
-generateImageWithHorde(prompt);
+};
+img.src = imageUrl;
 }
 
 function renderSidebar() {
@@ -950,6 +944,88 @@ console.error('Proxy ' + i + ' failed:', e);
 return { text: '', title: url };
 }
 
+async function searchSerper(query) {
+if (!serperKey) return { text: '', sources: [], engine: 'Serper' };
+var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
+try {
+var res = await fetch('https://google.serper.dev/search', {
+method: 'POST', signal: c.signal,
+headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+body: JSON.stringify({ q: query, num: 5 })
+});
+clearTimeout(t);
+var json = await res.json();
+if (json.organic && json.organic.length) {
+var text = json.organic.map(function (o) { return '[' + o.title + '] ' + (o.snippet || ''); }).join('\n');
+var sources = json.organic.map(function (o) { return { label: (o.title || '').substring(0, 40), url: o.link }; });
+return { text: text, sources: sources, engine: 'Serper' };
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Serper' };
+}
+
+async function searchWebFast(query) {
+var serperP = safe(async function () {
+if (!serperKey) return { text: '', sources: [] };
+var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
+try {
+var res = await fetch('https://google.serper.dev/search', {
+method: 'POST', signal: c.signal,
+headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+body: JSON.stringify({ q: query, num: 5 })
+});
+clearTimeout(t);
+var json = await res.json();
+if (json.organic && json.organic.length) {
+var text = json.organic.map(function (o) { return '[' + o.title + '] ' + (o.snippet || ''); }).join('\n');
+var sources = json.organic.map(function (o) { return { label: (o.title || '').substring(0, 40), url: o.link }; });
+return { text: text, sources: sources, engine: 'Serper' };
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [] };
+}, { text: '', sources: [] });
+
+var wikiP = safe(async function () {
+var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
+try {
+var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
+clearTimeout(t); var j = await r.json();
+if (j.query && j.query.search.length) {
+var sources = j.query.search.map(function (s) { return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) }; });
+return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n'), sources: sources };
+}
+} catch (e) {}
+return { text: '', sources: [] };
+}, { text: '', sources: [] });
+
+var ddgP = safe(async function () {
+var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 4000);
+try {
+var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
+clearTimeout(t); var j = await r.json();
+if (j.contents) {
+var doc = new DOMParser().parseFromString(j.contents, 'text/html');
+var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
+var sources = results.map(function (resItem) {
+var anchor = resItem.querySelector('.result__a');
+var rawHref = anchor ? anchor.getAttribute('href') : '';
+var title = anchor ? anchor.textContent.trim().substring(0, 30) : 'Web Source';
+return { label: title, url: extractRealDdgUrl(rawHref) };
+});
+var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
+if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
+}
+} catch (e) {}
+return { text: '', sources: [] };
+}, { text: '', sources: [] });
+
+return Promise.all([serperP, wikiP, ddgP]).then(function (r) {
+var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
+var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
+return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results found.', sources: allSources };
+});
+}
+
 // Try a single OpenRouter model. Returns { text, model } or throws with code.
 async function tryOpenRouterModel(modelId, apiMessages, useStream) {
 var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -1045,46 +1121,6 @@ if (err.code === 'RATE_429') throw err;
 }
 }
 throw lastErr || { code: 'ALL_FAILED' };
-}
-
-async function searchWebFast(query) {
-var wikiP = safe(async function () {
-var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
-try {
-var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
-clearTimeout(t); var j = await r.json();
-if (j.query && j.query.search.length) {
-var sources = j.query.search.map(function (s) { return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) }; });
-return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n'), sources: sources };
-}
-} catch (e) {}
-return { text: '', sources: [] };
-}, { text: '', sources: [] });
-var ddgP = safe(async function () {
-var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 4000);
-try {
-var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
-clearTimeout(t); var j = await r.json();
-if (j.contents) {
-var doc = new DOMParser().parseFromString(j.contents, 'text/html');
-var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
-var sources = results.map(function (resItem) {
-var anchor = resItem.querySelector('.result__a');
-var rawHref = anchor ? anchor.getAttribute('href') : '';
-var title = anchor ? anchor.textContent.trim().substring(0, 30) : 'Web Source';
-return { label: title, url: extractRealDdgUrl(rawHref) };
-});
-var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
-if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
-}
-} catch (e) {}
-return { text: '', sources: [] };
-}, { text: '', sources: [] });
-return Promise.all([wikiP, ddgP]).then(function (r) {
-var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
-var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
-return { text: texts.length ? texts.join('\n') : 'No relevant results found.', sources: allSources };
-});
 }
 
 async function runAI(text, image, fileText, sources, urlToFetch) {
