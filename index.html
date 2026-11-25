@@ -199,7 +199,7 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <div class="logo-small"><i class="fa-solid fa-brain"></i></div>
 <div style="min-width:0">
 <div class="title">NeuralForge</div>
-<div class="model-tag" id="modelTag">openai</div>
+<div class="model-tag" id="modelTag">gemma</div>
 </div>
 </div>
 <div class="header-btns">
@@ -249,12 +249,11 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <div class="setting-group">
 <div class="setting-label">Text Model</div>
 <select class="setting-input" id="modelSelect">
-<option value="openai">OpenAI (default, fast)</option>
-<option value="openai-large">OpenAI Large (smartest)</option>
-<option value="deepseek">DeepSeek (reasoning)</option>
-<option value="llama">Meta Llama</option>
-<option value="mistral">Mistral</option>
-<option value="qwen-coder">Qwen Coder (code)</option>
+<option value="gemma">Gemma 4 (Fast & Multimodal)</option>
+<option value="nemotron">Nemotron 3.5 Lightning (Heavy Reasoning)</option>
+<option value="deepseek">DeepSeek Chat (Reasoning)</option>
+<option value="llama">Llama 3.3 70B (Meta)</option>
+<option value="qwen-coder">Qwen 2.5 Coder (Code)</option>
 </select>
 <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">
 <span class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></span>
@@ -262,7 +261,7 @@ Smart Mode (step-by-step reasoning)
 </label>
 </div>
 <div class="setting-group">
-<div class="setting-label">Serper.dev Search API Key (Optional)</div>
+<div class="setting-label">Serper.dev Search API Key</div>
 <input type="password" class="setting-input" id="serperKeyInput" placeholder="Paste Serper key — clean Google results" autocomplete="off">
 <a href="https://serper.dev/" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-magnifying-glass"></i>
@@ -372,28 +371,26 @@ var currentChatId = lsGet('nf_current_chat', '') || '';
 var memory = safe(function () { var a = JSON.parse(lsGet('nf_memory', '[]')); return Array.isArray(a) ? a : []; }, []);
 var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions', 'null')); return (Array.isArray(a) && a.length) ? a : DEFAULT_QS.slice(); }, DEFAULT_QS.slice());
 var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
-var currentModel = lsGet('nf_model', 'openai') || 'openai';
+var currentModel = lsGet('nf_model', 'gemma') || 'gemma';
 var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
 // Model-specific chains: each model prioritizes its exact counterpart, then falls back within its family
 var OR_MODEL_CHAINS = {
-  'openai': ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'deepseek/deepseek-chat'],
-  'openai-large': ['nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3.5-lightning:free', 'qwen/qwen-2.5-72b-instruct'],
-  'deepseek': ['deepseek/deepseek-chat', 'deepseek/deepseek-r1'],
+  'gemma': ['google/gemma-4-31b-it:free', 'google/gemma-3-27b-it:free', 'deepseek/deepseek-chat'],
+  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'qwen/qwen-2.5-72b-instruct'],
+  'deepseek': ['deepseek/deepseek-chat', 'deepseek/deepseek-r1:free'],
   'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-70b-instruct'],
-  'mistral': ['mistralai/mistral-large', 'mistralai/mistral-medium'],
   'qwen-coder': ['qwen/qwen-2.5-coder-32b-instruct', 'qwen/qwen-2.5-72b-instruct']
 };
 
 // Pollinations model mapping
 var POLL_MODEL_MAP = {
-  'openai': 'openai',
-  'openai-large': 'openai-large',
+  'gemma': 'openai',
+  'nemotron': 'openai',
   'deepseek': 'deepseek',
   'llama': 'llama',
-  'mistral': 'mistral',
   'qwen-coder': 'qwen-coder'
 };
 
@@ -788,7 +785,6 @@ scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
 var progressSpan = bubble.querySelector('#imgProgress');
 
-// Simulate percentage progress while image loads
 var progress = 0;
 var progressInterval = setInterval(function () {
 progress += Math.random() * 15;
@@ -1189,7 +1185,7 @@ apiMessages[apiMessages.length - 1].content = userText;
 
 if (useOpenRouter) {
 // PRIMARY: OpenRouter with model-specific chain fallback
-var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['openai'];
+var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['gemma'];
 showTyping('Using OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
 var to = setTimeout(function () { if (activeController) activeController.abort(); }, 120000);
@@ -1352,7 +1348,7 @@ friendly = (err && err.message) || 'Unknown error';
 }
 var hintHtml = '';
 if (!openrouterKey) {
-hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock DeepSeek, Llama, Mistral, Qwen individually. Without it, only openai works on Pollinations.</div>';
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock Gemma, Nemotron, DeepSeek, Llama, Qwen individually. Without it, only openai works on Pollinations.</div>';
 }
 streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
