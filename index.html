@@ -276,7 +276,7 @@ Smart Mode (step-by-step reasoning)
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
-<div class="setting-label">OpenRouter API Key (Fixes 403/429 Errors)</div>
+<div class="setting-label">OpenRouter API Key (Unlocks all models)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-key"></i>
@@ -285,10 +285,10 @@ Smart Mode (step-by-step reasoning)
 </a>
 <div id="keyStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key saved. Using free server (may get 403/429).</span>
+<span>No key saved. Using free server (only openai works).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-When you add a key, NeuralForge bypasses the free server entirely and uses OpenRouter directly. No more 403 errors.
+With a key: every model (DeepSeek, Llama, Mistral, Qwen) works individually. Without: Pollinations falls back to openai on 401.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -377,6 +377,7 @@ var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
+// OpenRouter model mapping (HK-safe, region-free models)
 var OR_MODEL_MAP = {
   'openai': 'openai/gpt-4o-mini',
   'openai-large': 'qwen/qwen-2.5-72b-instruct',
@@ -384,6 +385,16 @@ var OR_MODEL_MAP = {
   'llama': 'meta-llama/llama-3.3-70b-instruct:free',
   'mistral': 'mistralai/mistral-large',
   'qwen-coder': 'qwen/qwen-2.5-coder-32b-instruct'
+};
+
+// Pollinations model mapping — try the selected name, but fall back to 'openai' on 401
+var POLLINATIONS_MODEL_MAP = {
+  'openai': 'openai',
+  'openai-large': 'openai-large',
+  'deepseek': 'deepseek',
+  'llama': 'llama',
+  'mistral': 'mistral',
+  'qwen-coder': 'qwen-coder'
 };
 
 var isGenerating = false;
@@ -456,10 +467,10 @@ if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — 403 errors fixed!</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models unlocked</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (may get 403/429).</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Pollinations will fall back to openai on 401.</span>';
 }
 }
 function updateSerperStatus() {
@@ -620,7 +631,7 @@ var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
 lsSet('nf_openrouter_key', val);
 updateKeyStatus();
-showToast(val ? 'OpenRouter key saved! 403 errors fixed.' : 'Key removed');
+showToast(val ? 'OpenRouter key saved! All models unlocked.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
 
@@ -1002,6 +1013,56 @@ return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results f
 });
 }
 
+// Core: try OpenRouter first if key exists, else Pollinations with auto-fallback to 'openai' on 401
+async function streamResponse(apiEndpoint, headers, payloadModel, apiMessages, onChunk) {
+var res = await fetch(apiEndpoint, {
+method: 'POST',
+headers: headers,
+body: JSON.stringify({
+model: payloadModel,
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+if (res.status === 401) {
+throw { code: 'AUTH_401', status: 401, model: payloadModel };
+}
+if (res.status === 403) {
+throw { code: 'FORBIDDEN_403', status: 403 };
+}
+if (res.status === 429) {
+throw { code: 'RATE_429', status: 429 };
+}
+if (!res.ok) {
+throw new Error('Server error ' + res.status);
+}
+var aiText = '';
+if (res.body && res.body.getReader) {
+var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+while (true) {
+var r = await reader.read(); if (r.done) break;
+buffer += dec.decode(r.value, { stream: true });
+var lines = buffer.split('\n'); buffer = lines.pop();
+for (var j = 0; j < lines.length; j++) {
+var line = lines[j].trim();
+if (line.indexOf('data:') !== 0) continue;
+var data = line.slice(5).trim();
+if (data === '' || data === '[DONE]') continue;
+safe(function () {
+var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
+if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
+if (c) onChunk(c);
+}, null);
+}
+}
+} else {
+var rawText = await res.text();
+safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) { var c = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; if (c) onChunk(c); } }, null);
+}
+return aiText;
+}
+
 async function runAI(text, image, fileText, sources, urlToFetch) {
 var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
 var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
@@ -1025,12 +1086,17 @@ $('chatArea').appendChild(aiMsgDiv);
 streamBubble = aiMsgDiv.querySelector('.bubble');
 }
 
+function onChunk(c) {
+ensureAiBubble();
+aiText += c;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+}
+
 var aiText = '';
 var useOpenRouter = !!openrouterKey;
-
-var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
-var currentModelIdx = modelList.indexOf(currentModel);
-if (currentModelIdx === -1) currentModelIdx = 0;
+var providerUsed = '';
+var finalModel = '';
 
 try {
 var ocrText = '';
@@ -1060,17 +1126,6 @@ if (useWeb && webText && webText.indexOf('No relevant') === -1) {
 userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
 }
 
-var apiEndpoint = useOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://text.pollinations.ai/openai';
-var headers = useOpenRouter ? {
-'Authorization': 'Bearer ' + openrouterKey,
-'Content-Type': 'application/json',
-'HTTP-Referer': window.location.href,
-'X-Title': 'NeuralForge'
-} : { 'Content-Type': 'application/json' };
-var payloadModel = useOpenRouter ? (OR_MODEL_MAP[currentModel] || 'openai/gpt-4o-mini') : modelList[currentModelIdx];
-
-activeController = new AbortController();
-var to = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
 var apiMessages = [{ role: 'system', content: systemMsg }];
 var historyMsgs = msgs.slice(-8);
 for (var i = 0; i < historyMsgs.length; i++) {
@@ -1079,53 +1134,78 @@ apiMessages.push({ role: m.role, content: m.content });
 }
 apiMessages[apiMessages.length - 1].content = userText;
 
-var res = await fetch(apiEndpoint, {
-method: 'POST', signal: activeController.signal,
-headers: headers,
-body: JSON.stringify({
-model: payloadModel,
-messages: apiMessages,
-stream: true,
-temperature: smartMode ? 0.3 : 0.7
-})
-});
+if (useOpenRouter) {
+// === PRIMARY: OpenRouter with exact model mapping ===
+finalModel = OR_MODEL_MAP[currentModel] || 'openai/gpt-4o-mini';
+showTyping('Using OpenRouter: ' + finalModel + '…');
+activeController = new AbortController();
+var to = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+try {
+aiText = await streamResponse(
+'https://openrouter.ai/api/v1/chat/completions',
+{
+'Authorization': 'Bearer ' + openrouterKey,
+'Content-Type': 'application/json',
+'HTTP-Referer': window.location.href,
+'X-Title': 'NeuralForge'
+},
+finalModel,
+apiMessages,
+onChunk
+);
 clearTimeout(to);
-
-if (res.status === 403) {
-throw { code: 'FORBIDDEN', message: 'Server returned 403 Forbidden. Add an OpenRouter API key in Settings to bypass this error.' };
+providerUsed = 'OpenRouter';
+} catch (orErr) {
+clearTimeout(to);
+if (orErr && orErr.code === 'AUTH_401') {
+throw { code: 'OR_AUTH', message: 'OpenRouter returned 401. Your key is invalid or expired. Please re-enter it in Settings.' };
 }
-if (res.status === 429) {
-throw { code: 'RATE_LIMIT', message: 'Free server rate limit (429). Please add an OpenRouter API key in Settings for unlimited access.' };
+if (orErr && orErr.code === 'FORBIDDEN_403') {
+throw { code: 'OR_FORBIDDEN', message: 'OpenRouter returned 403. This model may be blocked in your region. Try a different model.' };
 }
-if (!res.ok) throw new Error('Server error ' + res.status);
-
-aiText = '';
-if (res.body && res.body.getReader) {
-var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
-while (true) {
-var r = await reader.read(); if (r.done) break;
-buffer += dec.decode(r.value, { stream: true });
-var lines = buffer.split('\n'); buffer = lines.pop();
-for (var j = 0; j < lines.length; j++) {
-var line = lines[j].trim();
-if (line.indexOf('data:') !== 0) continue;
-var data = line.slice(5).trim();
-if (data === '' || data === '[DONE]') continue;
-safe(function () {
-var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
-if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-if (c) {
-ensureAiBubble();
-aiText += c;
-streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
-scrollToBottom();
-}
-}, null);
-}
+throw orErr;
 }
 } else {
-var rawText = await res.text();
-safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
+// === FALLBACK: Pollinations with auto-fallback to 'openai' on 401 ===
+var pollModel = POLLINATIONS_MODEL_MAP[currentModel] || 'openai';
+showTyping('Using Pollinations: ' + pollModel + '…');
+activeController = new AbortController();
+var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
+try {
+aiText = await streamResponse(
+'https://text.pollinations.ai/openai',
+{ 'Content-Type': 'application/json' },
+pollModel,
+apiMessages,
+onChunk
+);
+clearTimeout(to2);
+providerUsed = 'Pollinations (' + pollModel + ')';
+} catch (pollErr) {
+clearTimeout(to2);
+if (pollErr && pollErr.code === 'AUTH_401' && pollModel !== 'openai') {
+// Auto-fallback to 'openai' model on Pollinations
+showTyping('Model ' + pollModel + ' not available — falling back to openai…');
+activeController = new AbortController();
+var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
+try {
+aiText = await streamResponse(
+'https://text.pollinations.ai/openai',
+{ 'Content-Type': 'application/json' },
+'openai',
+apiMessages,
+onChunk
+);
+clearTimeout(to3);
+providerUsed = 'Pollinations (openai fallback)';
+} catch (fbErr) {
+clearTimeout(to3);
+throw fbErr;
+}
+} else {
+throw pollErr;
+}
+}
 }
 
 if (!aiText.trim()) throw new Error('empty response');
@@ -1143,7 +1223,7 @@ sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" 
 });
 sourceHtml += '</div>';
 }
-var providerTag = useOpenRouter ? '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-style:italic"><i class="fa-solid fa-key" style="color:#10b981"></i> via OpenRouter (' + esc(OR_MODEL_MAP[currentModel] || currentModel) + ')</div>' : '';
+var providerTag = '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-style:italic"><i class="fa-solid fa-' + (useOpenRouter ? 'key' : 'server') + '" style="color:' + (useOpenRouter ? '#10b981' : '#f59e0b') + '"></i> via ' + esc(providerUsed) + ' · ' + esc(finalModel || currentModel) + '</div>';
 aiMsgDiv.dataset.text = aiText;
 streamBubble.innerHTML = formatText(aiText) + sourceHtml + providerTag;
 attachLongPress(aiMsgDiv, aiText, 'ai');
@@ -1164,10 +1244,14 @@ setMessages(savedPartial);
 } else {
 ensureAiBubble();
 var friendly;
-if (err && err.code === 'FORBIDDEN') {
+if (err && err.code === 'OR_AUTH') {
 friendly = err.message;
-} else if (err && err.code === 'RATE_LIMIT') {
+} else if (err && err.code === 'OR_FORBIDDEN') {
 friendly = err.message;
+} else if (err && err.code === 'RATE_429') {
+friendly = 'Rate limit (429). Add an OpenRouter key for unlimited access.';
+} else if (err && err.code === 'FORBIDDEN_403') {
+friendly = 'Server returned 403 Forbidden. Add an OpenRouter API key in Settings to bypass.';
 } else if (err && err.name === 'AbortError') {
 friendly = 'Generation stopped.';
 } else if (err && err.message === 'empty response') {
@@ -1177,10 +1261,9 @@ friendly = 'Network blocked. Open on github.io.';
 } else {
 friendly = (err && err.message) || 'Unknown error';
 }
-var hasKey = !!openrouterKey;
 var hintHtml = '';
-if (!hasKey) {
-hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to bypass 403/429 errors permanently.</div>';
+if (!openrouterKey) {
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock DeepSeek, Llama, Mistral, Qwen individually. Without it, only openai works on Pollinations.</div>';
 }
 streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
