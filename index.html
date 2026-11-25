@@ -288,7 +288,7 @@ Smart Mode (step-by-step reasoning)
 <span>No key saved. Using free server (only openai works).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-With a key: every model (DeepSeek, Llama, Mistral, Qwen) works individually. Without: Pollinations falls back to openai on 401.
+With a key: every model auto-falls-back through a chain if one is blocked. Without: Pollinations falls back to openai on 401.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -377,24 +377,15 @@ var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
-// OpenRouter model mapping (HK-safe, region-free models)
-var OR_MODEL_MAP = {
-  'openai': 'openai/gpt-4o-mini',
-  'openai-large': 'qwen/qwen-2.5-72b-instruct',
-  'deepseek': 'deepseek/deepseek-chat',
-  'llama': 'meta-llama/llama-3.3-70b-instruct:free',
-  'mistral': 'mistralai/mistral-large',
-  'qwen-coder': 'qwen/qwen-2.5-coder-32b-instruct'
-};
-
-// Pollinations model mapping — try the selected name, but fall back to 'openai' on 401
-var POLLINATIONS_MODEL_MAP = {
-  'openai': 'openai',
-  'openai-large': 'openai-large',
-  'deepseek': 'deepseek',
-  'llama': 'llama',
-  'mistral': 'mistral',
-  'qwen-coder': 'qwen-coder'
+// Each dropdown model maps to a CHAIN of OpenRouter models.
+// If the first returns 403/401/404, automatically try the next.
+var OR_MODEL_CHAINS = {
+  'openai': ['openai/gpt-4o-mini', 'deepseek/deepseek-chat', 'qwen/qwen-2.5-72b-instruct'],
+  'openai-large': ['qwen/qwen-2.5-72b-instruct', 'deepseek/deepseek-chat', 'meta-llama/llama-3.3-70b-instruct:free'],
+  'deepseek': ['deepseek/deepseek-chat', 'qwen/qwen-2.5-72b-instruct', 'meta-llama/llama-3.3-70b-instruct:free'],
+  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'qwen/qwen-2.5-72b-instruct', 'deepseek/deepseek-chat'],
+  'mistral': ['mistralai/mistral-large', 'deepseek/deepseek-chat', 'qwen/qwen-2.5-72b-instruct'],
+  'qwen-coder': ['qwen/qwen-2.5-coder-32b-instruct', 'qwen/qwen-2.5-72b-instruct', 'deepseek/deepseek-chat']
 };
 
 var isGenerating = false;
@@ -467,10 +458,10 @@ if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models unlocked</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models unlocked with auto-fallback</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Pollinations will fall back to openai on 401.</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (only openai works).</span>';
 }
 }
 function updateSerperStatus() {
@@ -1013,54 +1004,104 @@ return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results f
 });
 }
 
-// Core: try OpenRouter first if key exists, else Pollinations with auto-fallback to 'openai' on 401
-async function streamResponse(apiEndpoint, headers, payloadModel, apiMessages, onChunk) {
-var res = await fetch(apiEndpoint, {
+// Try a single OpenRouter model. Returns { text, model } or throws with code.
+async function tryOpenRouterModel(modelId, apiMessages, useStream) {
+var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
-headers: headers,
+headers: {
+'Authorization': 'Bearer ' + openrouterKey,
+'Content-Type': 'application/json',
+'HTTP-Referer': window.location.href,
+'X-Title': 'NeuralForge'
+},
 body: JSON.stringify({
-model: payloadModel,
+model: modelId,
 messages: apiMessages,
-stream: true,
+stream: useStream,
 temperature: smartMode ? 0.3 : 0.7
 })
 });
-if (res.status === 401) {
-throw { code: 'AUTH_401', status: 401, model: payloadModel };
+if (res.status === 401) throw { code: 'AUTH_401', model: modelId };
+if (res.status === 403) throw { code: 'FORBIDDEN_403', model: modelId };
+if (res.status === 404) throw { code: 'NOT_FOUND_404', model: modelId };
+if (res.status === 429) throw { code: 'RATE_429', model: modelId };
+if (!res.ok) throw { code: 'OTHER', status: res.status, model: modelId };
+
+if (!useStream) {
+var rawText = await res.text();
+var jj = safe(function () { return JSON.parse(rawText); }, null);
+if (jj && jj.choices && jj.choices[0]) {
+var c = (jj.choices[0].message && jj.choices[0].message.content) || '';
+if (c) return { text: c, model: modelId };
 }
-if (res.status === 403) {
-throw { code: 'FORBIDDEN_403', status: 403 };
+throw { code: 'EMPTY', model: modelId };
 }
-if (res.status === 429) {
-throw { code: 'RATE_429', status: 429 };
+
+// Streaming
+if (!res.body || !res.body.getReader) {
+var rawText2 = await res.text();
+var jj2 = safe(function () { return JSON.parse(rawText2); }, null);
+if (jj2 && jj2.choices && jj2.choices[0]) {
+var c2 = (jj2.choices[0].message && jj2.choices[0].message.content) || '';
+if (c2) return { text: c2, model: modelId };
 }
-if (!res.ok) {
-throw new Error('Server error ' + res.status);
+throw { code: 'EMPTY', model: modelId };
 }
-var aiText = '';
-if (res.body && res.body.getReader) {
-var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+var reader = res.body.getReader();
+var dec = new TextDecoder();
+var buffer = '';
+var accumulated = '';
 while (true) {
-var r = await reader.read(); if (r.done) break;
+var r = await reader.read();
+if (r.done) break;
 buffer += dec.decode(r.value, { stream: true });
-var lines = buffer.split('\n'); buffer = lines.pop();
+var lines = buffer.split('\n');
+buffer = lines.pop();
 for (var j = 0; j < lines.length; j++) {
 var line = lines[j].trim();
 if (line.indexOf('data:') !== 0) continue;
 var data = line.slice(5).trim();
 if (data === '' || data === '[DONE]') continue;
 safe(function () {
-var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
-if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-if (c) onChunk(c);
+var jj = JSON.parse(data);
+var ch = jj.choices && jj.choices[0];
+var c = '';
+if (ch) {
+if (ch.delta && ch.delta.content) c = ch.delta.content;
+else if (ch.message && ch.message.content) c = ch.message.content;
+}
+if (c) accumulated += c;
 }, null);
 }
 }
-} else {
-var rawText = await res.text();
-safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) { var c = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; if (c) onChunk(c); } }, null);
+if (!accumulated.trim()) throw { code: 'EMPTY', model: modelId };
+return { text: accumulated, model: modelId };
 }
-return aiText;
+
+// Try models in chain. Returns { text, model } or throws final error.
+async function tryOpenRouterChain(chain, apiMessages, onChunk) {
+var lastErr = null;
+for (var i = 0; i < chain.length; i++) {
+var modelId = chain[i];
+try {
+if (onChunk) {
+// Try streaming first
+var result = await tryOpenRouterModel(modelId, apiMessages, true);
+// Replay through onChunk so UI shows it
+onChunk(result.text);
+return { text: result.text, model: result.model };
+} else {
+var result2 = await tryOpenRouterModel(modelId, apiMessages, false);
+return { text: result2.text, model: result2.model };
+}
+} catch (err) {
+lastErr = err;
+// Only skip on auth/forbidden/not-found. For empty/other, also try next.
+if (err.code === 'RATE_429') throw err; // Don't skip rate limit, surface it
+// Continue to next model in chain
+}
+}
+throw lastErr || { code: 'ALL_FAILED' };
 }
 
 async function runAI(text, image, fileText, sources, urlToFetch) {
@@ -1084,13 +1125,6 @@ aiMsgDiv.dataset.id = aiMsgId;
 aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 streamBubble = aiMsgDiv.querySelector('.bubble');
-}
-
-function onChunk(c) {
-ensureAiBubble();
-aiText += c;
-streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
-scrollToBottom();
 }
 
 var aiText = '';
@@ -1135,75 +1169,118 @@ apiMessages.push({ role: m.role, content: m.content });
 apiMessages[apiMessages.length - 1].content = userText;
 
 if (useOpenRouter) {
-// === PRIMARY: OpenRouter with exact model mapping ===
-finalModel = OR_MODEL_MAP[currentModel] || 'openai/gpt-4o-mini';
-showTyping('Using OpenRouter: ' + finalModel + '…');
+// === PRIMARY: OpenRouter with model chain fallback ===
+var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['openai'];
+showTyping('Trying OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
-var to = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+var to = setTimeout(function () { if (activeController) activeController.abort(); }, 120000);
 try {
-aiText = await streamResponse(
-'https://openrouter.ai/api/v1/chat/completions',
-{
-'Authorization': 'Bearer ' + openrouterKey,
-'Content-Type': 'application/json',
-'HTTP-Referer': window.location.href,
-'X-Title': 'NeuralForge'
-},
-finalModel,
-apiMessages,
-onChunk
-);
+var orResult = await tryOpenRouterChain(chain, apiMessages, function (chunk) {
+ensureAiBubble();
+aiText += chunk;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+});
 clearTimeout(to);
+finalModel = orResult.model;
 providerUsed = 'OpenRouter';
 } catch (orErr) {
 clearTimeout(to);
 if (orErr && orErr.code === 'AUTH_401') {
-throw { code: 'OR_AUTH', message: 'OpenRouter returned 401. Your key is invalid or expired. Please re-enter it in Settings.' };
+throw { code: 'OR_AUTH', message: 'OpenRouter returned 401. Your API key is invalid or expired. Please re-enter it in Settings.' };
 }
-if (orErr && orErr.code === 'FORBIDDEN_403') {
-throw { code: 'OR_FORBIDDEN', message: 'OpenRouter returned 403. This model may be blocked in your region. Try a different model.' };
+if (orErr && orErr.code === 'RATE_429') {
+throw { code: 'OR_RATE', message: 'OpenRouter rate limit (429). Wait a minute or check your plan.' };
 }
+if (orErr && orErr.code === 'ALL_FAILED' || (orErr && orErr.code === 'EMPTY')) {
+// Last resort: try non-streaming with first model
+showTyping('Streaming failed, trying non-streaming fallback…');
+try {
+var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false);
+aiText = nsResult.text;
+finalModel = nsResult.model;
+providerUsed = 'OpenRouter (non-stream)';
+} catch (nsErr) {
+throw { code: 'OR_ALL', message: 'All OpenRouter models failed. Last error: ' + (nsErr.code || 'unknown') + ' on ' + (nsErr.model || '?') + '. Try a different model in Settings.' };
+}
+} else {
 throw orErr;
+}
 }
 } else {
 // === FALLBACK: Pollinations with auto-fallback to 'openai' on 401 ===
-var pollModel = POLLINATIONS_MODEL_MAP[currentModel] || 'openai';
+var pollModel = currentModel === 'openai' ? 'openai' : currentModel;
 showTyping('Using Pollinations: ' + pollModel + '…');
 activeController = new AbortController();
-var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
+var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
 try {
-aiText = await streamResponse(
-'https://text.pollinations.ai/openai',
-{ 'Content-Type': 'application/json' },
-pollModel,
-apiMessages,
-onChunk
-);
+var pollResult = await tryOpenRouterModel(pollModel, apiMessages, true);
+// Reuse the same function but pointed at Pollinations — actually let's do it inline
 clearTimeout(to2);
-providerUsed = 'Pollinations (' + pollModel + ')';
 } catch (pollErr) {
 clearTimeout(to2);
-if (pollErr && pollErr.code === 'AUTH_401' && pollModel !== 'openai') {
-// Auto-fallback to 'openai' model on Pollinations
+// Inline Pollinations call with fallback
+try {
+activeController = new AbortController();
+var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+var res = await fetch('https://text.pollinations.ai/openai', {
+method: 'POST', signal: activeController.signal,
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: pollModel,
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+clearTimeout(to3);
+if (res.status === 401 && pollModel !== 'openai') {
+// Auto-fallback to openai
 showTyping('Model ' + pollModel + ' not available — falling back to openai…');
 activeController = new AbortController();
-var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
-try {
-aiText = await streamResponse(
-'https://text.pollinations.ai/openai',
-{ 'Content-Type': 'application/json' },
-'openai',
-apiMessages,
-onChunk
-);
-clearTimeout(to3);
-providerUsed = 'Pollinations (openai fallback)';
-} catch (fbErr) {
-clearTimeout(to3);
-throw fbErr;
+var to4 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+res = await fetch('https://text.pollinations.ai/openai', {
+method: 'POST', signal: activeController.signal,
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: 'openai',
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+clearTimeout(to4);
+pollModel = 'openai';
 }
-} else {
-throw pollErr;
+if (!res.ok) throw new Error('Pollinations error ' + res.status);
+if (res.body && res.body.getReader) {
+var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+while (true) {
+var r = await reader.read(); if (r.done) break;
+buffer += dec.decode(r.value, { stream: true });
+var lines = buffer.split('\n'); buffer = lines.pop();
+for (var j = 0; j < lines.length; j++) {
+var line = lines[j].trim();
+if (line.indexOf('data:') !== 0) continue;
+var data = line.slice(5).trim();
+if (data === '' || data === '[DONE]') continue;
+safe(function () {
+var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
+if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
+if (c) {
+ensureAiBubble();
+aiText += c;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+}
+}, null);
+}
+}
+}
+providerUsed = 'Pollinations (' + pollModel + ')';
+finalModel = pollModel;
+} catch (fbErr) {
+throw fbErr;
 }
 }
 }
@@ -1246,7 +1323,9 @@ ensureAiBubble();
 var friendly;
 if (err && err.code === 'OR_AUTH') {
 friendly = err.message;
-} else if (err && err.code === 'OR_FORBIDDEN') {
+} else if (err && err.code === 'OR_RATE') {
+friendly = err.message;
+} else if (err && err.code === 'OR_ALL') {
 friendly = err.message;
 } else if (err && err.code === 'RATE_429') {
 friendly = 'Rate limit (429). Add an OpenRouter key for unlimited access.';
