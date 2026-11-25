@@ -262,7 +262,7 @@ Smart Mode (step-by-step reasoning)
 </label>
 </div>
 <div class="setting-group">
-<div class="setting-label">Serper.dev Search API Key (Recommended)</div>
+<div class="setting-label">Serper.dev Search API Key</div>
 <input type="password" class="setting-input" id="serperKeyInput" placeholder="Paste Serper key — clean Google results" autocomplete="off">
 <a href="https://serper.dev/" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-magnifying-glass"></i>
@@ -276,7 +276,7 @@ Smart Mode (step-by-step reasoning)
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
-<div class="setting-label">OpenRouter API Key (Bypasses 429 Limits)</div>
+<div class="setting-label">OpenRouter API Key (Fixes 403/429 Errors)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-key"></i>
@@ -285,10 +285,10 @@ Smart Mode (step-by-step reasoning)
 </a>
 <div id="keyStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key saved. Using free server (rate-limited).</span>
+<span>No key saved. Using free server (may get 403/429).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-When the free server returns 429, your key is used automatically. You get higher limits, faster responses, and access to premium models. Your key stays on this device only.
+When you add a key, NeuralForge bypasses the free server entirely and uses OpenRouter directly. No more 403 errors.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -456,10 +456,10 @@ if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + '</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — 403 errors fixed!</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (rate-limited).</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (may get 403/429).</span>';
 }
 }
 function updateSerperStatus() {
@@ -620,7 +620,7 @@ var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
 lsSet('nf_openrouter_key', val);
 updateKeyStatus();
-showToast(val ? 'OpenRouter key saved!' : 'Key removed');
+showToast(val ? 'OpenRouter key saved! 403 errors fixed.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
 
@@ -1091,6 +1091,9 @@ temperature: smartMode ? 0.3 : 0.7
 });
 clearTimeout(to);
 
+if (res.status === 403) {
+throw { code: 'FORBIDDEN', message: 'Server returned 403 Forbidden. Add an OpenRouter API key in Settings to bypass this error.' };
+}
 if (res.status === 429) {
 throw { code: 'RATE_LIMIT', message: 'Free server rate limit (429). Please add an OpenRouter API key in Settings for unlimited access.' };
 }
@@ -1161,7 +1164,9 @@ setMessages(savedPartial);
 } else {
 ensureAiBubble();
 var friendly;
-if (err && err.code === 'RATE_LIMIT') {
+if (err && err.code === 'FORBIDDEN') {
+friendly = err.message;
+} else if (err && err.code === 'RATE_LIMIT') {
 friendly = err.message;
 } else if (err && err.name === 'AbortError') {
 friendly = 'Generation stopped.';
@@ -1174,8 +1179,8 @@ friendly = (err && err.message) || 'Unknown error';
 }
 var hasKey = !!openrouterKey;
 var hintHtml = '';
-if (!hasKey && (!err || err.code !== 'RATE_LIMIT')) {
-hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Tip:</strong> Add an OpenRouter API key in Settings for higher limits and more reliable responses.</div>';
+if (!hasKey) {
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to bypass 403/429 errors permanently.</div>';
 }
 streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
