@@ -253,7 +253,7 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <option value="nemotron">Nemotron 3.5 Lightning (Heavy Reasoning)</option>
 <option value="deepseek">DeepSeek Chat (Reasoning)</option>
 <option value="llama">Llama 3.3 70B (Meta)</option>
-<option value="qwen-coder">Qwen 2.5 Coder (Code)</option>
+<option value="qwen-coder">Qwen 3 Coder (Code)</option>
 </select>
 <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">
 <span class="toggle-switch"><input type="checkbox" id="smartMode"><span class="slider"></span></span>
@@ -270,24 +270,24 @@ Smart Mode (step-by-step reasoning)
 </a>
 <div id="serperStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key. Using Wikipedia + DDG fallback.</span>
+<span>No key. Using Wikipedia + Jina Reader fallback.</span>
 </div>
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
-<div class="setting-label">OpenRouter API Key (Unlocks all models & AI Vision)</div>
+<div class="setting-label">OpenRouter API Key (Required for :free models)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
-<a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
+<a href="https://openrouter.ai" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-key"></i>
-<span>Get your API key at openrouter.ai/keys</span>
+<span>Get a free key at openrouter.ai (no credit card required)</span>
 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
 </a>
 <div id="keyStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key saved. Using free server (only openai works).</span>
+<span>No key saved. Please add a key to use these models.</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-With a key: every model uses its exact counterpart with family-specific fallbacks, plus AI Vision for reading images. Without: Pollinations falls back to openai on 401.
+A free OpenRouter key unlocks all :free models, AI Vision for reading images, and reliable streaming.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
 </div>
@@ -363,22 +363,13 @@ var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
 
-// Model-specific chains: active, valid free slugs with openrouter/free as ultimate fallback
+// 1. Updated Model Slugs with :free models and openrouter/free as guaranteed backup
 var OR_MODEL_CHAINS = {
-  'gemma': ['google/gemma-2-9b-it:free', 'openrouter/free'],
-  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free'],
-  'deepseek': ['deepseek/deepseek-chat:free', 'openrouter/free'],
-  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'openrouter/free'],
-  'qwen-coder': ['qwen/qwen-2.5-coder-32b-instruct:free', 'openrouter/free']
-};
-
-// Pollinations model mapping
-var POLL_MODEL_MAP = {
-  'gemma': 'openai',
-  'nemotron': 'openai',
-  'deepseek': 'deepseek',
-  'llama': 'llama',
-  'qwen-coder': 'qwen-coder'
+  'gemma': ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
+  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'openrouter/free'],
+  'deepseek': ['deepseek/deepseek-chat:free', 'deepseek/deepseek-r1:free', 'particle-ai/particle-1:free', 'openrouter/free'],
+  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
+  'qwen-coder': ['qwen/qwen3.8-27b:free', 'qwen/qwen3-235b-a22b:free', 'openrouter/free']
 };
 
 var isGenerating = false;
@@ -389,14 +380,15 @@ var pendingImage = null;
 var pendingFile = null;
 var recognition = null;
 var isRecording = false;
-var recShouldKeep = false;
 
 function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
 function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
+
 function saveHistoriesSafe() {
 try {
 localStorage.setItem('nf_histories', JSON.stringify(histories));
 } catch (e) {
+// Prevent silent image loss on storage full: strip base64 data URLs and retry
 var trimmed = histories.map(function (h) {
 return {
 id: h.id, title: h.title,
@@ -410,6 +402,7 @@ return copy;
 safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
 }
 }
+
 function setMessages(msgs) {
 var c = histories.find(function (h) { return h.id === currentChatId; });
 if (c) {
@@ -420,6 +413,7 @@ saveHistoriesSafe();
 renderSidebar();
 }
 }
+
 function setGeneratingState(active) {
 isGenerating = active;
 var btn = $('sendBtn');
@@ -434,6 +428,7 @@ btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
 activeController = null;
 }
 }
+
 function createNewChat() {
 if (isGenerating && activeController) activeController.abort();
 var id = 'chat_' + Date.now();
@@ -445,18 +440,20 @@ clearAttachments();
 renderSidebar(); renderWelcomeScreen();
 if (window.innerWidth < 768) $('sidebar').classList.remove('open');
 }
+
 function updateKeyStatus() {
 var el = $('keyStatus');
 if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models & AI Vision unlocked</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all :free models unlocked</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (only openai works).</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Please add a key to use these models.</span>';
 }
 }
+
 function updateSerperStatus() {
 var el = $('serperStatus');
 if (!el) return;
@@ -465,9 +462,10 @@ el.className = 'key-status active';
 el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG fallback.</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + Jina Reader fallback.</span>';
 }
 }
+
 function boot() {
 if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
 var isDark = lsGet('nf_theme', 'dark') !== 'light';
@@ -514,7 +512,7 @@ if (activeController) activeController.abort();
 });
 
 var ctxMenu = $('contextMenu');
-document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target) && !e.target.closest('.msg')) ctxMenu.style.display = 'none'; });
+document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
 $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
 $('chatArea').addEventListener('click', function (e) {
 var b = e.target.closest('.sugg-btn');
@@ -576,7 +574,7 @@ setMessages(msgs);
 selectedMsgEl.remove();
 setGeneratingState(true);
 showTyping('Thinking...');
-runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
+runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, prev.fileText || '', [], detectUrls(prev.content)[0] || null);
 }
 }
 };
@@ -592,7 +590,7 @@ setMessages(msgs);
 selectedMsgEl.remove();
 setGeneratingState(true);
 showTyping('Thinking...');
-runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, '', [], detectUrls(prev.content)[0] || null);
+runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, prev.fileText || '', [], detectUrls(prev.content)[0] || null);
 }
 };
 
@@ -615,7 +613,7 @@ var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
 lsSet('nf_openrouter_key', val);
 updateKeyStatus();
-showToast(val ? 'OpenRouter key saved! All models & AI Vision unlocked.' : 'Key removed');
+showToast(val ? 'OpenRouter key saved! All :free models unlocked.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
 
@@ -709,7 +707,8 @@ if (isRecording) { stopRecording(); return; }
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
 recognition = new SR();
-recognition.continuous = true;
+// 7. Fix iOS Safari voice recording loop
+recognition.continuous = false;
 recognition.interimResults = true;
 recognition.lang = navigator.language || 'en-US';
 var baseText = $('userInput').value;
@@ -728,10 +727,8 @@ recognition.onerror = function (e) {
 if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
 };
 recognition.onend = function () {
-if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
-else { isRecording = false; renderPreview(); }
+isRecording = false; renderPreview();
 };
-recShouldKeep = true;
 isRecording = true;
 safe(function () { recognition.start(); }, null);
 renderPreview();
@@ -739,7 +736,6 @@ showToast('Recording…');
 }
 
 function stopRecording() {
-recShouldKeep = false;
 isRecording = false;
 if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
 renderPreview();
@@ -761,34 +757,54 @@ if (p) generateImage(p);
 overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
 }
 
+// 3. Free, No-API-Key Image Generation Endpoints
 function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
 var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Submitting to AI Horde… <span id="imgProgress">0%</span></div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating via Pollinations Flux… <span id="imgProgress">0%</span></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
 var progressSpan = bubble.querySelector('#imgProgress');
 
+var encodedPrompt = encodeURIComponent(prompt);
+// Primary: Pollinations Flux (free, no key, direct <img> src)
+var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&model=flux&seed=' + Math.floor(Math.random() * 10000);
+var img = new Image();
+
+var progress = 0;
+var progressInterval = setInterval(function () {
+progress += Math.random() * 10;
+if (progress > 90) progress = 90;
+if (progressSpan) progressSpan.textContent = Math.round(progress) + '%';
+}, 500);
+
+img.onload = function () {
+clearInterval(progressInterval);
+if (progressSpan) progressSpan.textContent = '100%';
+var content = '[Generated Image] ' + prompt;
+aiMsgDiv.dataset.text = content;
+bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
+attachLongPress(aiMsgDiv, content, 'ai');
+var msgs = getMessages();
+msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
+setMessages(msgs);
+scrollToBottom();
+};
+
+img.onerror = function () {
+clearInterval(progressInterval);
+// Fallback: AI Horde with extended 4-minute timeout (120 attempts)
+bubble.innerHTML = 'Pollinations failed. Trying AI Horde fallback…';
 fetch('https://stablehorde.net/api/v2/generate/async', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json', 'apikey': '0000000000' },
 body: JSON.stringify({
 prompt: prompt,
-params: {
-sampler_name: 'k_euler',
-cfg_scale: 7.5,
-width: 512,
-height: 512,
-steps: 30,
-n: 1
-},
+params: { sampler_name: 'k_euler', cfg_scale: 7.5, width: 512, height: 512, steps: 30, n: 1 },
 models: ['stable_diffusion'],
-nsfw: false,
-censor_nsfw: true,
-shared: false,
-replacement_filter: true
+nsfw: false, censor_nsfw: true, shared: false, replacement_filter: true
 })
 }).then(function(res) {
 if (!res.ok) throw new Error('Horde submit error ' + res.status);
@@ -796,12 +812,10 @@ return res.json();
 }).then(function(data) {
 var taskId = data.id;
 var attempts = 0;
-var maxAttempts = 60;
-
+var maxAttempts = 120; // 4 minutes
 var poll = setInterval(function() {
 attempts++;
-if (progressSpan) progressSpan.textContent = Math.round((attempts / maxAttempts) * 100) + '%';
-
+if (progressSpan) progressSpan.textContent = 'Horde: ' + Math.round((attempts / maxAttempts) * 100) + '%';
 fetch('https://stablehorde.net/api/v2/generate/check/' + taskId)
 .then(function(r) { return r.json(); })
 .then(function(checkData) {
@@ -812,64 +826,36 @@ return fetch('https://stablehorde.net/api/v2/generate/status/' + taskId);
 clearInterval(poll);
 throw new Error('Generation timed out');
 }
-})
-.then(function(res) {
+}).then(function(res) {
 if (!res) return;
 return res.json();
-})
-.then(function(resultData) {
+}).then(function(resultData) {
 if (!resultData) return;
 if (resultData.generations && resultData.generations.length > 0) {
-var imageUrl = resultData.generations[0].img;
+var hImageUrl = resultData.generations[0].img;
 var content = '[Generated Image] ' + prompt;
 aiMsgDiv.dataset.text = content;
-bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
+bubble.innerHTML = '<img class="generated-img" src="' + hImageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + ' (via AI Horde)</p>';
 attachLongPress(aiMsgDiv, content, 'ai');
 var msgs = getMessages();
-msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
+msgs.push({ id: msgId, role: 'assistant', content: content, image: hImageUrl });
 setMessages(msgs);
 scrollToBottom();
 } else {
 throw new Error('No generations returned');
 }
-})
-.catch(function(err) {
+}).catch(function(err) {
 clearInterval(poll);
-bubble.innerHTML = '⚠️ AI Horde generation failed: ' + esc(err.message) + '. Tap to retry with fallback.';
+bubble.innerHTML = '⚠️ Image generation failed completely. Tap to retry.';
 aiMsgDiv.classList.add('error');
-bubble.onclick = function () { aiMsgDiv.remove(); generateImageFallback(prompt, msgId); };
+bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
 });
 }, 2000);
 }).catch(function(err) {
-bubble.innerHTML = '⚠️ AI Horde submission failed: ' + esc(err.message) + '. Tap to retry with fallback.';
+bubble.innerHTML = '⚠️ Image generation failed: ' + esc(err.message) + '. Tap to retry.';
 aiMsgDiv.classList.add('error');
-bubble.onclick = function () { aiMsgDiv.remove(); generateImageFallback(prompt, msgId); };
+bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
 });
-}
-
-function generateImageFallback(prompt, msgId) {
-var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
-var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating via fallback…</div></div>';
-$('chatArea').appendChild(aiMsgDiv);
-scrollToBottom();
-var bubble = aiMsgDiv.querySelector('.bubble');
-var encodedPrompt = encodeURIComponent(prompt);
-var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
-var img = new Image();
-img.onload = function () {
-var content = '[Generated Image] ' + prompt;
-aiMsgDiv.dataset.text = content;
-bubble.innerHTML = '<img class="generated-img" src="' + imageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + '</p>';
-attachLongPress(aiMsgDiv, content, 'ai');
-var msgs = getMessages();
-msgs.push({ id: msgId, role: 'assistant', content: content, image: imageUrl });
-setMessages(msgs);
-scrollToBottom();
-};
-img.onerror = function () {
-bubble.innerHTML = '⚠️ Image generation failed completely.';
-aiMsgDiv.classList.add('error');
 };
 img.src = imageUrl;
 }
@@ -931,7 +917,8 @@ if (pendingFile) displayText = (displayText ? displayText : 'Summarize this file
 if (pendingImage) displayText = '[Image] ' + displayText;
 var msgId = uid();
 var msgs = getMessages();
-msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null });
+// 6. Save attached file text in chat history
+msgs.push({ id: msgId, role: 'user', content: displayText, image: pendingImage ? pendingImage.dataUrl : null, fileText: pendingFile ? pendingFile.text : '' });
 setMessages(msgs);
 addMessageToUI(displayText, 'user', true, pendingImage ? pendingImage.dataUrl : null, null, msgId);
 var sendImage = pendingImage;
@@ -944,14 +931,15 @@ showTyping('Thinking...');
 runAI(sendText, sendImage, sendFileText, [], urlToFetch);
 }
 
+// 1. AI Vision updated to active :free models
 async function extractTextFromImage(imageDataUrl) {
-if (!openrouterKey) {
-return '[Please add an OpenRouter API key in Settings to enable AI Vision for reading images.]';
-}
+if (!openrouterKey) return '[Please add a free OpenRouter API key in Settings to enable AI Vision for reading images.]';
+const visionModels = ['qwen/qwen3.8-27b:free', 'google/gemma-4-31b-it:free', 'openrouter/free'];
+for (const model of visionModels) {
 try {
-showTyping('Reading image with AI Vision…');
-var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
+signal: activeController ? activeController.signal : undefined,
 headers: {
 'Authorization': 'Bearer ' + openrouterKey,
 'Content-Type': 'application/json',
@@ -959,62 +947,38 @@ headers: {
 'X-Title': 'NeuralForge'
 },
 body: JSON.stringify({
-model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
-messages: [
-{
+model: model,
+messages: [{
 role: 'user',
 content: [
-{ type: 'text', text: 'Please extract all text from this image accurately. If there is no text, describe the image briefly.' },
+{ type: 'text', text: 'Extract all text from this image accurately.' },
 { type: 'image_url', image_url: { url: imageDataUrl } }
 ]
-}
-],
+}],
 temperature: 0.2
 })
 });
-if (!res.ok) throw new Error('Vision API error ' + res.status);
-var json = await res.json();
-var text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
-return text ? text.trim() : '[No text detected in image]';
-} catch (e) {
-console.error('Vision OCR error:', e);
-return '[AI Vision failed to read image: ' + e.message + ']';
+if (!res.ok) continue;
+const json = await res.json();
+const text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+if (text) return text.trim();
+} catch (e) { continue; }
 }
+return '[AI Vision failed to read image.]';
 }
 
+// 4. Web Search & Website Reader: Replaced fragile proxies with Jina.ai
 async function fetchWebsiteContent(url) {
-var proxies = [
-'https://api.allorigins.win/get?url=',
-'https://corsproxy.io/?',
-'https://api.codetabs.com/v1/proxy?quest='
-];
-for (var i = 0; i < proxies.length; i++) {
 try {
-showTyping('Fetching website… (attempt ' + (i + 1) + ')');
-var proxyUrl = proxies[i] + encodeURIComponent(url);
-var response = await fetch(proxyUrl);
-var data;
-if (proxies[i].indexOf('allorigins') !== -1) {
-data = await response.json();
-data = data.contents;
-} else {
-data = await response.text();
-}
-if (!data || data.length < 100) continue;
-var parser = new DOMParser();
-var doc = parser.parseFromString(data, 'text/html');
-var elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation');
-elementsToRemove.forEach(function (el) { el.remove(); });
-var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main') || doc.body;
-var text = mainContent ? mainContent.textContent : '';
-text = text.replace(/\s+/g, ' ').trim().substring(0, 8000);
-var title = doc.title || url;
-if (text.length > 100) {
-return { text: text, title: title };
+showTyping('Fetching website via Jina Reader…');
+const response = await fetch('https://r.jina.ai/' + encodeURIComponent(url));
+if (!response.ok) throw new Error('Jina reader failed');
+const text = await response.text();
+if (text && text.length > 100) {
+return { text: text.substring(0, 8000), title: url };
 }
 } catch (e) {
-console.error('Proxy ' + i + ' failed:', e);
-}
+console.error('Jina reader failed:', e);
 }
 return { text: '', title: url };
 }
@@ -1073,37 +1037,18 @@ return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s
 return { text: '', sources: [] };
 }, { text: '', sources: [] });
 
-var ddgP = safe(async function () {
-var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 4000);
-try {
-var r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query)), { signal: c.signal });
-clearTimeout(t); var j = await r.json();
-if (j.contents) {
-var doc = new DOMParser().parseFromString(j.contents, 'text/html');
-var results = Array.from(doc.querySelectorAll('.result')).slice(0, 5);
-var sources = results.map(function (resItem) {
-var anchor = resItem.querySelector('.result__a');
-var rawHref = anchor ? anchor.getAttribute('href') : '';
-var title = anchor ? anchor.textContent.trim().substring(0, 30) : 'Web Source';
-return { label: title, url: extractRealDdgUrl(rawHref) };
-});
-var sn = Array.from(doc.querySelectorAll('.result__snippet')).map(function (el) { return el.textContent.trim(); }).filter(Boolean);
-if (sn.length) return { text: sn.slice(0, 5).map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), sources: sources };
-}
-} catch (e) {}
-return { text: '', sources: [] };
-}, { text: '', sources: [] });
-
-return Promise.all([serperP, wikiP, ddgP]).then(function (r) {
+return Promise.all([serperP, wikiP]).then(function (r) {
 var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
 var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
 return { text: texts.length ? texts.join('\n\n---\n\n') : 'No relevant results found.', sources: allSources };
 });
 }
 
-async function tryOpenRouterModel(modelId, apiMessages, useStream) {
+// 5. Logic & Streaming Bugs Fixed
+async function tryOpenRouterModel(modelId, apiMessages, useStream, signal) {
 var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
+signal: signal, // Connected Stop button to OpenRouter
 headers: {
 'Authorization': 'Bearer ' + openrouterKey,
 'Content-Type': 'application/json',
@@ -1178,16 +1123,16 @@ var lastErr = null;
 for (var i = 0; i < chain.length; i++) {
 var modelId = chain[i];
 try {
-if (onChunk) {
-var result = await tryOpenRouterModel(modelId, apiMessages, true);
+// 5. Clear partial text on fallback (handled by resetting aiText in runAI before calling this)
+var result = await tryOpenRouterModel(modelId, apiMessages, true, activeController ? activeController.signal : undefined);
 onChunk(result.text);
 return { text: result.text, model: result.model };
-} else {
-var result2 = await tryOpenRouterModel(modelId, apiMessages, false);
-return { text: result2.text, model: result2.model };
-}
 } catch (err) {
 lastErr = err;
+// 5. Stop hiding primary model errors: show brief notice
+if (err.code === 'FORBIDDEN_403' || err.code === 'NOT_FOUND_404') {
+showTyping('Model ' + modelId + ' unavailable (' + err.code + '), trying fallback…');
+}
 if (err.code === 'RATE_429') throw err;
 }
 }
@@ -1262,6 +1207,8 @@ showTyping('Using OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
 var to = setTimeout(function () { if (activeController) activeController.abort(); }, 120000);
 try {
+// 5. Clear partial text on fallback
+aiText = '';
 var orResult = await tryOpenRouterChain(chain, apiMessages, function (chunk) {
 ensureAiBubble();
 aiText += chunk;
@@ -1282,7 +1229,8 @@ throw { code: 'OR_RATE', message: 'OpenRouter rate limit (429). Wait a minute or
 if (orErr && orErr.code === 'ALL_FAILED' || (orErr && orErr.code === 'EMPTY')) {
 showTyping('Streaming failed, trying non-streaming fallback…');
 try {
-var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false);
+aiText = '';
+var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false, activeController ? activeController.signal : undefined);
 aiText = nsResult.text;
 finalModel = nsResult.model;
 providerUsed = 'OpenRouter (non-stream)';
@@ -1294,70 +1242,8 @@ throw orErr;
 }
 }
 } else {
-var pollModel = POLL_MODEL_MAP[currentModel] || 'openai';
-showTyping('Using Pollinations: ' + pollModel + '…');
-activeController = new AbortController();
-var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
-try {
-var res = await fetch('https://text.pollinations.ai/openai', {
-method: 'POST', signal: activeController.signal,
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-model: pollModel,
-messages: apiMessages,
-stream: true,
-temperature: smartMode ? 0.3 : 0.7
-})
-});
-clearTimeout(to2);
-if (res.status === 401 && pollModel !== 'openai') {
-showTyping('Model ' + pollModel + ' not available — falling back to openai…');
-activeController = new AbortController();
-var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
-res = await fetch('https://text.pollinations.ai/openai', {
-method: 'POST', signal: activeController.signal,
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-model: 'openai',
-messages: apiMessages,
-stream: true,
-temperature: smartMode ? 0.3 : 0.7
-})
-});
-clearTimeout(to3);
-pollModel = 'openai';
-}
-if (!res.ok) throw new Error('Pollinations error ' + res.status);
-if (res.body && res.body.getReader) {
-var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
-while (true) {
-var r = await reader.read(); if (r.done) break;
-buffer += dec.decode(r.value, { stream: true });
-var lines = buffer.split('\n'); buffer = lines.pop();
-for (var j = 0; j < lines.length; j++) {
-var line = lines[j].trim();
-if (line.indexOf('data:') !== 0) continue;
-var data = line.slice(5).trim();
-if (data === '' || data === '[DONE]') continue;
-safe(function () {
-var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
-if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
-if (c) {
-ensureAiBubble();
-aiText += c;
-streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
-scrollToBottom();
-}
-}, null);
-}
-}
-}
-providerUsed = 'Pollinations (' + pollModel + ')';
-finalModel = pollModel;
-} catch (pollErr) {
-clearTimeout(to2);
-throw pollErr;
-}
+// 4. No-Key Text Fallback: Prompt for OpenRouter key instead of relying on broken Pollinations
+throw { code: 'NO_KEY', message: 'Please add a free OpenRouter API key in Settings to use these models. Get one at <a href="https://openrouter.ai" target="_blank" style="color:#818cf8">openrouter.ai</a> (no credit card required for :free models).' };
 }
 
 if (!aiText.trim()) throw new Error('empty response');
@@ -1402,10 +1288,8 @@ friendly = err.message;
 friendly = err.message;
 } else if (err && err.code === 'OR_ALL') {
 friendly = err.message;
-} else if (err && err.code === 'RATE_429') {
-friendly = 'Rate limit (429). Add an OpenRouter key for unlimited access.';
-} else if (err && err.code === 'FORBIDDEN_403') {
-friendly = 'Server returned 403 Forbidden. Add an OpenRouter API key in Settings to bypass.';
+} else if (err && err.code === 'NO_KEY') {
+friendly = err.message;
 } else if (err && err.name === 'AbortError') {
 friendly = 'Generation stopped.';
 } else if (err && err.message === 'empty response') {
@@ -1415,11 +1299,7 @@ friendly = 'Network blocked. Open on github.io.';
 } else {
 friendly = (err && err.message) || 'Unknown error';
 }
-var hintHtml = '';
-if (!openrouterKey) {
-hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock Gemma, Nemotron, DeepSeek, Llama, Qwen individually, plus AI Vision for reading images. Without it, only openai works on Pollinations.</div>';
-}
-streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+streamBubble.innerHTML = '⚠️ ' + friendly + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
 streamBubble.querySelector('.retry').addEventListener('click', function () {
 aiMsgDiv.remove();
@@ -1428,7 +1308,8 @@ var lastUser = s.slice().reverse().find(function (m) { return m.role === 'user';
 if (lastUser) {
 setGeneratingState(true);
 showTyping('Thinking...');
-runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, '', [], detectUrls(lastUser.content)[0] || null);
+// 6. Pass fileText back into runAI during Retry
+runAI(lastUser.content, lastUser.image ? { dataUrl: lastUser.image } : null, lastUser.fileText || '', [], detectUrls(lastUser.content)[0] || null);
 }
 });
 attachLongPress(aiMsgDiv, '', 'ai');
@@ -1517,7 +1398,8 @@ div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
 div.addEventListener('contextmenu', function (e) {
-if (e.target.closest('a, button')) return;
+// 8. Ignore buttons in long-press menus
+if (e.target.closest('a, button, .copy-code-btn, .source-link, .thinking-header')) return;
 e.preventDefault();
 showContextMenu(e, div, text, type);
 });
@@ -1536,16 +1418,6 @@ $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
 function copyText(t) {
 if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
 else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
-}
-
-function extractRealDdgUrl(rawHref) {
-if (!rawHref) return 'https://duckduckgo.com';
-if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
-var match = rawHref.match(/[?&]uddg=([^&]+)/);
-if (match && match[1]) {
-return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
-}
-return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
 }
 
 function renderQuestions() {
