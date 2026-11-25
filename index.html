@@ -276,6 +276,23 @@ Smart Mode (step-by-step reasoning)
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
+<div class="setting-label">OpenRouter API Key (Bypasses 429 Limits)</div>
+<input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
+<a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
+<i class="fa-solid fa-key"></i>
+<span>Get your API key at openrouter.ai/keys</span>
+<i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
+</a>
+<div id="keyStatus" class="key-status">
+<i class="fa-solid fa-circle-info"></i>
+<span>No key saved. Using free server (rate-limited).</span>
+</div>
+<p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
+When the free server returns 429, your key is used automatically. You get higher limits, faster responses, and access to premium models. Your key stays on this device only.
+</p>
+<button class="btn-primary" id="saveKeyBtn">Save API Key</button>
+</div>
+<div class="setting-group">
 <div class="setting-label">Welcome Questions</div>
 <div style="display:flex;gap:8px;margin-bottom:12px">
 <input type="text" class="setting-input" id="questionInput" placeholder="e.g. Write a poem about space" style="flex:1">
@@ -357,7 +374,17 @@ var customQuestions = safe(function () { var a = JSON.parse(lsGet('nf_questions'
 var sysPrompt = lsGet('nf_sys', DEFAULT_SYS) || DEFAULT_SYS;
 var currentModel = lsGet('nf_model', 'openai') || 'openai';
 var smartMode = lsGet('nf_smart', '0') === '1';
+var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
+
+var OR_MODEL_MAP = {
+  'openai': 'openai/gpt-4o-mini',
+  'openai-large': 'qwen/qwen-2.5-72b-instruct',
+  'deepseek': 'deepseek/deepseek-chat',
+  'llama': 'meta-llama/llama-3.3-70b-instruct:free',
+  'mistral': 'mistralai/mistral-large',
+  'qwen-coder': 'qwen/qwen-2.5-coder-32b-instruct'
+};
 
 var isGenerating = false;
 var activeController = null;
@@ -371,7 +398,6 @@ var recShouldKeep = false;
 
 function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
 function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
-
 function saveHistoriesSafe() {
 try {
 localStorage.setItem('nf_histories', JSON.stringify(histories));
@@ -389,7 +415,6 @@ return copy;
 safe(function () { localStorage.setItem('nf_histories', JSON.stringify(trimmed)); }, null);
 }
 }
-
 function setMessages(msgs) {
 var c = histories.find(function (h) { return h.id === currentChatId; });
 if (c) {
@@ -400,7 +425,6 @@ saveHistoriesSafe();
 renderSidebar();
 }
 }
-
 function setGeneratingState(active) {
 isGenerating = active;
 var btn = $('sendBtn');
@@ -415,7 +439,6 @@ btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
 activeController = null;
 }
 }
-
 function createNewChat() {
 if (isGenerating && activeController) activeController.abort();
 var id = 'chat_' + Date.now();
@@ -427,18 +450,29 @@ clearAttachments();
 renderSidebar(); renderWelcomeScreen();
 if (window.innerWidth < 768) $('sidebar').classList.remove('open');
 }
-
+function updateKeyStatus() {
+var el = $('keyStatus');
+if (!el) return;
+if (openrouterKey) {
+el.className = 'key-status active';
+var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + '</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (rate-limited).</span>';
+}
+}
 function updateSerperStatus() {
-var el = $('serperStatus'); if (!el) return;
-if (serperKey) { 
-el.className = 'key-status active'; 
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>'; 
-} else { 
-el.className = 'key-status'; 
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG fallback.</span>'; 
+var el = $('serperStatus');
+if (!el) return;
+if (serperKey) {
+el.className = 'key-status active';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG fallback.</span>';
 }
 }
-
 function boot() {
 if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
 var isDark = lsGet('nf_theme', 'dark') !== 'light';
@@ -456,7 +490,7 @@ $('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSe
 $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
 $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
 $('newChatBtn').onclick = createNewChat;
-$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateSerperStatus(); };
+$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); updateSerperStatus(); };
 $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
 $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
@@ -489,7 +523,7 @@ document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target
 $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
 $('chatArea').addEventListener('click', function (e) {
 var b = e.target.closest('.sugg-btn');
-if (b && b.dataset.q) { userInput.value = b.dataset.q; submitForm(); }
+if (b && b.dataset.q) { userInput.value = b.dataset.q; userInput.dispatchEvent(new Event('input')); submitForm(); }
 var h = e.target.closest('.thinking-header');
 if (h) h.parentElement.classList.toggle('open');
 var copyBtn = e.target.closest('.copy-code-btn');
@@ -572,19 +606,29 @@ $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; l
 $('addQuestionBtn').onclick = addQuestion;
 $('addMemBtn').onclick = addMemory;
 
-$('saveSerperKeyBtn').onclick = function () { 
-var val = $('serperKeyInput').value.trim(); 
-serperKey = val; 
-lsSet('nf_serper_key', val); 
-updateSerperStatus(); 
-showToast(val ? 'Serper key saved!' : 'Serper key removed'); 
+$('saveSerperKeyBtn').onclick = function () {
+var val = $('serperKeyInput').value.trim();
+serperKey = val;
+lsSet('nf_serper_key', val);
+updateSerperStatus();
+showToast(val ? 'Serper key saved!' : 'Serper key removed');
 };
 $('serperKeyInput').value = serperKey;
+
+$('saveKeyBtn').onclick = function () {
+var val = $('openrouterKeyInput').value.trim();
+openrouterKey = val;
+lsSet('nf_openrouter_key', val);
+updateKeyStatus();
+showToast(val ? 'OpenRouter key saved!' : 'Key removed');
+};
+$('openrouterKeyInput').value = openrouterKey;
 
 $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
 $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
 
 renderSidebar(); renderQuestions(); renderMemory(); renderChat();
+updateKeyStatus();
 updateSerperStatus();
 window.__nfBooted = true;
 }
@@ -876,7 +920,27 @@ console.error('Proxy ' + i + ' failed:', e);
 return { text: '', title: url };
 }
 
-function searchWebFast(query) {
+async function searchSerper(query) {
+if (!serperKey) return { text: '', sources: [], engine: 'Serper' };
+var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
+try {
+var res = await fetch('https://google.serper.dev/search', {
+method: 'POST', signal: c.signal,
+headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+body: JSON.stringify({ q: query, num: 5 })
+});
+clearTimeout(t);
+var json = await res.json();
+if (json.organic && json.organic.length) {
+var text = json.organic.map(function (o) { return '[' + o.title + '] ' + (o.snippet || ''); }).join('\n');
+var sources = json.organic.map(function (o) { return { label: (o.title || '').substring(0, 40), url: o.link }; });
+return { text: text, sources: sources, engine: 'Serper' };
+}
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Serper' };
+}
+
+async function searchWebFast(query) {
 var serperP = safe(async function () {
 if (!serperKey) return { text: '', sources: [] };
 var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
@@ -962,8 +1026,8 @@ streamBubble = aiMsgDiv.querySelector('.bubble');
 }
 
 var aiText = '';
-var retryCount = 0;
-var maxRetries = 3;
+var useOpenRouter = !!openrouterKey;
+
 var modelList = ['openai', 'deepseek', 'openai-large', 'llama', 'mistral'];
 var currentModelIdx = modelList.indexOf(currentModel);
 if (currentModelIdx === -1) currentModelIdx = 0;
@@ -996,10 +1060,17 @@ if (useWeb && webText && webText.indexOf('No relevant') === -1) {
 userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
 }
 
-var modelToUse = modelList[currentModelIdx];
-while (retryCount <= maxRetries) {
+var apiEndpoint = useOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://text.pollinations.ai/openai';
+var headers = useOpenRouter ? {
+'Authorization': 'Bearer ' + openrouterKey,
+'Content-Type': 'application/json',
+'HTTP-Referer': window.location.href,
+'X-Title': 'NeuralForge'
+} : { 'Content-Type': 'application/json' };
+var payloadModel = useOpenRouter ? (OR_MODEL_MAP[currentModel] || 'openai/gpt-4o-mini') : modelList[currentModelIdx];
+
 activeController = new AbortController();
-var to = setTimeout(function () { if (activeController) activeController.abort(); }, 60000);
+var to = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
 var apiMessages = [{ role: 'system', content: systemMsg }];
 var historyMsgs = msgs.slice(-8);
 for (var i = 0; i < historyMsgs.length; i++) {
@@ -1007,18 +1078,24 @@ var m = historyMsgs[i];
 apiMessages.push({ role: m.role, content: m.content });
 }
 apiMessages[apiMessages.length - 1].content = userText;
-var res = await fetch('https://text.pollinations.ai/openai', {
+
+var res = await fetch(apiEndpoint, {
 method: 'POST', signal: activeController.signal,
-headers: { 'Content-Type': 'application/json' },
+headers: headers,
 body: JSON.stringify({
-model: modelToUse,
+model: payloadModel,
 messages: apiMessages,
 stream: true,
 temperature: smartMode ? 0.3 : 0.7
 })
 });
 clearTimeout(to);
+
+if (res.status === 429) {
+throw { code: 'RATE_LIMIT', message: 'Free server rate limit (429). Please add an OpenRouter API key in Settings for unlimited access.' };
+}
 if (!res.ok) throw new Error('Server error ' + res.status);
+
 aiText = '';
 if (res.body && res.body.getReader) {
 var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
@@ -1047,15 +1124,7 @@ scrollToBottom();
 var rawText = await res.text();
 safe(function () { var jj = JSON.parse(rawText); var ch = jj.choices && jj.choices[0]; if (ch) aiText = (ch.message && ch.message.content) || (ch.delta && ch.delta.content) || ''; }, null);
 }
-if (aiText.trim()) break;
-retryCount++;
-if (retryCount <= maxRetries) {
-currentModelIdx = (currentModelIdx + 1) % modelList.length;
-modelToUse = modelList[currentModelIdx];
-showTyping('Retrying with ' + modelToUse + '… (' + retryCount + '/' + maxRetries + ')');
-await new Promise(function (r) { setTimeout(r, 800); });
-}
-}
+
 if (!aiText.trim()) throw new Error('empty response');
 
 ensureAiBubble();
@@ -1071,8 +1140,9 @@ sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" 
 });
 sourceHtml += '</div>';
 }
+var providerTag = useOpenRouter ? '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-style:italic"><i class="fa-solid fa-key" style="color:#10b981"></i> via OpenRouter (' + esc(OR_MODEL_MAP[currentModel] || currentModel) + ')</div>' : '';
 aiMsgDiv.dataset.text = aiText;
-streamBubble.innerHTML = formatText(aiText) + sourceHtml;
+streamBubble.innerHTML = formatText(aiText) + sourceHtml + providerTag;
 attachLongPress(aiMsgDiv, aiText, 'ai');
 var saved = getMessages();
 saved.push({ id: aiMsgId, role: 'assistant', content: aiText, sources: allSources });
@@ -1080,7 +1150,7 @@ setMessages(saved);
 scrollToBottom();
 } catch (err) {
 removeTyping();
-if (err.name === 'AbortError' && aiText.trim()) {
+if (err && err.name === 'AbortError' && aiText.trim()) {
 ensureAiBubble();
 aiMsgDiv.dataset.text = aiText;
 streamBubble.innerHTML = formatText(aiText);
@@ -1090,8 +1160,24 @@ savedPartial.push({ id: aiMsgId, role: 'assistant', content: aiText });
 setMessages(savedPartial);
 } else {
 ensureAiBubble();
-var friendly = err.name === 'AbortError' ? 'Generation stopped.' : (err.message === 'empty response' ? 'The AI returned nothing after retries.' : (/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'Network blocked. Open on github.io.' : err.message));
-streamBubble.innerHTML = '⚠️ ' + esc(friendly) + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+var friendly;
+if (err && err.code === 'RATE_LIMIT') {
+friendly = err.message;
+} else if (err && err.name === 'AbortError') {
+friendly = 'Generation stopped.';
+} else if (err && err.message === 'empty response') {
+friendly = 'The AI returned nothing after retries.';
+} else if (err && /Failed to fetch|NetworkError|Load failed/i.test(err.message || '')) {
+friendly = 'Network blocked. Open on github.io.';
+} else {
+friendly = (err && err.message) || 'Unknown error';
+}
+var hasKey = !!openrouterKey;
+var hintHtml = '';
+if (!hasKey && (!err || err.code !== 'RATE_LIMIT')) {
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Tip:</strong> Add an OpenRouter API key in Settings for higher limits and more reliable responses.</div>';
+}
+streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
 streamBubble.querySelector('.retry').addEventListener('click', function () {
 aiMsgDiv.remove();
