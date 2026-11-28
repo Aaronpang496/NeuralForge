@@ -55,7 +55,99 @@ justify-content: space-between; padding: env(safe-area-inset-top) 16px 0; flex-s
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .menu-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); margin-right: 4px; }
 .menu-btn:active { background: var(--border); }
-.logo-small { width: 32px; height: 32px; flex: none; background: linear-gradient(135deg,#6366f1,#a855f7); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+
+/* ===== BOLD Animated NeuralForge icon ===== */
+.logo-small {
+width: 32px; height: 32px; flex: none;
+background: linear-gradient(135deg, #6366f1, #a855f7);
+border-radius: 10px;
+display: flex; align-items: center; justify-content: center;
+overflow: visible;
+}
+.brain-icon {
+width: 28px; height: 28px; flex: none;
+background: linear-gradient(135deg, #6366f1, #a855f7);
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+overflow: visible;
+margin-bottom: 4px;
+}
+.neural-svg {
+width: 72%; height: 72%;
+overflow: visible;
+animation: nfGlowPulse 4.5s ease-in-out infinite;
+will-change: filter, transform;
+}
+.curve-base {
+fill: none;
+stroke: #ffffff;
+stroke-width: 13;
+stroke-linecap: round;
+stroke-linejoin: round;
+stroke-dasharray: 145;
+stroke-dashoffset: 145;
+}
+.curve-top-left {
+animation:
+nfDrawStroke 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+nfFloatTopLeft 5s ease-in-out 1.1s infinite;
+}
+.curve-bottom-right {
+animation:
+nfDrawStroke 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.14s forwards,
+nfFloatBottomRight 5s ease-in-out 1.24s infinite;
+}
+.curve-shimmer {
+fill: none;
+stroke: #ffffff;
+stroke-width: 15;
+stroke-linecap: round;
+stroke-dasharray: 22 140;
+stroke-dashoffset: 162;
+opacity: 0;
+filter: blur(0.8px);
+}
+.shimmer-top-left {
+animation: nfTravelPulse 3.6s cubic-bezier(0.4, 0, 0.2, 1) 1.15s infinite;
+}
+.shimmer-bottom-right {
+animation: nfTravelPulse 3.6s cubic-bezier(0.4, 0, 0.2, 1) 2.05s infinite;
+}
+@keyframes nfDrawStroke {
+0% { stroke-dashoffset: 145; opacity: 0.2; }
+15% { opacity: 1; }
+100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes nfFloatTopLeft {
+0%, 100% { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+50% { transform: translate(-1.4px, -1.8px) rotate(-1.5deg) scale(1.02); }
+}
+@keyframes nfFloatBottomRight {
+0%, 100% { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+50% { transform: translate(1.4px, 1.8px) rotate(1.5deg) scale(1.02); }
+}
+@keyframes nfGlowPulse {
+0%, 100% {
+filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35))
+drop-shadow(0 0 28px rgba(255, 255, 255, 0.16));
+}
+50% {
+filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.68))
+drop-shadow(0 0 44px rgba(233, 213, 255, 0.4));
+}
+}
+@keyframes nfTravelPulse {
+0% { stroke-dashoffset: 162; opacity: 0; }
+18% { opacity: 0.9; }
+82% { opacity: 0.8; }
+100% { stroke-dashoffset: -24; opacity: 0; }
+}
+.brain-icon.tiny {
+width: 20px; height: 20px;
+margin-bottom: 0;
+}
+/* ===== End bold animated icon ===== */
+
 .title { font-weight: 700; font-size: 17px; }
 .model-tag { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 .header-btns { display: flex; gap: 8px; }
@@ -74,7 +166,6 @@ justify-content: space-between; padding: env(safe-area-inset-top) 16px 0; flex-s
 .msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
 .msg.ai .msg-row { flex-direction: row; }
 .msg.user .msg-row { flex-direction: row-reverse; }
-.brain-icon { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; flex-shrink: 0; margin-bottom: 4px; }
 @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes pulseRing { 0% { transform: scale(.8); opacity: .5; } 80%, 100% { transform: scale(2); opacity: 0; } }
@@ -196,10 +287,15 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <header>
 <div class="brand">
 <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
-<div class="logo-small"><i class="fa-solid fa-brain"></i></div>
+<div class="logo-small">
+<svg class="neural-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g><path class="curve-base curve-top-left" d="M 52 12 C 53 23, 30 31, 30 48 C 30 62, 43 68, 56 64"/><path class="curve-shimmer shimmer-top-left" d="M 52 12 C 53 23, 30 31, 30 48 C 30 62, 43 68, 56 64"/></g>
+<g><path class="curve-base curve-bottom-right" d="M 44 36 C 57 32, 70 38, 70 52 C 70 69, 47 77, 48 88"/><path class="curve-shimmer shimmer-bottom-right" d="M 44 36 C 57 32, 70 38, 70 52 C 70 69, 47 77, 48 88"/></g>
+</svg>
+</div>
 <div style="min-width:0">
 <div class="title">NeuralForge</div>
-<div class="model-tag" id="modelTag">gemma</div>
+<div class="model-tag" id="modelTag">openai</div>
 </div>
 </div>
 <div class="header-btns">
@@ -249,7 +345,7 @@ select.setting-input { appearance: none; -webkit-appearance: none; }
 <div class="setting-group">
 <div class="setting-label">Text Model</div>
 <select class="setting-input" id="modelSelect">
-<option value="gemma">Gemma (Fast & Multimodal)</option>
+<option value="gemma">Gemma 4 (Fast & Multimodal)</option>
 <option value="nemotron">Nemotron 3.5 Lightning (Heavy Reasoning)</option>
 <option value="deepseek">DeepSeek Chat (Reasoning)</option>
 <option value="llama">Llama 3.3 70B (Meta)</option>
@@ -270,26 +366,40 @@ Smart Mode (step-by-step reasoning)
 </a>
 <div id="serperStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key. Using Wikipedia + Jina Reader fallback.</span>
+<span>No key. Using Wikipedia + DDG fallback.</span>
 </div>
 <button class="btn-primary" id="saveSerperKeyBtn">Save Serper Key</button>
 </div>
 <div class="setting-group">
-<div class="setting-label">OpenRouter API Key (Required for :free models)</div>
+<div class="setting-label">OpenRouter API Key (Unlocks all models)</div>
 <input type="password" class="setting-input" id="openrouterKeyInput" placeholder="sk-or-v1-..." autocomplete="off">
-<a href="https://openrouter.ai" target="_blank" rel="noopener" class="key-hint">
+<a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="key-hint">
 <i class="fa-solid fa-key"></i>
-<span>Get a free key at openrouter.ai (no credit card required)</span>
+<span>Get your API key at openrouter.ai/keys</span>
 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
 </a>
 <div id="keyStatus" class="key-status">
 <i class="fa-solid fa-circle-info"></i>
-<span>No key saved. Please add a key to use these models.</span>
+<span>No key saved. Using free server (only openai works).</span>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
-A free OpenRouter key unlocks all :free models, AI Vision for reading images, and reliable streaming.
+With a key: every model uses its exact counterpart with family-specific fallbacks. Without: Pollinations falls back to openai on 401.
 </p>
 <button class="btn-primary" id="saveKeyBtn">Save API Key</button>
+</div>
+<div class="setting-group">
+<div class="setting-label">CORSProxy API Key (for reading websites)</div>
+<input type="password" class="setting-input" id="corsproxyKeyInput" placeholder="Optional — for corsproxy.io" autocomplete="off">
+<a href="https://corsproxy.io/" target="_blank" rel="noopener" class="key-hint">
+<i class="fa-solid fa-globe"></i>
+<span>Get free key at corsproxy.io</span>
+<i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:11px"></i>
+</a>
+<div id="corsproxyStatus" class="key-status">
+<i class="fa-solid fa-circle-info"></i>
+<span>Using free proxies (allorigins, codetabs). Add key for better reliability.</span>
+</div>
+<button class="btn-primary" id="saveCorsproxyKeyBtn">Save CORSProxy Key</button>
 </div>
 <div class="setting-group">
 <div class="setting-label">Welcome Questions</div>
@@ -341,6 +451,25 @@ function lsSet(k, v) { safe(function () { localStorage.setItem(k, v); }, null); 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function uid() { return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+var NEURAL_SVG = '<svg class="neural-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+'<g><path class="curve-base curve-top-left" d="M 52 12 C 53 23, 30 31, 30 48 C 30 62, 43 68, 56 64"/><path class="curve-shimmer shimmer-top-left" d="M 52 12 C 53 23, 30 31, 30 48 C 30 62, 43 68, 56 64"/></g>' +
+'<g><path class="curve-base curve-bottom-right" d="M 44 36 C 57 32, 70 38, 70 52 C 70 69, 47 77, 48 88"/><path class="curve-shimmer shimmer-bottom-right" d="M 44 36 C 57 32, 70 38, 70 52 C 70 69, 47 77, 48 88"/></g>' +
+'</svg>';
+
+var tesseractPromise = null;
+function loadTesseract() {
+if (window.Tesseract) return Promise.resolve(window.Tesseract);
+if (tesseractPromise) return tesseractPromise;
+tesseractPromise = new Promise(function (resolve, reject) {
+var s = document.createElement('script');
+s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+s.onload = function () { resolve(window.Tesseract); };
+s.onerror = function () { tesseractPromise = null; reject(new Error('Failed to load OCR engine')); };
+document.head.appendChild(s);
+});
+return tesseractPromise;
+}
 function detectUrls(text) {
 var urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
 return text.match(urlRegex) || [];
@@ -361,53 +490,23 @@ var currentModel = lsGet('nf_model', 'gemma') || 'gemma';
 var smartMode = lsGet('nf_smart', '0') === '1';
 var openrouterKey = lsGet('nf_openrouter_key', '') || '';
 var serperKey = lsGet('nf_serper_key', '') || '';
+var corsproxyKey = lsGet('nf_corsproxy_key', '') || '';
 
-var liveVisionModel = 'openrouter/free';
+var OR_MODEL_CHAINS = {
+  'gemma': ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
+  'nemotron': ['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'openrouter/free'],
+  'deepseek': ['deepseek/deepseek-chat:free', 'deepseek/deepseek-r1:free', 'particle-ai/particle-1:free', 'openrouter/free'],
+  'llama': ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemma-4-26b-a4b-it:free', 'openrouter/free'],
+  'qwen-coder': ['qwen/qwen3.8-27b:free', 'qwen/qwen3-235b-a22b:free', 'openrouter/free']
+};
 
-async function syncOpenRouterModels() {
-  try {
-    var res = await fetch('https://openrouter.ai/api/v1/models');
-    if (!res.ok) return;
-    var json = await res.json();
-    if (!json || !Array.isArray(json.data)) return;
-
-    var freeModels = json.data.filter(function (m) {
-      var isFree = (m.pricing && parseFloat(m.pricing.prompt) === 0 && parseFloat(m.pricing.completion) === 0) || (m.id && m.id.endsWith(':free'));
-      var isText = !m.architecture || !m.architecture.output_modalities || m.architecture.output_modalities.indexOf('text') !== -1;
-      return isFree && isText && m.id !== 'openrouter/free';
-    });
-
-    if (!freeModels.length) return;
-
-    var visionModel = freeModels.find(function (m) {
-      return m.architecture && Array.isArray(m.architecture.input_modalities) && m.architecture.input_modalities.indexOf('image') !== -1;
-    });
-    if (visionModel) {
-      liveVisionModel = visionModel.id;
-    }
-
-    var select = $('modelSelect');
-    var savedChoice = lsGet('nf_model', 'openrouter/free');
-    var html = '<option value="openrouter/free">Auto-Router (Best Available Free)</option>';
-
-    freeModels.forEach(function (m) {
-      var cleanName = m.name.replace(/\s*\(free\)/i, '').trim();
-      html += '<option value="' + esc(m.id) + '">' + esc(cleanName) + '</option>';
-    });
-
-    select.innerHTML = html;
-
-    if (Array.from(select.options).some(function (o) { return o.value === savedChoice; })) {
-      select.value = savedChoice;
-    } else {
-      select.value = 'openrouter/free';
-    }
-    currentModel = select.value;
-    $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : '');
-  } catch (e) {
-    console.warn('Could not sync live models, using fallback.', e);
-  }
-}
+var POLL_MODEL_MAP = {
+  'gemma': 'openai',
+  'nemotron': 'openai',
+  'deepseek': 'deepseek',
+  'llama': 'llama',
+  'qwen-coder': 'qwen-coder'
+};
 
 var isGenerating = false;
 var activeController = null;
@@ -417,6 +516,7 @@ var pendingImage = null;
 var pendingFile = null;
 var recognition = null;
 var isRecording = false;
+var recShouldKeep = false;
 
 function today() { try { return new Date().toDateString(); } catch (e) { return ''; } }
 function getMessages() { var c = histories.find(function (h) { return h.id === currentChatId; }); return c ? c.messages : []; }
@@ -478,10 +578,10 @@ if (!el) return;
 if (openrouterKey) {
 el.className = 'key-status active';
 var masked = openrouterKey.substring(0, 8) + '••••••' + openrouterKey.substring(openrouterKey.length - 4);
-el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all :free models unlocked</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Key saved: ' + esc(masked) + ' — all models unlocked</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Please add a key to use these models.</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key saved. Using free server (only openai works).</span>';
 }
 }
 function updateSerperStatus() {
@@ -492,14 +592,22 @@ el.className = 'key-status active';
 el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Serper key saved. High-quality Google search enabled.</span>';
 } else {
 el.className = 'key-status';
-el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + Jina Reader fallback.</span>';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>No key. Using Wikipedia + DDG fallback.</span>';
 }
 }
-async function boot() {
+function updateCorsproxyStatus() {
+var el = $('corsproxyStatus');
+if (!el) return;
+if (corsproxyKey) {
+el.className = 'key-status active';
+el.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>CORSProxy key saved. Website reading more reliable.</span>';
+} else {
+el.className = 'key-status';
+el.innerHTML = '<i class="fa-solid fa-circle-info"></i><span>Using free proxies (allorigins, codetabs). Add key for better reliability.</span>';
+}
+}
+function boot() {
 if (!currentChatId || !histories.find(function (h) { return h.id === currentChatId; })) createNewChat();
-
-await syncOpenRouterModels();
-
 var isDark = lsGet('nf_theme', 'dark') !== 'light';
 function applyTheme() {
 if (isDark) { document.body.classList.remove('light'); $('themeIcon').className = 'fa-solid fa-sun'; }
@@ -507,35 +615,15 @@ else { document.body.classList.add('light'); $('themeIcon').className = 'fa-soli
 }
 applyTheme();
 $('themeBtn').onclick = function () { isDark = !isDark; lsSet('nf_theme', isDark ? 'dark' : 'light'); applyTheme(); };
-
-if ($('modelSelect').querySelector('option[value="' + currentModel + '"]')) {
-  $('modelSelect').value = currentModel;
-} else {
-  $('modelSelect').value = 'openrouter/free';
-  currentModel = 'openrouter/free';
-}
-
+$('modelSelect').value = currentModel;
 $('smartMode').checked = smartMode;
-$('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : '');
-
-$('modelSelect').onchange = function () { 
-  currentModel = $('modelSelect').value; 
-  lsSet('nf_model', currentModel); 
-  $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : ''); 
-  showToast('Text model: ' + currentModel); 
-};
-
-$('smartMode').onchange = function () { 
-  smartMode = $('smartMode').checked; 
-  lsSet('nf_smart', smartMode ? '1' : '0'); 
-  $('modelTag').textContent = currentModel.split('/').pop().replace(':free', '') + (smartMode ? ' +smart' : ''); 
-  showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); 
-};
-
+updateModelTag();
+$('modelSelect').onchange = function () { currentModel = $('modelSelect').value; lsSet('nf_model', currentModel); updateModelTag(); showToast('Text model: ' + currentModel); };
+$('smartMode').onchange = function () { smartMode = $('smartMode').checked; lsSet('nf_smart', smartMode ? '1' : '0'); updateModelTag(); showToast(smartMode ? 'Smart Mode ON' : 'Smart Mode off'); };
 $('menuBtn').onclick = function () { $('sidebar').classList.add('open'); };
 $('closeSidebarBtn').onclick = function () { $('sidebar').classList.remove('open'); };
 $('newChatBtn').onclick = createNewChat;
-$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); updateSerperStatus(); };
+$('settingsBtn').onclick = function () { $('settingsModal').classList.add('open'); updateKeyStatus(); updateSerperStatus(); updateCorsproxyStatus(); };
 $('closeSettings').onclick = function () { $('settingsModal').classList.remove('open'); };
 $('settingsModal').addEventListener('click', function (e) { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); });
 $('attachBtn').onclick = function () { $('attachSheet').classList.add('open'); };
@@ -549,19 +637,22 @@ $('optGenerate').onclick = function () { $('attachSheet').classList.remove('open
 $('cameraInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
 $('albumInput').addEventListener('change', function (e) { handleImageFile(e.target.files[0]); e.target.value = ''; });
 $('fileInput').addEventListener('change', function (e) { handleTextFile(e.target.files[0]); e.target.value = ''; });
+
 var userInput = $('userInput');
 userInput.addEventListener('input', function () {
 this.style.height = 'auto';
 this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+
 $('sendBtn').addEventListener('click', function (e) {
 if (isGenerating) {
 e.preventDefault();
 if (activeController) activeController.abort();
 }
 });
+
 var ctxMenu = $('contextMenu');
-document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
+document.addEventListener('click', function (e) { if (!ctxMenu.contains(e.target) && !e.target.closest('.msg')) ctxMenu.style.display = 'none'; });
 $('chatForm').addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
 $('chatArea').addEventListener('click', function (e) {
 var b = e.target.closest('.sugg-btn');
@@ -578,6 +669,7 @@ setTimeout(function () { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> C
 }
 }
 });
+
 $('ctxCopy').onclick = function () { copyText(selectedMsgEl.dataset.text); ctxMenu.style.display = 'none'; };
 $('ctxDelete').onclick = function () {
 var targetId = selectedMsgEl.dataset.id;
@@ -641,10 +733,12 @@ showTyping('Thinking...');
 runAI(prev.content, prev.image ? { dataUrl: prev.image } : null, prev.fileText || '', [], detectUrls(prev.content)[0] || null);
 }
 };
+
 $('sysPrompt').value = sysPrompt;
 $('saveBehaviorBtn').onclick = function () { sysPrompt = $('sysPrompt').value; lsSet('nf_sys', sysPrompt); showToast('Settings saved!'); $('settingsModal').classList.remove('open'); };
 $('addQuestionBtn').onclick = addQuestion;
 $('addMemBtn').onclick = addMemory;
+
 $('saveSerperKeyBtn').onclick = function () {
 var val = $('serperKeyInput').value.trim();
 serperKey = val;
@@ -653,21 +747,42 @@ updateSerperStatus();
 showToast(val ? 'Serper key saved!' : 'Serper key removed');
 };
 $('serperKeyInput').value = serperKey;
+
 $('saveKeyBtn').onclick = function () {
 var val = $('openrouterKeyInput').value.trim();
 openrouterKey = val;
 lsSet('nf_openrouter_key', val);
 updateKeyStatus();
-showToast(val ? 'OpenRouter key saved! All :free models unlocked.' : 'Key removed');
+updateModelTag();
+showToast(val ? 'OpenRouter key saved! All models unlocked.' : 'Key removed');
 };
 $('openrouterKeyInput').value = openrouterKey;
+
+$('saveCorsproxyKeyBtn').onclick = function () {
+var val = $('corsproxyKeyInput').value.trim();
+corsproxyKey = val;
+lsSet('nf_corsproxy_key', val);
+updateCorsproxyStatus();
+showToast(val ? 'CORSProxy key saved!' : 'CORSProxy key removed');
+};
+$('corsproxyKeyInput').value = corsproxyKey;
+
 $('questionList').addEventListener('click', function (e) { var b = e.target.closest('[data-q]'); if (b) { customQuestions.splice(+b.dataset.q, 1); lsSet('nf_questions', JSON.stringify(customQuestions)); renderQuestions(); renderWelcomeScreen(); } });
 $('memoryList').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) { memory.splice(+b.dataset.m, 1); lsSet('nf_memory', JSON.stringify(memory)); renderMemory(); } });
+
 renderSidebar(); renderQuestions(); renderMemory(); renderChat();
 updateKeyStatus();
 updateSerperStatus();
+updateCorsproxyStatus();
 window.__nfBooted = true;
 }
+
+function updateModelTag() {
+var tag = currentModel + (smartMode ? ' +smart' : '');
+if (openrouterKey) tag += ' (OR)';
+$('modelTag').textContent = tag;
+}
+
 function renderPreview() {
 var row = $('previewRow');
 row.innerHTML = '';
@@ -694,11 +809,14 @@ if (b.dataset.clear === 'image') pendingImage = null;
 if (b.dataset.clear === 'file') pendingFile = null;
 renderPreview();
 });
+
 function clearAttachments() { pendingImage = null; pendingFile = null; if (isRecording) stopRecording(); renderPreview(); }
+
 function handleImageFile(file) {
 if (!file) return;
 if (!/^image\//.test(file.type)) { showToast('Not an image file'); return; }
 if (file.size > 8000000) { showToast('Image too large (max 8MB)'); return; }
+loadTesseract();
 var reader = new FileReader();
 reader.onload = function (ev) {
 compressImage(ev.target.result, 720, 0.7, function (dataUrl) {
@@ -710,6 +828,7 @@ showToast('Photo attached');
 reader.onerror = function () { showToast('Could not read image'); };
 reader.readAsDataURL(file);
 }
+
 function compressImage(dataUrl, maxDim, quality, cb) {
 var img = new Image();
 img.onload = function () {
@@ -727,6 +846,7 @@ cb(canvas.toDataURL('image/jpeg', quality));
 img.onerror = function () { cb(dataUrl); };
 img.src = dataUrl;
 }
+
 function handleTextFile(file) {
 if (!file) return;
 if (file.size > 100000) { showToast('File too large (max 100KB)'); return; }
@@ -739,12 +859,13 @@ showToast('File attached');
 reader.onerror = function () { showToast('Could not read file'); };
 reader.readAsText(file);
 }
+
 function toggleRecording() {
 if (isRecording) { stopRecording(); return; }
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SR) { showToast('Voice not supported — use Safari on iOS 14.5+'); return; }
 recognition = new SR();
-recognition.continuous = false;
+recognition.continuous = true;
 recognition.interimResults = true;
 recognition.lang = navigator.language || 'en-US';
 var baseText = $('userInput').value;
@@ -763,18 +884,23 @@ recognition.onerror = function (e) {
 if (e.error === 'not-allowed') { showToast('Mic permission denied'); stopRecording(); }
 };
 recognition.onend = function () {
-isRecording = false; renderPreview();
+if (recShouldKeep) { safe(function () { recognition.start(); }, null); }
+else { isRecording = false; renderPreview(); }
 };
+recShouldKeep = true;
 isRecording = true;
 safe(function () { recognition.start(); }, null);
 renderPreview();
 showToast('Recording…');
 }
+
 function stopRecording() {
+recShouldKeep = false;
 isRecording = false;
 if (recognition) { safe(function () { recognition.stop(); }, null); recognition = null; }
 renderPreview();
 }
+
 function generateImageFromPrompt() {
 var overlay = document.createElement('div');
 overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -790,24 +916,27 @@ if (p) generateImage(p);
 };
 overlay.addEventListener('click', function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
 }
+
 function generateImage(prompt) {
 var welcome = $('welcomeScreen'); if (welcome) welcome.remove();
 var msgId = uid();
 var aiMsgDiv = document.createElement('div'); aiMsgDiv.className = 'msg ai'; aiMsgDiv.dataset.id = msgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="bubble">Generating via Pollinations Flux… <span id="imgProgress">0%</span></div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon">' + NEURAL_SVG + '</div><div class="bubble">Generating image… <span id="imgProgress">0%</span></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 scrollToBottom();
 var bubble = aiMsgDiv.querySelector('.bubble');
 var progressSpan = bubble.querySelector('#imgProgress');
-var encodedPrompt = encodeURIComponent(prompt);
-var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&model=flux&seed=' + Math.floor(Math.random() * 10000);
-var img = new Image();
+
 var progress = 0;
 var progressInterval = setInterval(function () {
 progress += Math.random() * 10;
 if (progress > 90) progress = 90;
 if (progressSpan) progressSpan.textContent = Math.round(progress) + '%';
 }, 500);
+
+var encodedPrompt = encodeURIComponent(prompt);
+var imageUrl = 'https://image.pollinations.ai/prompt/' + encodedPrompt + '?width=512&height=512&nologo=true&seed=' + Math.floor(Math.random() * 10000);
+var img = new Image();
 img.onload = function () {
 clearInterval(progressInterval);
 if (progressSpan) progressSpan.textContent = '100%';
@@ -822,69 +951,13 @@ scrollToBottom();
 };
 img.onerror = function () {
 clearInterval(progressInterval);
-bubble.innerHTML = 'Pollinations failed. Trying AI Horde fallback…';
-fetch('https://stablehorde.net/api/v2/generate/async', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json', 'apikey': '0000000000' },
-body: JSON.stringify({
-prompt: prompt,
-params: { sampler_name: 'k_euler', cfg_scale: 7.5, width: 512, height: 512, steps: 30, n: 1 },
-models: ['stable_diffusion'],
-nsfw: false, censor_nsfw: true, shared: false, replacement_filter: true
-})
-}).then(function(res) {
-if (!res.ok) throw new Error('Horde submit error ' + res.status);
-return res.json();
-}).then(function(data) {
-var taskId = data.id;
-var attempts = 0;
-var maxAttempts = 120;
-var poll = setInterval(function() {
-attempts++;
-if (progressSpan) progressSpan.textContent = 'Horde: ' + Math.round((attempts / maxAttempts) * 100) + '%';
-fetch('https://stablehorde.net/api/v2/generate/check/' + taskId)
-.then(function(r) { return r.json(); })
-.then(function(checkData) {
-if (checkData.done) {
-clearInterval(poll);
-return fetch('https://stablehorde.net/api/v2/generate/status/' + taskId);
-} else if (attempts >= maxAttempts) {
-clearInterval(poll);
-throw new Error('Generation timed out');
-}
-}).then(function(res) {
-if (!res) return;
-return res.json();
-}).then(function(resultData) {
-if (!resultData) return;
-if (resultData.generations && resultData.generations.length > 0) {
-var hImageUrl = resultData.generations[0].img;
-var content = '[Generated Image] ' + prompt;
-aiMsgDiv.dataset.text = content;
-bubble.innerHTML = '<img class="generated-img" src="' + hImageUrl + '" alt="Generated image"><p style="margin-top:8px;font-size:13px;color:var(--text-muted)">' + esc(prompt) + ' (via AI Horde)</p>';
-attachLongPress(aiMsgDiv, content, 'ai');
-var msgs = getMessages();
-msgs.push({ id: msgId, role: 'assistant', content: content, image: hImageUrl });
-setMessages(msgs);
-scrollToBottom();
-} else {
-throw new Error('No generations returned');
-}
-}).catch(function(err) {
-clearInterval(poll);
-bubble.innerHTML = '⚠️ Image generation failed completely. Tap to retry.';
+bubble.innerHTML = '⚠️ Image generation failed. Tap to retry.';
 aiMsgDiv.classList.add('error');
 bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
-});
-}, 2000);
-}).catch(function(err) {
-bubble.innerHTML = '⚠️ Image generation failed: ' + esc(err.message) + '. Tap to retry.';
-aiMsgDiv.classList.add('error');
-bubble.onclick = function () { aiMsgDiv.remove(); generateImage(prompt); };
-});
 };
 img.src = imageUrl;
 }
+
 function renderSidebar() {
 var list = $('historyList');
 list.innerHTML = histories.map(function (h) {
@@ -908,6 +981,7 @@ if (currentChatId === id) createNewChat(); else renderSidebar();
 });
 });
 }
+
 function renderChat() {
 var msgs = getMessages(); var area = $('chatArea'); area.innerHTML = '';
 if (msgs.length === 0) { renderWelcomeScreen(); return; }
@@ -917,6 +991,7 @@ addMessageToUI(m.content, m.role, false, m.image, m.sources, m.id);
 });
 scrollToBottom();
 }
+
 function renderWelcomeScreen() {
 var html = '<div class="welcome" id="welcomeScreen"><i class="fa-solid fa-sparkles big"></i><h2>How can I help?</h2><p>Tap + to attach a photo, file, voice, or generate an image. Paste a URL to read websites.</p><div class="suggestions">';
 customQuestions.forEach(function (q) {
@@ -925,6 +1000,7 @@ html += '<button class="sugg-btn" data-q="' + esc(q.text).replace(/"/g, '&quot;'
 html += '</div></div>';
 $('chatArea').innerHTML = html;
 }
+
 function submitForm() {
 if (isGenerating) return;
 var input = $('userInput'); var text = input.value.trim();
@@ -953,57 +1029,72 @@ runAI(sendText, sendImage, sendFileText, [], urlToFetch);
 }
 
 async function extractTextFromImage(imageDataUrl) {
-  if (!openrouterKey) {
-    return '[Please add an OpenRouter API key in Settings to enable AI Vision for reading images.]';
-  }
-  try {
-    showTyping('Reading image with AI Vision…');
-    var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + openrouterKey,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.href,
-        'X-Title': 'NeuralForge'
-      },
-      body: JSON.stringify({
-        model: liveVisionModel,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Please extract all text from this image accurately. If there is no text, describe the image briefly.' },
-              { type: 'image_url', image_url: { url: imageDataUrl } }
-            ]
-          }
-        ],
-        temperature: 0.2
-      })
-    });
-    if (!res.ok) throw new Error('Vision API error ' + res.status);
-    var json = await res.json();
-    var text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
-    return text ? text.trim() : '[No text detected in image]';
-  } catch (e) {
-    console.error('Vision OCR error:', e);
-    return '[AI Vision failed to read image: ' + e.message + ']';
-  }
+try {
+var T = await loadTesseract();
+var result = await T.recognize(imageDataUrl, 'eng+chi_sim', {
+logger: function (m) {
+if (m.status === 'recognizing text') {
+showTyping('Reading image (EN+中文)… ' + Math.round(m.progress * 100) + '%');
+}
+}
+});
+return result.data.text.trim();
+} catch (e) {
+console.error('OCR error:', e);
+return '';
+}
 }
 
 async function fetchWebsiteContent(url) {
+var proxies = [];
+if (corsproxyKey) {
+proxies.push({
+name: 'corsproxy-key',
+url: 'https://corsproxy.io/?' + encodeURIComponent(url),
+headers: { 'x-cors-api-key': corsproxyKey },
+parse: function (t) { return t; }
+});
+}
+proxies.push({
+name: 'allorigins',
+url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+headers: {},
+parse: function (raw) { try { var j = JSON.parse(raw); return j.contents || ''; } catch (e) { return raw; } }
+});
+proxies.push({
+name: 'codetabs',
+url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+headers: {},
+parse: function (t) { return t; }
+});
+
+for (var i = 0; i < proxies.length; i++) {
 try {
-showTyping('Fetching website via Jina Reader…');
-const response = await fetch('https://r.jina.ai/' + encodeURIComponent(url));
-if (!response.ok) throw new Error('Jina reader failed');
-const text = await response.text();
-if (text && text.length > 100) {
-return { text: text.substring(0, 8000), title: url };
+showTyping('Fetching website… (attempt ' + (i + 1) + '/' + proxies.length + ')');
+var opts = { headers: proxies[i].headers };
+var response = await fetch(proxies[i].url, opts);
+if (!response.ok) continue;
+var raw = await response.text();
+var data = proxies[i].parse(raw);
+if (!data || data.length < 200) continue;
+var parser = new DOMParser();
+var doc = parser.parseFromString(data, 'text/html');
+var noise = doc.querySelectorAll('script, style, nav, header, footer, aside, .ads, .advertisement, .sidebar, .menu, .navigation, .cookie, .popup, .modal, .overlay, .banner');
+noise.forEach(function (el) { el.remove(); });
+var mainContent = doc.querySelector('main, article, .content, .post, .entry, #content, #main, .article, .story-body, .story-content') || doc.body;
+var text = mainContent ? mainContent.textContent : '';
+text = text.replace(/\s+/g, ' ').trim().substring(0, 10000);
+var title = doc.title || url;
+if (text.length > 150) {
+return { text: text, title: title, success: true };
 }
 } catch (e) {
-console.error('Jina reader failed:', e);
+console.error('Proxy ' + proxies[i].name + ' failed:', e);
 }
-return { text: '', title: url };
 }
+return { text: '', title: url, success: false };
+}
+
 async function searchSerper(query) {
 if (!serperKey) return { text: '', sources: [], engine: 'Serper' };
 var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
@@ -1023,48 +1114,103 @@ return { text: text, sources: sources, engine: 'Serper' };
 } catch (e) { clearTimeout(t); }
 return { text: '', sources: [], engine: 'Serper' };
 }
-async function searchWebFast(query) {
-var serperP = safe(async function () {
-if (!serperKey) return { text: '', sources: [] };
-var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 5000);
-try {
-var res = await fetch('https://google.serper.dev/search', {
-method: 'POST', signal: c.signal,
-headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-body: JSON.stringify({ q: query, num: 5 })
-});
-clearTimeout(t);
-var json = await res.json();
-if (json.organic && json.organic.length) {
-var text = json.organic.map(function (o) { return '[' + o.title + '] ' + (o.snippet || ''); }).join('\n');
-var sources = json.organic.map(function (o) { return { label: (o.title || '').substring(0, 40), url: o.link }; });
-return { text: text, sources: sources, engine: 'Serper' };
-}
-} catch (e) { clearTimeout(t); }
-return { text: '', sources: [] };
-}, { text: '', sources: [] });
-var wikiP = safe(async function () {
-var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, 3500);
+
+async function searchWikipedia(query) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 4000);
 try {
 var r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&srlimit=3&format=json&origin=*', { signal: c.signal });
-clearTimeout(t); var j = await r.json();
-if (j.query && j.query.search.length) {
-var sources = j.query.search.map(function (s) { return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) }; });
-return { text: j.query.search.map(function (s) { return '[' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, ''); }).join('\n'), sources: sources };
-}
-} catch (e) {}
-return { text: '', sources: [] };
-}, { text: '', sources: [] });
-return Promise.all([serperP, wikiP]).then(function (r) {
-var texts = r.map(function (x) { return x.text; }).filter(function (s) { return s && s.length > 0; });
-var allSources = r.reduce(function (acc, x) { return acc.concat(x.sources || []); }, []);
-return { text: texts.length ? texts.join('\n---\n') : 'No relevant results found.', sources: allSources };
+clearTimeout(t);
+var j = await r.json();
+if (j.query && j.query.search && j.query.search.length) {
+var sources = j.query.search.map(function (s) {
+return { label: s.title, url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(s.title.replace(/ /g, '_')) };
 });
+var text = j.query.search.map(function (s) {
+return '[Wikipedia: ' + s.title + '] ' + s.snippet.replace(/<[^>]*>/g, '');
+}).join('\n');
+return { text: text, sources: sources, engine: 'Wikipedia' };
 }
-async function tryOpenRouterModel(modelId, apiMessages, useStream, signal) {
+} catch (e) { clearTimeout(t); }
+return { text: '', sources: [], engine: 'Wikipedia' };
+}
+
+async function searchDuckDuckGo(query) {
+var proxies = [
+{ name: 'allorigins', url: function (q) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (j) { try { return JSON.parse(j).contents; } catch (e) { return j; } } },
+{ name: 'codetabs', url: function (q) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, parse: function (t) { return t; } }
+];
+if (corsproxyKey) {
+proxies.unshift({ name: 'corsproxy', url: function (q) { return 'https://corsproxy.io/?' + encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q)); }, headers: { 'x-cors-api-key': corsproxyKey }, parse: function (t) { return t; } });
+}
+for (var i = 0; i < proxies.length; i++) {
+var c = new AbortController();
+var t = setTimeout(function () { c.abort(); }, 5000);
+try {
+var opts = proxies[i].headers ? { headers: proxies[i].headers, signal: c.signal } : { signal: c.signal };
+var r = await fetch(proxies[i].url(query), opts);
+clearTimeout(t);
+var raw = await r.text();
+var data = proxies[i].parse(raw);
+if (!data || data.length < 100) continue;
+var doc = new DOMParser().parseFromString(data, 'text/html');
+var results = Array.from(doc.querySelectorAll('.result')).slice(0, 6);
+if (!results.length) continue;
+var sources = results.map(function (resItem) {
+var anchor = resItem.querySelector('.result__a');
+var rawHref = anchor ? anchor.getAttribute('href') : '';
+var title = anchor ? anchor.textContent.trim().substring(0, 40) : 'Web Source';
+if (rawHref && rawHref.indexOf('uddg=') !== -1) {
+var match = rawHref.match(/[?&]uddg=([^&]+)/);
+if (match) { try { rawHref = decodeURIComponent(match[1]); } catch (e) {} }
+}
+if (!rawHref || rawHref.indexOf('http') !== 0) rawHref = 'https://duckduckgo.com';
+return { label: title, url: rawHref };
+});
+var snippets = Array.from(doc.querySelectorAll('.result__snippet'))
+.map(function (el) { return el.textContent.trim(); })
+.filter(function (s) { return s && s.length > 15; })
+.slice(0, 6);
+if (snippets.length) {
+var text = snippets.map(function (s, idx) { return (idx + 1) + '. ' + s; }).join('\n');
+return { text: text, sources: sources, engine: 'DuckDuckGo' };
+}
+} catch (e) { clearTimeout(t); }
+}
+return { text: '', sources: [], engine: 'DuckDuckGo' };
+}
+
+async function searchWebIntelligent(userMessage) {
+showTyping('Searching multiple sources…');
+var promises = [];
+if (serperKey) {
+promises.push(searchSerper(userMessage));
+}
+promises.push(searchWikipedia(userMessage));
+promises.push(searchDuckDuckGo(userMessage));
+
+var results = await Promise.allSettled(promises);
+var allTexts = [];
+var allSources = [];
+var seenUrls = {};
+var engines = [];
+
+results.forEach(function (r) {
+if (r.status === 'fulfilled' && r.value) {
+var v = r.value;
+if (v.text && v.text.length > 10) {
+allTexts.push(v.text);
+if (engines.indexOf(v.engine) === -1) engines.push(v.engine);
+}
+if (v.sources) v.sources.forEach(function (s) { if (s.url && !seenUrls[s.url]) { seenUrls[s.url] = true; allSources.push(s); } });
+}
+});
+return { text: allTexts.length ? allTexts.join('\n\n---\n\n') : '', sources: allSources.slice(0, 10), engines: engines };
+}
+
+async function tryOpenRouterModel(modelId, apiMessages, useStream) {
 var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 method: 'POST',
-signal: signal,
 headers: {
 'Authorization': 'Bearer ' + openrouterKey,
 'Content-Type': 'application/json',
@@ -1083,6 +1229,7 @@ if (res.status === 403) throw { code: 'FORBIDDEN_403', model: modelId };
 if (res.status === 404) throw { code: 'NOT_FOUND_404', model: modelId };
 if (res.status === 429) throw { code: 'RATE_429', model: modelId };
 if (!res.ok) throw { code: 'OTHER', status: res.status, model: modelId };
+
 if (!useStream) {
 var rawText = await res.text();
 var jj = safe(function () { return JSON.parse(rawText); }, null);
@@ -1092,6 +1239,7 @@ if (c) return { text: c, model: modelId };
 }
 throw { code: 'EMPTY', model: modelId };
 }
+
 if (!res.body || !res.body.getReader) {
 var rawText2 = await res.text();
 var jj2 = safe(function () { return JSON.parse(rawText2); }, null);
@@ -1131,54 +1279,64 @@ if (c) accumulated += c;
 if (!accumulated.trim()) throw { code: 'EMPTY', model: modelId };
 return { text: accumulated, model: modelId };
 }
+
 async function tryOpenRouterChain(chain, apiMessages, onChunk) {
 var lastErr = null;
 for (var i = 0; i < chain.length; i++) {
 var modelId = chain[i];
 try {
-var result = await tryOpenRouterModel(modelId, apiMessages, true, activeController ? activeController.signal : undefined);
+if (onChunk) {
+var result = await tryOpenRouterModel(modelId, apiMessages, true);
 onChunk(result.text);
 return { text: result.text, model: result.model };
+} else {
+var result2 = await tryOpenRouterModel(modelId, apiMessages, false);
+return { text: result2.text, model: result2.model };
+}
 } catch (err) {
 lastErr = err;
-if (err.code === 'FORBIDDEN_403' || err.code === 'NOT_FOUND_404') {
-showTyping('Model ' + modelId + ' unavailable (' + err.code + '), trying fallback…');
-}
 if (err.code === 'RATE_429') throw err;
 }
 }
 throw lastErr || { code: 'ALL_FAILED' };
 }
+
 async function runAI(text, image, fileText, sources, urlToFetch) {
 var useWeb = $('webSearchToggle').checked && !image && !urlToFetch;
-var searchPromise = useWeb ? searchWebFast(text) : Promise.resolve({ text: '', sources: [] });
+var searchPromise = useWeb ? searchWebIntelligent(text) : Promise.resolve({ text: '', sources: [], engines: [] });
 var systemMsg = sysPrompt + '\nCurrent date: ' + today() + '.';
 if (smartMode) systemMsg += '\nSMART MODE: First write your step-by-step reasoning wrapped EXACTLY as [[THINK]] ... [[/THINK]]. Then write the final answer after the closing tag.';
 if (memory.length) systemMsg += '\n[USER MEMORY]:\n' + memory.map(function (m) { return '- ' + m; }).join('\n');
+
 var msgs = getMessages();
 var aiMsgId = uid();
 var aiMsgDiv = null;
 var streamBubble = null;
+
 function ensureAiBubble() {
 if (aiMsgDiv) return;
 removeTyping();
 aiMsgDiv = document.createElement('div');
 aiMsgDiv.className = 'msg ai';
 aiMsgDiv.dataset.id = aiMsgId;
-aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble"></div></div>';
+aiMsgDiv.innerHTML = '<div class="msg-row"><div class="brain-icon">' + NEURAL_SVG + '</div><div class="bubble"></div></div>';
 $('chatArea').appendChild(aiMsgDiv);
 streamBubble = aiMsgDiv.querySelector('.bubble');
 }
+
 var aiText = '';
 var useOpenRouter = !!openrouterKey;
 var providerUsed = '';
 var finalModel = '';
+
 try {
 var ocrText = '';
 var websiteContent = '';
 var websiteTitle = '';
 if (image) {
+showTyping('Reading image with OCR (English + Chinese)…');
 ocrText = await extractTextFromImage(image.dataUrl);
+if (!ocrText) ocrText = '[No text detected in image]';
 }
 if (urlToFetch) {
 var websiteData = await fetchWebsiteContent(urlToFetch);
@@ -1190,13 +1348,22 @@ if (useWeb && !image && !urlToFetch) showTyping('Searching the web…');
 var results = await searchPromise;
 var webText = results.text || '';
 var webSources = results.sources || [];
+var enginesUsed = results.engines || [];
+
+if (useWeb && enginesUsed.length) {
+showTyping('Searched: ' + enginesUsed.join(', '));
+}
+
 var userText = text || '';
-if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (AI VISION)]:\n' + ocrText;
+if (ocrText) userText += '\n[TEXT EXTRACTED FROM IMAGE (OCR)]:\n' + ocrText;
 if (websiteContent) userText += '\n[WEBSITE CONTENT - ' + websiteTitle + ' - ' + urlToFetch + ']:\n' + websiteContent;
 if (fileText) userText += '\n[FILE CONTENT]:\n' + fileText;
 if (useWeb && webText && webText.indexOf('No relevant') === -1) {
-userText += '\n[LIVE WEB SEARCH RESULTS — you MUST use this information]:\n' + webText;
+userText += '\n[LIVE WEB SEARCH RESULTS from ' + enginesUsed.join(', ') + ' — you MUST use this information]:\n' + webText;
+} else if (useWeb) {
+userText += '\n[LIVE WEB SEARCH FAILED — NO RESULTS RETRIEVED. Tell the user the search returned no results, but you may provide general knowledge with a clear disclaimer.]';
 }
+
 var apiMessages = [{ role: 'system', content: systemMsg }];
 var historyMsgs = msgs.slice(-8);
 for (var i = 0; i < historyMsgs.length; i++) {
@@ -1204,8 +1371,9 @@ var m = historyMsgs[i];
 apiMessages.push({ role: m.role, content: m.content });
 }
 apiMessages[apiMessages.length - 1].content = userText;
+
 if (useOpenRouter) {
-var chain = [currentModel, 'openrouter/free'];
+var chain = OR_MODEL_CHAINS[currentModel] || OR_MODEL_CHAINS['gemma'];
 showTyping('Using OpenRouter: ' + chain[0] + '…');
 activeController = new AbortController();
 var to = setTimeout(function () { if (activeController) activeController.abort(); }, 120000);
@@ -1232,7 +1400,7 @@ if (orErr && orErr.code === 'ALL_FAILED' || (orErr && orErr.code === 'EMPTY')) {
 showTyping('Streaming failed, trying non-streaming fallback…');
 try {
 aiText = '';
-var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false, activeController ? activeController.signal : undefined);
+var nsResult = await tryOpenRouterModel(chain[0], apiMessages, false);
 aiText = nsResult.text;
 finalModel = nsResult.model;
 providerUsed = 'OpenRouter (non-stream)';
@@ -1244,9 +1412,74 @@ throw orErr;
 }
 }
 } else {
-throw { code: 'NO_KEY', message: 'Please add a free OpenRouter API key in Settings to use these models. Get one at <a href="https://openrouter.ai" target="_blank" style="color:#818cf8">openrouter.ai</a> (no credit card required for :free models).' };
+var pollModel = POLL_MODEL_MAP[currentModel] || 'openai';
+showTyping('Using Pollinations: ' + pollModel + '…');
+activeController = new AbortController();
+var to2 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+try {
+var res = await fetch('https://text.pollinations.ai/openai', {
+method: 'POST', signal: activeController.signal,
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: pollModel,
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+clearTimeout(to2);
+if (res.status === 401 && pollModel !== 'openai') {
+showTyping('Model ' + pollModel + ' not available — falling back to openai…');
+activeController = new AbortController();
+var to3 = setTimeout(function () { if (activeController) activeController.abort(); }, 90000);
+res = await fetch('https://text.pollinations.ai/openai', {
+method: 'POST', signal: activeController.signal,
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: 'openai',
+messages: apiMessages,
+stream: true,
+temperature: smartMode ? 0.3 : 0.7
+})
+});
+clearTimeout(to3);
+pollModel = 'openai';
 }
+if (!res.ok) throw new Error('Pollinations error ' + res.status);
+if (res.body && res.body.getReader) {
+var reader = res.body.getReader(), dec = new TextDecoder(), buffer = '';
+while (true) {
+var r = await reader.read(); if (r.done) break;
+buffer += dec.decode(r.value, { stream: true });
+var lines = buffer.split('\n'); buffer = lines.pop();
+for (var j = 0; j < lines.length; j++) {
+var line = lines[j].trim();
+if (line.indexOf('data:') !== 0) continue;
+var data = line.slice(5).trim();
+if (data === '' || data === '[DONE]') continue;
+safe(function () {
+var jj = JSON.parse(data); var ch = jj.choices && jj.choices[0]; var c = '';
+if (ch) { if (ch.delta && ch.delta.content) c = ch.delta.content; else if (ch.message && ch.message.content) c = ch.message.content; }
+if (c) {
+ensureAiBubble();
+aiText += c;
+streamBubble.innerHTML = formatText(aiText) + '<span style="display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;animation:blink 1s infinite"></span>';
+scrollToBottom();
+}
+}, null);
+}
+}
+}
+providerUsed = 'Pollinations (' + pollModel + ')';
+finalModel = pollModel;
+} catch (pollErr) {
+clearTimeout(to2);
+throw pollErr;
+}
+}
+
 if (!aiText.trim()) throw new Error('empty response');
+
 ensureAiBubble();
 var allSources = webSources.concat(sources || []);
 if (urlToFetch) {
@@ -1287,8 +1520,10 @@ friendly = err.message;
 friendly = err.message;
 } else if (err && err.code === 'OR_ALL') {
 friendly = err.message;
-} else if (err && err.code === 'NO_KEY') {
-friendly = err.message;
+} else if (err && err.code === 'RATE_429') {
+friendly = 'Rate limit (429). Add an OpenRouter key for unlimited access.';
+} else if (err && err.code === 'FORBIDDEN_403') {
+friendly = 'Server returned 403 Forbidden. Add an OpenRouter API key in Settings to bypass.';
 } else if (err && err.name === 'AbortError') {
 friendly = 'Generation stopped.';
 } else if (err && err.message === 'empty response') {
@@ -1298,7 +1533,11 @@ friendly = 'Network blocked. Open on github.io.';
 } else {
 friendly = (err && err.message) || 'Unknown error';
 }
-streamBubble.innerHTML = '⚠️ ' + friendly + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
+var hintHtml = '';
+if (!openrouterKey) {
+hintHtml = '<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;color:#818cf8;line-height:1.5"><i class="fa-solid fa-lightbulb"></i> <strong>Fix:</strong> Add an OpenRouter API key in Settings (tap ⚙️) to unlock Gemma, Nemotron, DeepSeek, Llama, Qwen individually. Without it, only openai works on Pollinations.</div>';
+}
+streamBubble.innerHTML = '⚠️ ' + esc(friendly) + hintHtml + ' <button class="retry"><i class="fa-solid fa-rotate"></i> Retry</button>';
 aiMsgDiv.classList.add('error');
 streamBubble.querySelector('.retry').addEventListener('click', function () {
 aiMsgDiv.remove();
@@ -1316,6 +1555,7 @@ attachLongPress(aiMsgDiv, '', 'ai');
 setGeneratingState(false);
 }
 }
+
 function formatText(text) {
 var codeBlocks = [];
 var raw = String(text).replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, function (m, lang, code) {
@@ -1346,7 +1586,9 @@ return codeBlocks[+idx] || '';
 });
 return html;
 }
+
 function scrollToBottom() { var c = $('chatArea'); c.scrollTop = c.scrollHeight; }
+
 function addMessageToUI(text, type, animate, image, sources, id) {
 var div = document.createElement('div');
 div.className = 'msg ' + type;
@@ -1363,7 +1605,7 @@ sourceHtml += '<a class="source-link" href="' + esc(s.url) + '" target="_blank" 
 sourceHtml += '</div>';
 }
 if (type === 'ai') {
-div.innerHTML = '<div class="msg-row"><div class="brain-icon"><i class="fa-solid fa-brain"></i></div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + sourceHtml + '</div></div>';
+div.innerHTML = '<div class="msg-row"><div class="brain-icon">' + NEURAL_SVG + '</div><div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '').replace(/^\[Generated Image\]\s*/, '')) + sourceHtml + '</div></div>';
 } else {
 div.innerHTML = '<div class="bubble">' + imgHtml + formatText(text.replace(/^\[Image\]\s*/, '')) + '</div>';
 }
@@ -1371,6 +1613,7 @@ $('chatArea').appendChild(div);
 scrollToBottom();
 attachLongPress(div, text, type);
 }
+
 function showTyping(text) {
 var existing = $('typingIndicator');
 if (existing) {
@@ -1380,21 +1623,24 @@ scrollToBottom();
 return;
 }
 var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'typingIndicator';
-div.innerHTML = '<div class="msg-row"><div class="brain-icon" style="animation:pulseDot 1.5s infinite"><i class="fa-solid fa-brain"></i></div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div><i class="fa-solid fa-brain" style="font-size:14px;color:#6366f1;animation:pulseDot 1.5s infinite;z-index:2"></i></div><span class="typing-label">' + esc(text) + '</span></div></div>';
+div.innerHTML = '<div class="msg-row"><div class="brain-icon tiny">' + NEURAL_SVG + '</div><div class="bubble" style="color:var(--text-muted);font-style:italic;display:flex;align-items:center;gap:10px"><div style="position:relative;width:20px;height:20px;display:flex;justify-content:center;align-items:center;flex-shrink:0"><div style="position:absolute;width:100%;height:100%;border-radius:50%;background:#6366f1;opacity:.4;animation:pulseRing 1.5s infinite"></div></div><span class="typing-label">' + esc(text) + '</span></div></div>';
 $('chatArea').appendChild(div); scrollToBottom();
 }
+
 function removeTyping() { var el = $('typingIndicator'); if (el) el.remove(); }
+
 function attachLongPress(div, text, type) {
 div.addEventListener('touchstart', function (e) { longPressTimer = setTimeout(function () { showContextMenu(e, div, text, type); }, 500); }, { passive: true });
 div.addEventListener('touchend', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchmove', function () { clearTimeout(longPressTimer); });
 div.addEventListener('touchcancel', function () { clearTimeout(longPressTimer); });
 div.addEventListener('contextmenu', function (e) {
-if (e.target.closest('a, button, .copy-code-btn, .source-link, .thinking-header')) return;
+if (e.target.closest('a, button')) return;
 e.preventDefault();
 showContextMenu(e, div, text, type);
 });
 }
+
 function showContextMenu(e, el, text, type) {
 selectedMsgEl = el; var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
 $('contextMenu').style.left = Math.min(t.clientX || 20, window.innerWidth - 180) + 'px';
@@ -1404,15 +1650,28 @@ $('ctxEdit').style.display = type === 'user' ? 'flex' : 'none';
 $('ctxRegen').style.display = type === 'ai' ? 'flex' : 'none';
 $('ctxTeach').style.display = type === 'ai' ? 'flex' : 'none';
 }
+
 function copyText(t) {
 if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { showToast('Copied!'); }, function () { showToast('Copy failed'); });
 else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); safe(function () { document.execCommand('copy'); showToast('Copied!'); }, null); ta.remove(); }
 }
+
+function extractRealDdgUrl(rawHref) {
+if (!rawHref) return 'https://duckduckgo.com';
+if (rawHref.indexOf('//') === 0) rawHref = 'https:' + rawHref;
+var match = rawHref.match(/[?&]uddg=([^&]+)/);
+if (match && match[1]) {
+return safe(function () { return decodeURIComponent(match[1]); }, rawHref);
+}
+return /^https?:\/\//i.test(rawHref) ? rawHref : 'https://duckduckgo.com';
+}
+
 function renderQuestions() {
 var list = $('questionList');
 if (!customQuestions.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom questions yet.</p>'; return; }
 list.innerHTML = customQuestions.map(function (q, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(q.text) + '</span><button class="delete-item" data-q="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
 }
+
 function addQuestion() {
 var input = $('questionInput'); var text = input.value.trim(); if (!text) return;
 var icons = ['fa-comment', 'fa-lightbulb', 'fa-rocket', 'fa-code', 'fa-book', 'fa-pen'];
@@ -1420,13 +1679,17 @@ var colors = ['#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#ef4444'];
 customQuestions.push({ text: text, icon: icons[Math.floor(Math.random() * icons.length)], color: colors[Math.floor(Math.random() * colors.length)] });
 lsSet('nf_questions', JSON.stringify(customQuestions)); input.value = ''; renderQuestions(); renderWelcomeScreen(); showToast('Question added!');
 }
+
 function renderMemory() {
 var list = $('memoryList');
 if (!memory.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text-muted);text-align:center">No custom memory yet.</p>'; return; }
 list.innerHTML = memory.map(function (m, i) { return '<div class="list-item"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span><button class="delete-item" data-m="' + i + '"><i class="fa-solid fa-trash"></i></button></div>'; }).join('');
 }
+
 function addMemory() { var input = $('memInput'); var text = input.value.trim(); if (!text) return; memory.push(text); lsSet('nf_memory', JSON.stringify(memory)); input.value = ''; renderMemory(); showToast('Memory added!'); }
+
 function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
